@@ -83,10 +83,12 @@ async function main(): Promise<void> {
   const canvas = new Canvas(document.getElementById('cy')!, (event) => {
     switch (event.kind) {
       case 'canvas-clicked': {
+        const clickPos = event.position;
         showCreateNodeDialog(registry).then((result) => {
           if (!result) return;
           registry.ensure(result.type);
-          db.createNode(result.type, { name: result.name });
+          const gnId = db.createNode(result.type, { name: result.name });
+          canvas.hintPosition(gnId, clickPos);
           refreshAndSave();
         });
         break;

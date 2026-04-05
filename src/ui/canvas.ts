@@ -1,6 +1,35 @@
 import cytoscape from 'cytoscape';
 import type { RawNode, RawEdge, CanvasEvent, InteractionMode } from '../types.js';
 
+const NODE_SPACING = 110; // minimum distance between node centers
+
+/**
+ * Find a position that doesn't overlap with any of the occupied positions.
+ * Searches outward in a spiral from the centroid of existing nodes.
+ */
+function findFreePosition(occupied: Array<{ x: number; y: number }>): { x: number; y: number } {
+  if (occupied.length === 0) return { x: 0, y: 0 };
+
+  const cx = occupied.reduce((s, p) => s + p.x, 0) / occupied.length;
+  const cy = occupied.reduce((s, p) => s + p.y, 0) / occupied.length;
+
+  const isFree = (x: number, y: number) =>
+    occupied.every((p) => Math.hypot(p.x - x, p.y - y) >= NODE_SPACING);
+
+  for (let r = NODE_SPACING; r <= NODE_SPACING * 20; r += NODE_SPACING) {
+    const steps = Math.max(6, Math.round((2 * Math.PI * r) / NODE_SPACING));
+    for (let i = 0; i < steps; i++) {
+      const angle = (2 * Math.PI * i) / steps;
+      const x = cx + r * Math.cos(angle);
+      const y = cy + r * Math.sin(angle);
+      if (isFree(x, y)) return { x, y };
+    }
+  }
+
+  // Fallback: offset from centroid
+  return { x: cx + NODE_SPACING, y: cy + NODE_SPACING };
+}
+
 const PALETTE = [
   '#6c8ef7', '#a78bfa', '#34d399', '#f87171',
   '#fbbf24', '#38bdf8', '#fb923c', '#e879f9',
@@ -26,6 +55,9 @@ export class Canvas {
 
   // edge-creation drag state
   private dragState: { active: false } | { active: true; sourceGnId: string } = { active: false };
+
+  // Positions hinted from outside (e.g. click position) for the next refresh
+  private positionHints = new Map<string, { x: number; y: number }>();
 
   constructor(container: HTMLElement, onEvent: (e: CanvasEvent) => void) {
     this.onEvent = onEvent;
@@ -230,6 +262,11 @@ export class Canvas {
     }
   }
 
+  /** Hint where a newly created node (by gnId) should be placed on next refresh. */
+  hintPosition(gnId: string, pos: { x: number; y: number }): void {
+    this.positionHints.set(gnId, pos);
+  }
+
   refreshGraph(
     nodes: RawNode[],
     edges: RawEdge[],
@@ -255,7 +292,7 @@ export class Canvas {
       const name = (node._properties['name'] as string | undefined) ?? (label || gnId.slice(0, 8));
       const color = colorForLabel(label);
 
-      const pos = savedPositions?.[gnId] ?? currentPositions[gnId];
+      const pos = savedPositions?.[gnId] ?? currentPositions[gnId] ?? this.positionHints.get(gnId);
       if (!pos) newNodeGnIds.push(gnId);
 
       elements.push({
@@ -271,6 +308,9 @@ export class Canvas {
         ...(pos ? { position: pos } : {}),
       });
     }
+
+    // Consume hints after use
+    this.positionHints.clear();
 
     for (const edge of edges) {
       const gnId = edge._properties['gnId'] as string | undefined;
@@ -297,19 +337,15 @@ export class Canvas {
 
     cy.add(elements);
 
-    // Layout only newly added nodes (those without a position)
+    // Place new nodes (no saved/current/hinted position) avoiding existing nodes
     if (newNodeGnIds.length > 0) {
+      const occupied = cy.nodes(':not([ghost])').map((n) => n.position());
       const selector = newNodeGnIds.map((id) => `#${CSS.escape(id)}`).join(', ');
-      const newNodes = cy.$(selector);
-      if (newNodes.length > 0) {
-        const bb = cy.extent();
-        newNodes.forEach((n, i) => {
-          n.position({
-            x: bb.x1 + 80 + (i % 5) * 120,
-            y: bb.y1 + 80 + Math.floor(i / 5) * 120,
-          });
-        });
-      }
+      cy.$(selector).forEach((n) => {
+        const pos = findFreePosition(occupied);
+        n.position(pos);
+        occupied.push(pos);
+      });
     }
 
     // Re-apply mode settings to new nodes
