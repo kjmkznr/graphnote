@@ -148,6 +148,23 @@
       height: 100%;
     }
 
+    .canvas-overlay-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 5px 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: border-color 0.15s, color 0.15s;
+      z-index: 10;
+    }
+    .canvas-overlay-btn:hover { border-color: var(--accent); color: var(--accent); }
+
     /* ── Sidebar ── */
     #sidebar {
       grid-column: 3;
@@ -664,7 +681,6 @@
         <span class="stat">Nodes: <span class="stat-value" id="node-count">0</span></span>
         <span class="stat">Edges: <span class="stat-value" id="edge-count">0</span></span>
       </div>
-      <button class="header-btn" id="fit-btn">Fit</button>
       <button class="header-btn" id="types-btn">Types</button>
       <button class="header-btn danger" id="reset-btn">Reset</button>
     </header>
@@ -672,6 +688,7 @@
     <!-- Canvas -->
     <div id="canvas-wrap">
       <div id="cy"></div>
+      <button id="fit-btn" class="canvas-overlay-btn">Fit</button>
     </div>
 
     <!-- Vertical resize handle (between canvas and query panel) -->
