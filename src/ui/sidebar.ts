@@ -1,4 +1,5 @@
 import type { RawNode, RawEdge, PropertyValue } from '../types.js';
+import type { TypeRegistry } from '../graph/typeRegistry.js';
 
 // Properties that are internal and should never be shown to the user
 const HIDDEN_PROPS = new Set(['gnId', 'note']);
@@ -12,6 +13,7 @@ function escHtml(s: string): string {
 }
 
 export class Sidebar {
+  private registry!: TypeRegistry;
   private elHeader = document.getElementById('element-header')!;
   private elEmpty = document.getElementById('sidebar-empty')!;
   private elContent = document.getElementById('sidebar-content')!;
@@ -31,6 +33,10 @@ export class Sidebar {
   private onLabelChangeCb: ((gnId: string, oldLabel: string, newLabel: string) => void) | null = null;
 
   private noteDebounce: ReturnType<typeof setTimeout> | null = null;
+
+  setRegistry(registry: TypeRegistry): void {
+    this.registry = registry;
+  }
 
   constructor() {
     this.elNoteTextarea.addEventListener('input', () => {
@@ -100,22 +106,32 @@ export class Sidebar {
   onLabelChange(cb: (gnId: string, oldLabel: string, newLabel: string) => void): void { this.onLabelChangeCb = cb; }
 
   private renderNodeHeader(label: string): void {
+    // Ensure current label exists in registry
+    this.registry?.ensure(label);
+
+    const types = this.registry?.getAll() ?? [label];
+    const options = types.map((t) =>
+      `<option value="${escHtml(t)}"${t === label ? ' selected' : ''}>${escHtml(t)}</option>`,
+    ).join('');
+    // Add current label as option even if not in registry
+    const hasLabel = types.includes(label);
+    const extraOption = !hasLabel
+      ? `<option value="${escHtml(label)}" selected>${escHtml(label)}</option>`
+      : '';
+
     this.elHeader.innerHTML = `
       <div class="element-type-badge badge-node">Node</div>
       <div class="label-row">
         <span class="label-prefix">Type:</span>
-        <input
-          id="label-input"
-          class="label-input"
-          value="${escHtml(label)}"
-          title="ノードのタイプ (Cypher ラベル)。色分けやフィルタリングに使われます"
-        />
+        <select id="label-select" class="label-input" title="ノードのタイプ。色分けやフィルタリングに使われます">
+          ${extraOption}${options}
+        </select>
       </div>
     `;
 
-    const labelInput = document.getElementById('label-input') as HTMLInputElement;
-    labelInput.addEventListener('change', () => {
-      const newLabel = labelInput.value.trim();
+    const select = document.getElementById('label-select') as HTMLSelectElement;
+    select.addEventListener('change', () => {
+      const newLabel = select.value;
       if (!newLabel || !this.currentGnId || !this.currentLabel || newLabel === this.currentLabel) return;
       this.onLabelChangeCb?.(this.currentGnId, this.currentLabel, newLabel);
       this.currentLabel = newLabel;

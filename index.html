@@ -463,6 +463,128 @@
     .val-bool   { color: #fca5a5; }
     .val-object { color: var(--text-muted); font-size: 11px; }
 
+    /* ── Dialog / Modal ── */
+    #dialog-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+
+    .dialog-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px;
+      width: 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+    }
+
+    .dialog-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .dialog-field { display: flex; flex-direction: column; gap: 6px; }
+
+    .dialog-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+    }
+
+    .dialog-select, .dialog-input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .dialog-select:focus, .dialog-input:focus { border-color: var(--accent); }
+
+    .dialog-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+    .dialog-btn {
+      padding: 7px 18px;
+      border-radius: 5px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s;
+    }
+    .dialog-btn:hover { opacity: 0.85; }
+    .dialog-btn-primary { background: var(--accent); color: #fff; }
+    .dialog-btn-secondary {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    /* Type manager specific */
+    #type-manager-dialog { width: 360px; }
+
+    .tm-list-wrap {
+      max-height: 260px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+
+    .tm-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .tm-item:last-child { border-bottom: none; }
+
+    .tm-item-input {
+      flex: 1;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text);
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: var(--font-mono);
+      outline: none;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .tm-item-input:focus {
+      border-color: var(--accent);
+      background: var(--surface2);
+    }
+
+    .tm-delete-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 12px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .tm-delete-btn:hover { color: var(--red); background: rgba(248,113,113,0.1); }
+
+    .tm-add-row { display: flex; gap: 8px; }
+    .tm-add-row .dialog-input { flex: 1; }
+
     /* ── Context Menu ── */
     #context-menu {
       position: fixed;
@@ -543,6 +665,7 @@
         <span class="stat">Edges: <span class="stat-value" id="edge-count">0</span></span>
       </div>
       <button class="header-btn" id="fit-btn">Fit</button>
+      <button class="header-btn" id="types-btn">Types</button>
       <button class="header-btn danger" id="reset-btn">Reset</button>
     </header>
 
@@ -604,6 +727,43 @@
 
   <!-- Context Menu -->
   <div id="context-menu" style="display:none"></div>
+
+  <!-- Dialog Overlay -->
+  <div id="dialog-overlay">
+
+    <!-- Create Node Dialog -->
+    <div id="create-node-dialog" class="dialog-box">
+      <div class="dialog-title">ノードを作成</div>
+      <div class="dialog-field">
+        <label class="dialog-label" for="cnd-type">Type (種類)</label>
+        <select id="cnd-type" class="dialog-select"></select>
+      </div>
+      <div class="dialog-field">
+        <label class="dialog-label" for="cnd-name">Name (名前)</label>
+        <input id="cnd-name" class="dialog-input" placeholder="省略するとTypeと同じになります" />
+      </div>
+      <div class="dialog-actions">
+        <button id="cnd-cancel" class="dialog-btn dialog-btn-secondary">Cancel</button>
+        <button id="cnd-confirm" class="dialog-btn dialog-btn-primary">Create</button>
+      </div>
+    </div>
+
+    <!-- Type Manager Dialog -->
+    <div id="type-manager-dialog" class="dialog-box" style="display:none">
+      <div class="dialog-title">Node Types を管理</div>
+      <div class="tm-list-wrap">
+        <div id="tm-list"></div>
+      </div>
+      <div class="tm-add-row">
+        <input id="tm-new-input" class="dialog-input" placeholder="新しいタイプ名" />
+        <button id="tm-add-btn" class="dialog-btn dialog-btn-primary">Add</button>
+      </div>
+      <div class="dialog-actions">
+        <button id="tm-close-btn" class="dialog-btn dialog-btn-secondary">Close</button>
+      </div>
+    </div>
+
+  </div>
 
   <script type="module" src="/src/main.ts"></script>
 </body>

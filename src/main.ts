@@ -1,9 +1,12 @@
 import { GraphDB } from './graph/db.js';
 import { saveGraph, loadGraph, clearSaved } from './graph/persistence.js';
+import { TypeRegistry } from './graph/typeRegistry.js';
 import { Canvas } from './ui/canvas.js';
 import { Sidebar } from './ui/sidebar.js';
 import { QueryPanel } from './ui/queryPanel.js';
 import { initResizers } from './ui/resizer.js';
+import { showCreateNodeDialog } from './ui/createNodeDialog.js';
+import { showTypeManagerDialog } from './ui/typeManagerDialog.js';
 import type { InteractionMode } from './types.js';
 
 // ── Context Menu ──────────────────────────────────────────────────────────────
@@ -47,6 +50,7 @@ async function main(): Promise<void> {
   const db = new GraphDB();
   await db.init();
 
+  const registry = new TypeRegistry();
   const savedPositions = await loadGraph(db);
 
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -65,10 +69,6 @@ async function main(): Promise<void> {
     if (ec) ec.textContent = String(db.edgeCount());
   }
 
-  function promptNodeLabel(): string | null {
-    return window.prompt('ノードのラベル (例: Company, Person, System):', 'Node');
-  }
-
   function promptEdgeType(): string | null {
     return window.prompt('エッジのタイプ (例: DEPENDS_ON, KNOWS, USES):', 'RELATES_TO');
   }
@@ -83,10 +83,12 @@ async function main(): Promise<void> {
   const canvas = new Canvas(document.getElementById('cy')!, (event) => {
     switch (event.kind) {
       case 'canvas-clicked': {
-        const label = promptNodeLabel();
-        if (!label) break;
-        db.createNode(label, { name: label });
-        refreshAndSave();
+        showCreateNodeDialog(registry).then((result) => {
+          if (!result) return;
+          registry.ensure(result.type);
+          db.createNode(result.type, { name: result.name });
+          refreshAndSave();
+        });
         break;
       }
 
@@ -147,10 +149,12 @@ async function main(): Promise<void> {
           [{
             label: 'ノードを作成',
             action: () => {
-              const label = promptNodeLabel();
-              if (!label) return;
-              db.createNode(label, { name: label });
-              refreshAndSave();
+              showCreateNodeDialog(registry).then((result) => {
+                if (!result) return;
+                registry.ensure(result.type);
+                db.createNode(result.type, { name: result.name });
+                refreshAndSave();
+              });
             },
           }],
           event.x, event.y,
@@ -162,6 +166,7 @@ async function main(): Promise<void> {
   // ── Sidebar ─────────────────────────────────────────────────────────────────
 
   const sidebar = new Sidebar();
+  sidebar.setRegistry(registry);
 
   sidebar.onLabelChange((gnId, oldLabel, newLabel) => {
     db.relabelNode(gnId, oldLabel, newLabel);
@@ -214,6 +219,10 @@ async function main(): Promise<void> {
   });
 
   document.getElementById('fit-btn')?.addEventListener('click', () => canvas.fitView());
+
+  document.getElementById('types-btn')?.addEventListener('click', () => {
+    showTypeManagerDialog(registry);
+  });
 
   document.getElementById('reset-btn')?.addEventListener('click', () => {
     if (!window.confirm('グラフをリセットしますか？この操作は取り消せません。')) return;
