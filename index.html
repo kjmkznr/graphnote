@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>graphnote</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #242736;
+      --border: #2e3247;
+      --accent: #6c8ef7;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --text: #e2e8f0;
+      --text-muted: #8892a4;
+      --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overflow: hidden;
+    }
+
+    :root {
+      --sidebar-w: 300px;
+      --query-h: 220px;
+    }
+
+    #app {
+      display: grid;
+      grid-template-columns: 1fr 4px var(--sidebar-w);
+      grid-template-rows: 48px 1fr 4px var(--query-h);
+      height: 100vh;
+    }
+
+    /* ── Resize handles ── */
+    .resize-handle {
+      background: var(--border);
+      transition: background 0.15s;
+      z-index: 10;
+    }
+    .resize-handle:hover,
+    .resize-handle:active {
+      background: var(--accent);
+    }
+    #resize-h {
+      grid-column: 2;
+      grid-row: 2 / span 3;
+      cursor: ew-resize;
+    }
+    #resize-v {
+      grid-column: 1;
+      grid-row: 3;
+      cursor: ns-resize;
+    }
+
+    /* ── Header ── */
+    #header {
+      grid-column: 1 / -1;
+      grid-row: 1;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 16px;
+    }
+
+    .logo {
+      font-size: 18px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header-divider {
+      width: 1px;
+      height: 20px;
+      background: var(--border);
+    }
+
+    #mode-buttons {
+      display: flex;
+      gap: 4px;
+    }
+
+    .mode-btn {
+      padding: 4px 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .mode-btn:hover { border-color: var(--accent); color: var(--text); }
+    .mode-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    .header-stats {
+      margin-left: auto;
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+      font-family: var(--font-mono);
+    }
+    .stat { display: flex; align-items: center; gap: 4px; color: var(--text-muted); }
+    .stat-value { color: var(--accent); font-weight: 600; }
+
+    .header-btn {
+      padding: 4px 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .header-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .header-btn.danger:hover { border-color: var(--red); color: var(--red); }
+
+    /* ── Canvas ── */
+    #canvas-wrap {
+      grid-column: 1;
+      grid-row: 2;
+      min-width: 0;
+      position: relative;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    #cy {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      grid-column: 3;
+      grid-row: 2 / span 3;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #sidebar-header {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    #sidebar-empty {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 13px;
+      padding: 24px;
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    #sidebar-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #element-header {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .element-type-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-bottom: 6px;
+    }
+    .badge-node { background: rgba(108,142,247,0.2); color: var(--accent); border: 1px solid rgba(108,142,247,0.4); }
+    .badge-edge { background: rgba(167,139,250,0.2); color: var(--accent2); border: 1px solid rgba(167,139,250,0.4); }
+
+    .element-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      font-family: var(--font-mono);
+    }
+
+    .label-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .label-prefix {
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .label-input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .label-input:focus { border-color: var(--accent); }
+
+    #sidebar-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .prop-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .prop-key {
+      font-size: 12px;
+      font-family: var(--font-mono);
+      color: var(--accent);
+      min-width: 80px;
+      flex-shrink: 0;
+    }
+
+    .prop-value-input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .prop-value-input:focus { border-color: var(--accent); }
+    .prop-value-input[readonly] { opacity: 0.5; cursor: default; }
+
+    .add-prop-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .add-prop-key, .add-prop-val {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px dashed var(--border);
+      color: var(--text);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      outline: none;
+    }
+    .add-prop-key::placeholder, .add-prop-val::placeholder { color: var(--text-muted); }
+
+    .add-prop-btn {
+      padding: 4px 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .add-prop-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    #note-textarea {
+      width: 100%;
+      min-height: 120px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.6;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    #note-textarea:focus { border-color: var(--accent); }
+
+    /* ── Query Panel ── */
+    #query-panel {
+      grid-column: 1;
+      grid-row: 4;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #query-panel-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .panel-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+
+    .shortcut-hint { font-size: 11px; color: var(--text-muted); }
+    kbd {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 1px 5px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+    }
+
+    .run-btn {
+      margin-left: auto;
+      padding: 5px 14px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: opacity 0.15s;
+    }
+    .run-btn:hover { opacity: 0.85; }
+    .run-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    #query-body {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    #query-input {
+      flex: 1;
+      background: var(--surface2);
+      border: none;
+      border-right: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.6;
+      resize: none;
+      outline: none;
+    }
+
+    #query-results {
+      flex: 1;
+      overflow: auto;
+      padding: 10px 14px;
+      font-size: 12px;
+    }
+
+    .result-tag { font-size: 11px; padding: 1px 8px; border-radius: 10px; font-family: var(--font-mono); display: inline-block; margin-bottom: 8px; }
+    .tag-ok    { background: rgba(52,211,153,0.15);  color: var(--green);  border: 1px solid rgba(52,211,153,0.3); }
+    .tag-err   { background: rgba(248,113,113,0.15); color: var(--red);    border: 1px solid rgba(248,113,113,0.3); }
+    .tag-empty { background: rgba(251,191,36,0.1);   color: var(--yellow); border: 1px solid rgba(251,191,36,0.2); }
+
+    .error-box {
+      background: rgba(248,113,113,0.08);
+      border: 1px solid rgba(248,113,113,0.3);
+      color: var(--red);
+      padding: 8px 12px;
+      border-radius: 5px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .result-table { border-collapse: collapse; font-size: 12px; font-family: var(--font-mono); width: 100%; }
+    .result-table th {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 5px 10px;
+      text-align: left;
+      color: var(--accent);
+      font-size: 11px;
+    }
+    .result-table td {
+      border: 1px solid var(--border);
+      padding: 5px 10px;
+      color: var(--text);
+      max-width: 400px;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    tr:hover td { background: rgba(108,142,247,0.05); }
+
+    .val-null   { color: var(--text-muted); font-style: italic; }
+    .val-string { color: #86efac; }
+    .val-number { color: #93c5fd; }
+    .val-bool   { color: #fca5a5; }
+    .val-object { color: var(--text-muted); font-size: 11px; }
+
+    /* ── Context Menu ── */
+    #context-menu {
+      position: fixed;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      z-index: 1000;
+      overflow: hidden;
+      min-width: 160px;
+    }
+
+    .ctx-item {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      padding: 9px 16px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .ctx-item:hover { background: var(--surface2); }
+    .ctx-item.danger { color: var(--red); }
+    .ctx-item.danger:hover { background: rgba(248,113,113,0.1); }
+
+    /* ── Loading overlay ── */
+    #loading {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      z-index: 9999;
+    }
+
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #loading p { color: var(--text-muted); font-size: 14px; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <div class="spinner"></div>
+    <p>Loading graphnote…</p>
+  </div>
+
+  <div id="app">
+    <!-- Header -->
+    <header id="header">
+      <span class="logo">graphnote</span>
+      <div class="header-divider"></div>
+      <div id="mode-buttons">
+        <button class="mode-btn active" data-mode="select" title="ノード/エッジを選択・移動">Select</button>
+        <button class="mode-btn" data-mode="node" title="空白クリックでノード作成">+ Node</button>
+        <button class="mode-btn" data-mode="edge" title="ノードからドラッグでエッジ作成">+ Edge</button>
+      </div>
+      <div class="header-stats">
+        <span class="stat">Nodes: <span class="stat-value" id="node-count">0</span></span>
+        <span class="stat">Edges: <span class="stat-value" id="edge-count">0</span></span>
+      </div>
+      <button class="header-btn" id="fit-btn">Fit</button>
+      <button class="header-btn danger" id="reset-btn">Reset</button>
+    </header>
+
+    <!-- Canvas -->
+    <div id="canvas-wrap">
+      <div id="cy"></div>
+    </div>
+
+    <!-- Vertical resize handle (between canvas and query panel) -->
+    <div id="resize-v" class="resize-handle"></div>
+
+    <!-- Horizontal resize handle (between main area and sidebar) -->
+    <div id="resize-h" class="resize-handle"></div>
+
+    <!-- Sidebar -->
+    <div id="sidebar">
+      <div id="sidebar-header">Properties</div>
+      <div id="sidebar-empty">
+        ノードまたはエッジを選択すると<br>プロパティとノートを編集できます
+      </div>
+      <div id="sidebar-content" style="display:none">
+        <div id="element-header"></div>
+        <div id="sidebar-scroll">
+          <div id="properties-section">
+            <div class="section-label">Properties</div>
+            <div id="properties-list"></div>
+            <div class="add-prop-row">
+              <input class="add-prop-key" id="new-prop-key" placeholder="key" />
+              <input class="add-prop-val" id="new-prop-val" placeholder="value" />
+              <button class="add-prop-btn" id="add-prop-btn">Add</button>
+            </div>
+          </div>
+          <div id="note-section">
+            <div class="section-label">Note</div>
+            <textarea id="note-textarea" placeholder="Markdown で自由にメモできます…"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Query Panel -->
+    <div id="query-panel">
+      <div id="query-panel-header">
+        <span class="panel-label">Cypher</span>
+        <span class="shortcut-hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> to run</span>
+        <button class="run-btn" id="run-btn">
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor"><path d="M2 1.5l8 4.5-8 4.5z"/></svg>
+          Run
+        </button>
+      </div>
+      <div id="query-body">
+        <textarea id="query-input" spellcheck="false" placeholder="MATCH (n) RETURN n LIMIT 10"></textarea>
+        <div id="query-results">
+          <span style="color: var(--text-muted); font-size: 12px;">クエリを実行すると結果が表示されます</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Context Menu -->
+  <div id="context-menu" style="display:none"></div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
