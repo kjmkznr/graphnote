@@ -26,18 +26,18 @@ export class GraphDB {
     this.graph = new WasmGraph();
   }
 
-  execute(cypher: string): unknown[] {
+  execute<T = unknown>(cypher: string): T[] {
     const json = this.graph.execute(cypher);
-    return JSON.parse(json) as unknown[];
+    return JSON.parse(json) as T[];
   }
 
   getAllNodes(): RawNode[] {
-    const rows = this.execute('MATCH (n) RETURN n') as Array<{ n: RawNode }>;
+    const rows = this.execute<{ n: RawNode }>('MATCH (n) RETURN n');
     return rows.map((r) => r.n);
   }
 
   getAllEdges(): RawEdge[] {
-    const rows = this.execute('MATCH ()-[r]->() RETURN r') as Array<{ r: RawEdge }>;
+    const rows = this.execute<{ r: RawEdge }>('MATCH ()-[r]->() RETURN r');
     return rows.map((r) => r.r);
   }
 
@@ -165,9 +165,9 @@ export class GraphDB {
 
   getNodeByGnId(gnId: string): RawNode | null {
     try {
-      const rows = this.execute(
+      const rows = this.execute<{ n: RawNode }>(
         `MATCH (n) WHERE n.gnId = "${escStr(gnId)}" RETURN n`,
-      ) as Array<{ n: RawNode }>;
+      );
       return rows[0]?.n ?? null;
     } catch {
       return null;
@@ -176,9 +176,9 @@ export class GraphDB {
 
   getEdgeByGnId(gnId: string): RawEdge | null {
     try {
-      const rows = this.execute(
+      const rows = this.execute<{ r: RawEdge }>(
         `MATCH ()-[r]->() WHERE r.gnId = "${escStr(gnId)}" RETURN r`,
-      ) as Array<{ r: RawEdge }>;
+      );
       return rows[0]?.r ?? null;
     } catch {
       return null;
