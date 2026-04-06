@@ -8,6 +8,7 @@ import { QueryPanel } from './ui/queryPanel.js';
 import { initResizers } from './ui/resizer.js';
 import { showCreateNodeDialog } from './ui/createNodeDialog.js';
 import { showTypeManagerDialog } from './ui/typeManagerDialog.js';
+import { showCreateEdgeDialog } from './ui/createEdgeDialog.js';
 import { showToast } from './ui/toast.js';
 import type { InteractionMode } from './types.js';
 
@@ -71,10 +72,6 @@ async function main(): Promise<void> {
     if (ec) ec.textContent = String(db.edgeCount());
   }
 
-  function promptEdgeType(): string | null {
-    return window.prompt('エッジのタイプ (例: DEPENDS_ON, KNOWS, USES):', 'RELATES_TO');
-  }
-
   function refreshAndSave(): void {
     try {
       canvas.refreshGraph(db.getAllNodes(), db.getAllEdges());
@@ -114,15 +111,17 @@ async function main(): Promise<void> {
       }
 
       case 'edge-created': {
-        const type = promptEdgeType();
-        if (!type) break;
-        try {
-          db.createEdge(event.sourceGnId, event.targetGnId, type);
-          refreshAndSave();
-        } catch (err) {
-          showToast(`エッジの作成に失敗しました: ${String(err)}`);
-          console.error('Failed to create edge:', err);
-        }
+        const { sourceGnId, targetGnId } = event;
+        showCreateEdgeDialog().then((type) => {
+          if (!type) return;
+          try {
+            db.createEdge(sourceGnId, targetGnId, type);
+            refreshAndSave();
+          } catch (err) {
+            showToast(`エッジの作成に失敗しました: ${String(err)}`);
+            console.error('Failed to create edge:', err);
+          }
+        });
         break;
       }
 
