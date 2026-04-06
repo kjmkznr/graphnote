@@ -3,6 +3,16 @@ import topLevelAwait from 'vite-plugin-top-level-await';
 
 export default defineConfig({
   plugins: [topLevelAwait()],
+  build: {
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['cytoscape'],
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       'egrph-wasm': '/Users/kkojima/src/github.com/kjmkznr/egrph/egrph-wasm/pkg/egrph_wasm.js',
