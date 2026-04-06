@@ -32,13 +32,13 @@
 
     :root {
       --sidebar-w: 300px;
-      --query-h: 220px;
+      --query-h: 0px;
     }
 
     #app {
       display: grid;
       grid-template-columns: 1fr 4px var(--sidebar-w);
-      grid-template-rows: 48px 1fr 4px var(--query-h);
+      grid-template-rows: 48px 1fr 28px var(--query-h);
       height: 100vh;
     }
 
@@ -57,10 +57,27 @@
       grid-row: 2 / span 3;
       cursor: ew-resize;
     }
-    #resize-v {
+    #query-toggle {
       grid-column: 1;
       grid-row: 3;
       cursor: ns-resize;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      user-select: none;
+      transition: background 0.15s;
+    }
+    #query-toggle:hover { background: var(--surface2); }
+    #query-toggle-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      pointer-events: none;
     }
 
     /* ── Header ── */
@@ -360,6 +377,7 @@
     #query-panel {
       grid-column: 1;
       grid-row: 4;
+      overflow: hidden;
       background: var(--surface);
       border-top: 1px solid var(--border);
       display: flex;
@@ -691,8 +709,8 @@
       <button id="fit-btn" class="canvas-overlay-btn">Fit</button>
     </div>
 
-    <!-- Vertical resize handle (between canvas and query panel) -->
-    <div id="resize-v" class="resize-handle"></div>
+    <!-- Query toggle bar (click to open/close, drag to resize) -->
+    <div id="query-toggle"><span id="query-toggle-label"></span></div>
 
     <!-- Horizontal resize handle (between main area and sidebar) -->
     <div id="resize-h" class="resize-handle"></div>
