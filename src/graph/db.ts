@@ -32,21 +32,13 @@ export class GraphDB {
   }
 
   getAllNodes(): RawNode[] {
-    try {
-      const rows = this.execute('MATCH (n) RETURN n') as Array<{ n: RawNode }>;
-      return rows.map((r) => r.n);
-    } catch {
-      return [];
-    }
+    const rows = this.execute('MATCH (n) RETURN n') as Array<{ n: RawNode }>;
+    return rows.map((r) => r.n);
   }
 
   getAllEdges(): RawEdge[] {
-    try {
-      const rows = this.execute('MATCH ()-[r]->() RETURN r') as Array<{ r: RawEdge }>;
-      return rows.map((r) => r.r);
-    } catch {
-      return [];
-    }
+    const rows = this.execute('MATCH ()-[r]->() RETURN r') as Array<{ r: RawEdge }>;
+    return rows.map((r) => r.r);
   }
 
   /**

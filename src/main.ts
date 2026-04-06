@@ -8,6 +8,7 @@ import { QueryPanel } from './ui/queryPanel.js';
 import { initResizers } from './ui/resizer.js';
 import { showCreateNodeDialog } from './ui/createNodeDialog.js';
 import { showTypeManagerDialog } from './ui/typeManagerDialog.js';
+import { showToast } from './ui/toast.js';
 import type { InteractionMode } from './types.js';
 
 // ── Context Menu ──────────────────────────────────────────────────────────────
@@ -75,8 +76,13 @@ async function main(): Promise<void> {
   }
 
   function refreshAndSave(): void {
-    canvas.refreshGraph(db.getAllNodes(), db.getAllEdges());
-    scheduleSave();
+    try {
+      canvas.refreshGraph(db.getAllNodes(), db.getAllEdges());
+      scheduleSave();
+    } catch (err) {
+      showToast(`グラフの更新に失敗しました: ${String(err)}`);
+      console.error('refreshAndSave failed:', err);
+    }
   }
 
   // ── Canvas ──────────────────────────────────────────────────────────────────
@@ -114,6 +120,7 @@ async function main(): Promise<void> {
           db.createEdge(event.sourceGnId, event.targetGnId, type);
           refreshAndSave();
         } catch (err) {
+          showToast(`エッジの作成に失敗しました: ${String(err)}`);
           console.error('Failed to create edge:', err);
         }
         break;
@@ -208,6 +215,7 @@ async function main(): Promise<void> {
       scheduleSave();
     } catch (err) {
       queryPanel.showError(String(err));
+      showToast(String(err), 'warn');
     }
   });
 
