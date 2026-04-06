@@ -4,15 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-Use `volta run` to prefix all Node.js commands (npm is not on PATH directly).
 
 ```bash
-volta run npm run dev      # start Vite dev server at http://localhost:5173
-volta run npm run build    # tsc + vite build
-volta run npx tsc --noEmit # type-check only (no test runner exists)
+npm run dev      # start Vite dev server at http://localhost:5173
+npm run build    # tsc + vite build
+npx tsc --noEmit # type-check only (no test runner exists)
 ```
 
-Use `sed -i` (not `sed -i ''`) for in-place file edits on this machine.
 
 ## Architecture
 

@@ -1,3 +1,4 @@
+import './styles/main.css';
 import { GraphDB } from './graph/db.js';
 import { saveGraph, loadGraph, clearSaved } from './graph/persistence.js';
 import { TypeRegistry } from './graph/typeRegistry.js';
