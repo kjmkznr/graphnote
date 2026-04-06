@@ -2,7 +2,12 @@ import init, { WasmGraph } from 'egrph-wasm';
 import type { RawNode, RawEdge, PropertyValue } from '../types.js';
 
 function escStr(s: string): string {
-  return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  return s
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\t/g, '\\t');
 }
 
 function propValueToCypher(v: PropertyValue): string {

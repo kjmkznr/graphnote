@@ -274,11 +274,11 @@ export class Canvas {
     this.mode = mode;
     if (mode === 'edge') {
       // Disable node dragging in edge-creation mode
-      this.cy.nodes(':not([ghost])').forEach((n) => n.ungrabify());
+      this.cy.nodes(':not([ghost])').forEach((n) => { n.ungrabify(); });
       this.cy.userPanningEnabled(false);
     } else {
       // select and node modes: nodes are draggable
-      this.cy.nodes(':not([ghost])').forEach((n) => n.grabify());
+      this.cy.nodes(':not([ghost])').forEach((n) => { n.grabify(); });
       this.cy.userPanningEnabled(mode === 'select');
     }
   }
