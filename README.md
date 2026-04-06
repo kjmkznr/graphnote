@@ -16,9 +16,19 @@
 ### 前提
 
 - [egrph-wasm](https://github.com/kjmkznr/egrph) が `../egrph/egrph-wasm/pkg/` に built 済みであること
-- Node.js (volta 管理推奨)
+- Nix (推奨) または Node.js v24
 
 ### インストール & 起動
+
+#### Nix を使用する場合 (推奨)
+
+```bash
+nix develop
+npm install
+npm run dev
+```
+
+#### Node.js を直接使用する場合
 
 ```bash
 npm install

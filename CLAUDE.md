@@ -4,8 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-
 ```bash
+nix develop      # enter dev shell with nodejs_24
 npm run dev      # start Vite dev server at http://localhost:5173
 npm run build    # tsc + vite build
 npx tsc --noEmit # type-check only (no test runner exists)
