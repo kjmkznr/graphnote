@@ -16,7 +16,7 @@ function getVar(name: string, fallback: number): number {
   return isNaN(v) ? fallback : v;
 }
 
-export function initResizers(onResize: () => void): void {
+export function initResizers(onResize: () => void, onQueryPanelCollapse?: () => void): void {
   const app = document.getElementById('app')!;
 
   // ── Horizontal resizer (canvas | sidebar) ────────────────────────────────
@@ -97,9 +97,11 @@ export function initResizers(onResize: () => void): void {
 
       if (!dragged) {
         // Pure click: toggle
+        const wasCollapsed = collapsed;
         collapsed = !collapsed;
         if (!collapsed) lastOpenHeight = lastOpenHeight || QUERY_DEFAULT;
         applyState();
+        if (!wasCollapsed && collapsed) onQueryPanelCollapse?.();
       }
     }
 

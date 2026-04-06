@@ -164,6 +164,27 @@ export class Canvas {
             'events': 'no',
           },
         },
+        {
+          selector: '.query-dimmed',
+          style: { 'opacity': 0.12 },
+        },
+        {
+          selector: 'node.query-match',
+          style: {
+            'border-width': 3,
+            'border-color': '#fbbf24',
+            'background-color': 'data(color)',
+          },
+        },
+        {
+          selector: 'edge.query-match',
+          style: {
+            'line-color': '#fbbf24',
+            'target-arrow-color': '#fbbf24',
+            'width': 3,
+            'color': '#fbbf24',
+          },
+        },
       ],
       layout: { name: 'preset' },
       wheelSensitivity: 0.3,
@@ -432,6 +453,32 @@ export class Canvas {
       if (gnId) positions[gnId] = { ...n.position() };
     });
     return positions;
+  }
+
+  /**
+   * Dim all elements except those matching the given gnId sets.
+   * Pass empty sets to call clearHighlight() instead.
+   */
+  highlightByGnId(nodeGnIds: Set<string>, edgeGnIds: Set<string>): void {
+    const cy = this.cy;
+    cy.elements().removeClass('query-match query-dimmed');
+
+    if (nodeGnIds.size === 0 && edgeGnIds.size === 0) return;
+
+    cy.elements().addClass('query-dimmed');
+    for (const gnId of nodeGnIds) {
+      const node = cy.getElementById(gnId);
+      node.removeClass('query-dimmed').addClass('query-match');
+      // Also highlight edges connected to matched nodes
+      node.connectedEdges(':not([ghost])').removeClass('query-dimmed').addClass('query-match');
+    }
+    for (const gnId of edgeGnIds) {
+      cy.getElementById(`e-${gnId}`).removeClass('query-dimmed').addClass('query-match');
+    }
+  }
+
+  clearHighlight(): void {
+    this.cy.elements().removeClass('query-match query-dimmed');
   }
 
   fitView(): void {

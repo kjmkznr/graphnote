@@ -12,6 +12,28 @@ import { showCreateEdgeDialog } from './ui/createEdgeDialog.js';
 import { showToast } from './ui/toast.js';
 import type { InteractionMode } from './types.js';
 
+// ── Query result gnId extraction ─────────────────────────────────────────────
+
+function extractMatchedGnIds(rows: unknown[]): { nodeGnIds: Set<string>; edgeGnIds: Set<string> } {
+  const nodeGnIds = new Set<string>();
+  const edgeGnIds = new Set<string>();
+  for (const row of rows) {
+    if (typeof row !== 'object' || row === null) continue;
+    for (const val of Object.values(row as Record<string, unknown>)) {
+      if (typeof val !== 'object' || val === null) continue;
+      const v = val as Record<string, unknown>;
+      if (Array.isArray(v['_labels']) && typeof v['_properties'] === 'object' && v['_properties'] !== null) {
+        const gnId = (v['_properties'] as Record<string, unknown>)['gnId'];
+        if (typeof gnId === 'string') nodeGnIds.add(gnId);
+      } else if (typeof v['_type'] === 'string' && '_src' in v && '_dst' in v && typeof v['_properties'] === 'object' && v['_properties'] !== null) {
+        const gnId = (v['_properties'] as Record<string, unknown>)['gnId'];
+        if (typeof gnId === 'string') edgeGnIds.add(gnId);
+      }
+    }
+  }
+  return { nodeGnIds, edgeGnIds };
+}
+
 // ── Context Menu ──────────────────────────────────────────────────────────────
 
 const ctxMenu = document.getElementById('context-menu')!;
@@ -205,6 +227,7 @@ async function main(): Promise<void> {
   const queryPanel = new QueryPanel();
 
   queryPanel.onExecute((query) => {
+    canvas.clearHighlight();
     const t0 = performance.now();
     try {
       const rows = db.execute(query);
@@ -212,6 +235,8 @@ async function main(): Promise<void> {
       queryPanel.showResult(rows, elapsed);
       canvas.refreshGraph(db.getAllNodes(), db.getAllEdges());
       scheduleSave();
+      const { nodeGnIds, edgeGnIds } = extractMatchedGnIds(rows);
+      canvas.highlightByGnId(nodeGnIds, edgeGnIds);
     } catch (err) {
       queryPanel.showError(String(err));
       showToast(String(err), 'warn');
@@ -245,7 +270,10 @@ async function main(): Promise<void> {
 
   // ── Resize handles ──────────────────────────────────────────────────────────
 
-  initResizers(() => canvas.resize());
+  initResizers(
+    () => canvas.resize(),
+    () => canvas.clearHighlight(),
+  );
 
   // ── Initial render ──────────────────────────────────────────────────────────
 
