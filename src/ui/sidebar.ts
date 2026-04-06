@@ -32,8 +32,6 @@ export class Sidebar {
   private onAddPropertyCb: ((gnId: string, key: string, value: string) => void) | null = null;
   private onLabelChangeCb: ((gnId: string, oldLabel: string, newLabel: string) => void) | null = null;
 
-  private noteDebounce: ReturnType<typeof setTimeout> | null = null;
-
   setRegistry(registry: TypeRegistry): void {
     this.registry = registry;
   }
@@ -41,12 +39,7 @@ export class Sidebar {
   constructor() {
     this.elNoteTextarea.addEventListener('input', () => {
       if (!this.currentGnId || !this.onNoteChangeCb) return;
-      if (this.noteDebounce) clearTimeout(this.noteDebounce);
-      const gnId = this.currentGnId;
-      const value = this.elNoteTextarea.value;
-      this.noteDebounce = setTimeout(() => {
-        this.onNoteChangeCb?.(gnId, value);
-      }, 800);
+      this.onNoteChangeCb(this.currentGnId, this.elNoteTextarea.value);
     });
 
     this.elAddPropBtn.addEventListener('click', () => {
