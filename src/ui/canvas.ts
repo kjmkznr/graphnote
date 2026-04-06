@@ -48,6 +48,32 @@ function colorForLabel(label: string): string {
 
 type PositionMap = Record<string, { x: number; y: number }>;
 
+function nodeDisplayData(node: RawNode): { displayLabel: string; color: string } {
+  const label = node._labels[0] ?? '';
+  const name = (node._properties['name'] as string | undefined) ?? (label || (node._properties['gnId'] as string).slice(0, 8));
+  return {
+    displayLabel: `${name}\n:${label}`,
+    color: colorForLabel(label),
+  };
+}
+
+function edgeElementDef(
+  edge: RawEdge,
+  nodes: RawNode[],
+): cytoscape.ElementDefinition | null {
+  const gnId = edge._properties['gnId'] as string | undefined;
+  if (!gnId) return null;
+  const srcNode = nodes.find((n) => n._id === edge._src);
+  const dstNode = nodes.find((n) => n._id === edge._dst);
+  const srcGnId = srcNode?._properties['gnId'] as string | undefined;
+  const dstGnId = dstNode?._properties['gnId'] as string | undefined;
+  if (!srcGnId || !dstGnId) return null;
+  return {
+    group: 'edges',
+    data: { id: `e-${gnId}`, gnId, source: srcGnId, target: dstGnId, label: edge._type },
+  };
+}
+
 export class Canvas {
   private cy: cytoscape.Core;
   private onEvent: (e: CanvasEvent) => void;
@@ -272,14 +298,24 @@ export class Canvas {
     edges: RawEdge[],
     savedPositions?: Record<string, { x: number; y: number }>,
   ): void {
+    if (savedPositions) {
+      this.fullRefresh(nodes, edges, savedPositions);
+    } else {
+      this.diffRefresh(nodes, edges);
+    }
+    // Re-apply mode settings to any newly added nodes
+    this.setMode(this.mode);
+  }
+
+  /**
+   * Full clear + rebuild used only on initial load (when savedPositions is provided).
+   */
+  private fullRefresh(
+    nodes: RawNode[],
+    edges: RawEdge[],
+    savedPositions: Record<string, { x: number; y: number }>,
+  ): void {
     const cy = this.cy;
-
-    // Capture current positions before clearing
-    const currentPositions: PositionMap = {};
-    cy.nodes(':not([ghost])').forEach((n) => {
-      currentPositions[n.data('gnId') as string] = { ...n.position() };
-    });
-
     cy.elements().remove();
 
     const elements: cytoscape.ElementDefinition[] = [];
@@ -288,68 +324,110 @@ export class Canvas {
     for (const node of nodes) {
       const gnId = node._properties['gnId'] as string | undefined;
       if (!gnId) continue;
-      const label = node._labels[0] ?? '';
-      const name = (node._properties['name'] as string | undefined) ?? (label || gnId.slice(0, 8));
-      const color = colorForLabel(label);
-
-      const pos = savedPositions?.[gnId] ?? currentPositions[gnId] ?? this.positionHints.get(gnId);
+      const { displayLabel, color } = nodeDisplayData(node);
+      const pos = savedPositions[gnId] ?? this.positionHints.get(gnId);
       if (!pos) newNodeGnIds.push(gnId);
-
       elements.push({
         group: 'nodes',
-        data: {
-          id: gnId,
-          gnId,
-          displayLabel: `${name}\n:${label}`,
-          nodeLabel: label,
-          color,
-          borderColor: color,
-        },
+        data: { id: gnId, gnId, displayLabel, nodeLabel: node._labels[0] ?? '', color, borderColor: color },
         ...(pos ? { position: pos } : {}),
       });
     }
 
-    // Consume hints after use
     this.positionHints.clear();
 
     for (const edge of edges) {
-      const gnId = edge._properties['gnId'] as string | undefined;
-      if (!gnId) continue;
-
-      // Find gnId of source and target nodes
-      const srcNode = nodes.find((n) => n._id === edge._src);
-      const dstNode = nodes.find((n) => n._id === edge._dst);
-      const srcGnId = srcNode?._properties['gnId'] as string | undefined;
-      const dstGnId = dstNode?._properties['gnId'] as string | undefined;
-      if (!srcGnId || !dstGnId) continue;
-
-      elements.push({
-        group: 'edges',
-        data: {
-          id: `e-${gnId}`,
-          gnId,
-          source: srcGnId,
-          target: dstGnId,
-          label: edge._type,
-        },
-      });
+      const def = edgeElementDef(edge, nodes);
+      if (def) elements.push(def);
     }
 
     cy.add(elements);
+    this.placeNewNodes(newNodeGnIds);
+  }
 
-    // Place new nodes (no saved/current/hinted position) avoiding existing nodes
-    if (newNodeGnIds.length > 0) {
-      const occupied = cy.nodes(':not([ghost])').map((n) => n.position());
-      const selector = newNodeGnIds.map((id) => `#${CSS.escape(id)}`).join(', ');
-      cy.$(selector).forEach((n) => {
-        const pos = findFreePosition(occupied);
-        n.position(pos);
-        occupied.push(pos);
+  /**
+   * Incremental diff update: add/remove/update only changed elements.
+   * Node positions are preserved.
+   */
+  private diffRefresh(nodes: RawNode[], edges: RawEdge[]): void {
+    const cy = this.cy;
+
+    // Build lookup maps for the desired state
+    const desiredNodes = new Map<string, RawNode>();
+    for (const n of nodes) {
+      const gnId = n._properties['gnId'] as string | undefined;
+      if (gnId) desiredNodes.set(gnId, n);
+    }
+
+    const desiredEdges = new Map<string, RawEdge>();
+    for (const e of edges) {
+      const gnId = e._properties['gnId'] as string | undefined;
+      if (gnId) desiredEdges.set(gnId, e);
+    }
+
+    // ── Nodes ──────────────────────────────────────────────────────────────
+    const existingNodeIds = new Set<string>();
+    cy.nodes(':not([ghost])').forEach((n) => {
+      const gnId = n.data('gnId') as string;
+      existingNodeIds.add(gnId);
+      if (!desiredNodes.has(gnId)) {
+        n.remove();
+      } else {
+        // Update mutable display data (label/name may change)
+        const rawNode = desiredNodes.get(gnId)!;
+        const { displayLabel, color } = nodeDisplayData(rawNode);
+        n.data({ displayLabel, nodeLabel: rawNode._labels[0] ?? '', color, borderColor: color });
+      }
+    });
+
+    // Add new nodes
+    const newNodeGnIds: string[] = [];
+    const newNodeElements: cytoscape.ElementDefinition[] = [];
+    for (const [gnId, rawNode] of desiredNodes) {
+      if (existingNodeIds.has(gnId)) continue;
+      const { displayLabel, color } = nodeDisplayData(rawNode);
+      const pos = this.positionHints.get(gnId);
+      if (!pos) newNodeGnIds.push(gnId);
+      newNodeElements.push({
+        group: 'nodes',
+        data: { id: gnId, gnId, displayLabel, nodeLabel: rawNode._labels[0] ?? '', color, borderColor: color },
+        ...(pos ? { position: pos } : {}),
       });
     }
 
-    // Re-apply mode settings to new nodes
-    this.setMode(this.mode);
+    this.positionHints.clear();
+
+    if (newNodeElements.length > 0) cy.add(newNodeElements);
+    this.placeNewNodes(newNodeGnIds);
+
+    // ── Edges ──────────────────────────────────────────────────────────────
+    cy.edges(':not([ghost])').forEach((e) => {
+      const gnId = e.data('gnId') as string;
+      if (!desiredEdges.has(gnId)) e.remove();
+    });
+
+    const existingEdgeIds = new Set<string>(
+      cy.edges(':not([ghost])').map((e) => e.data('gnId') as string),
+    );
+    const newEdgeElements: cytoscape.ElementDefinition[] = [];
+    for (const [gnId, rawEdge] of desiredEdges) {
+      if (existingEdgeIds.has(gnId)) continue;
+      const def = edgeElementDef(rawEdge, nodes);
+      if (def) newEdgeElements.push(def);
+    }
+    if (newEdgeElements.length > 0) cy.add(newEdgeElements);
+  }
+
+  private placeNewNodes(gnIds: string[]): void {
+    if (gnIds.length === 0) return;
+    const cy = this.cy;
+    const occupied = cy.nodes(':not([ghost])').map((n) => n.position());
+    const selector = gnIds.map((id) => `#${CSS.escape(id)}`).join(', ');
+    cy.$(selector).forEach((n) => {
+      const pos = findFreePosition(occupied);
+      n.position(pos);
+      occupied.push(pos);
+    });
   }
 
   getPositions(): Record<string, { x: number; y: number }> {
