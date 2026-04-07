@@ -552,13 +552,22 @@ export class Canvas {
 
     cy.elements().addClass('query-dimmed');
     for (const gnId of nodeGnIds) {
-      const node = cy.getElementById(gnId);
-      node.removeClass('query-dimmed').addClass('query-match');
-      // Also highlight edges connected to matched nodes
-      node.connectedEdges(':not([ghost])').removeClass('query-dimmed').addClass('query-match');
+      cy.getElementById(gnId).removeClass('query-dimmed').addClass('query-match');
     }
     for (const gnId of edgeGnIds) {
-      cy.getElementById(`e-${gnId}`).removeClass('query-dimmed').addClass('query-match');
+      const edge = cy.getElementById(`e-${gnId}`);
+      edge.removeClass('query-dimmed').addClass('query-match');
+      edge.connectedNodes().removeClass('query-dimmed').addClass('query-match');
+    }
+    // Highlight edges where both endpoints are matched nodes
+    if (nodeGnIds.size > 0) {
+      cy.edges(':not([ghost])').forEach((edge) => {
+        const src = edge.source();
+        const tgt = edge.target();
+        if (nodeGnIds.has(src.id()) && nodeGnIds.has(tgt.id())) {
+          edge.removeClass('query-dimmed').addClass('query-match');
+        }
+      });
     }
   }
 
