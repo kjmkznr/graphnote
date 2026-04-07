@@ -1,5 +1,6 @@
 import cytoscape from 'cytoscape';
-import type { RawNode, RawEdge, CanvasEvent, InteractionMode } from '../types.js';
+import { asGnId } from '../types.js';
+import type { GnId, RawNode, RawEdge, CanvasEvent, InteractionMode } from '../types.js';
 
 const NODE_SPACING = 110; // minimum distance between node centers
 
@@ -46,7 +47,7 @@ function colorForLabel(label: string): string {
   return labelColors.get(label)!;
 }
 
-type PositionMap = Record<string, { x: number; y: number }>;
+type PositionMap = Record<GnId, { x: number; y: number }>;
 
 function nodeDisplayData(node: RawNode): { displayLabel: string; color: string } {
   const label = node._labels[0] ?? '';
@@ -59,14 +60,12 @@ function nodeDisplayData(node: RawNode): { displayLabel: string; color: string }
 
 function edgeElementDef(
   edge: RawEdge,
-  nodes: RawNode[],
+  internalIdToGnId: Map<string, GnId>,
 ): cytoscape.ElementDefinition | null {
-  const gnId = edge._properties['gnId'] as string | undefined;
+  const gnId = edge._properties['gnId'] as GnId | undefined;
   if (!gnId) return null;
-  const srcNode = nodes.find((n) => n._id === edge._src);
-  const dstNode = nodes.find((n) => n._id === edge._dst);
-  const srcGnId = srcNode?._properties['gnId'] as string | undefined;
-  const dstGnId = dstNode?._properties['gnId'] as string | undefined;
+  const srcGnId = internalIdToGnId.get(edge._src);
+  const dstGnId = internalIdToGnId.get(edge._dst);
   if (!srcGnId || !dstGnId) return null;
   return {
     group: 'edges',
@@ -80,10 +79,10 @@ export class Canvas {
   private mode: InteractionMode = 'edit';
 
   // edge-creation drag state
-  private dragState: { active: false } | { active: true; sourceGnId: string } = { active: false };
+  private dragState: { active: false } | { active: true; sourceGnId: GnId } = { active: false };
 
   // Positions hinted from outside (e.g. click position) for the next refresh
-  private positionHints = new Map<string, { x: number; y: number }>();
+  private positionHints = new Map<GnId, { x: number; y: number }>();
 
   // timer for delayed edge handle removal
   private edgeHandleTimer: ReturnType<typeof setTimeout> | null = null;
@@ -231,13 +230,13 @@ export class Canvas {
     // Click on node
     cy.on('tap', 'node:not([ghost])', (e) => {
       if (this.dragState.active) return;
-      const gnId = e.target.data('gnId') as string;
+      const gnId = asGnId(e.target.data('gnId') as string);
       if (gnId) this.onEvent({ kind: 'node-clicked', gnId });
     });
 
     // Click on edge
     cy.on('tap', 'edge:not([ghost])', (e) => {
-      const gnId = e.target.data('gnId') as string;
+      const gnId = asGnId(e.target.data('gnId') as string);
       if (gnId) this.onEvent({ kind: 'edge-clicked', gnId });
     });
 
@@ -252,13 +251,13 @@ export class Canvas {
 
     // Right-click context menu
     cy.on('cxttap', 'node:not([ghost])', (e) => {
-      const gnId = e.target.data('gnId') as string;
+      const gnId = asGnId(e.target.data('gnId') as string);
       const orig = e.originalEvent as MouseEvent;
       if (gnId) this.onEvent({ kind: 'node-context', gnId, x: orig.clientX, y: orig.clientY });
     });
 
     cy.on('cxttap', 'edge:not([ghost])', (e) => {
-      const gnId = e.target.data('gnId') as string;
+      const gnId = asGnId(e.target.data('gnId') as string);
       const orig = e.originalEvent as MouseEvent;
       if (gnId) this.onEvent({ kind: 'edge-context', gnId, x: orig.clientX, y: orig.clientY });
     });
@@ -302,7 +301,7 @@ export class Canvas {
 
     cy.on('mousedown', 'node[?edgeHandle]', (e) => {
       e.preventDefault();
-      const sourceGnId = e.target.data('sourceGnId') as string;
+      const sourceGnId = asGnId(e.target.data('sourceGnId') as string);
       if (!sourceGnId) return;
 
       this.removeEdgeHandles();
@@ -324,7 +323,7 @@ export class Canvas {
 
     cy.on('mouseup', 'node:not([ghost]):not([edgeHandle])', (e) => {
       if (!this.dragState.active) return;
-      const targetGnId = e.target.data('gnId') as string;
+      const targetGnId = asGnId(e.target.data('gnId') as string);
       const { sourceGnId } = this.dragState;
       this.cleanupGhost();
       if (targetGnId && targetGnId !== sourceGnId) {
@@ -366,7 +365,7 @@ export class Canvas {
   private showEdgeHandles(sourceNode: cytoscape.NodeSingular): void {
     this.removeEdgeHandles();
     const pos = sourceNode.position();
-    const gnId = sourceNode.data('gnId') as string;
+    const gnId = asGnId(sourceNode.data('gnId') as string);
     const d = 52; // distance from node center
     const handles = [
       { id: '__handle_e', x: pos.x + d, y: pos.y,     arrowLabel: '→' },
@@ -390,7 +389,7 @@ export class Canvas {
   }
 
   /** Hint where a newly created node (by gnId) should be placed on next refresh. */
-  hintPosition(gnId: string, pos: { x: number; y: number }): void {
+  hintPosition(gnId: GnId, pos: { x: number; y: number }): void {
     this.positionHints.set(gnId, pos);
   }
 
@@ -414,16 +413,20 @@ export class Canvas {
   private fullRefresh(
     nodes: RawNode[],
     edges: RawEdge[],
-    savedPositions: Record<string, { x: number; y: number }>,
+    savedPositions: PositionMap,
   ): void {
     const cy = this.cy;
     cy.elements().remove();
 
+    const internalIdToGnId = new Map<string, GnId>(
+      nodes.map((n) => [n._id, n._properties['gnId'] as GnId]),
+    );
+
     const elements: cytoscape.ElementDefinition[] = [];
-    const newNodeGnIds: string[] = [];
+    const newNodeGnIds: GnId[] = [];
 
     for (const node of nodes) {
-      const gnId = node._properties['gnId'] as string | undefined;
+      const gnId = node._properties['gnId'] as GnId | undefined;
       if (!gnId) continue;
       const { displayLabel, color } = nodeDisplayData(node);
       const pos = savedPositions[gnId] ?? this.positionHints.get(gnId);
@@ -438,7 +441,7 @@ export class Canvas {
     this.positionHints.clear();
 
     for (const edge of edges) {
-      const def = edgeElementDef(edge, nodes);
+      const def = edgeElementDef(edge, internalIdToGnId);
       if (def) elements.push(def);
     }
 
@@ -454,22 +457,27 @@ export class Canvas {
     const cy = this.cy;
 
     // Build lookup maps for the desired state
-    const desiredNodes = new Map<string, RawNode>();
+    const desiredNodes = new Map<GnId, RawNode>();
     for (const n of nodes) {
-      const gnId = n._properties['gnId'] as string | undefined;
+      const gnId = n._properties['gnId'] as GnId | undefined;
       if (gnId) desiredNodes.set(gnId, n);
     }
 
-    const desiredEdges = new Map<string, RawEdge>();
+    const desiredEdges = new Map<GnId, RawEdge>();
     for (const e of edges) {
-      const gnId = e._properties['gnId'] as string | undefined;
+      const gnId = e._properties['gnId'] as GnId | undefined;
       if (gnId) desiredEdges.set(gnId, e);
     }
 
+    // Map from WasmGraph internal _id (ephemeral) to stable gnId, for edge src/dst lookup
+    const internalIdToGnId = new Map<string, GnId>(
+      nodes.map((n) => [n._id, n._properties['gnId'] as GnId]),
+    );
+
     // ── Nodes ──────────────────────────────────────────────────────────────
-    const existingNodeIds = new Set<string>();
+    const existingNodeIds = new Set<GnId>();
     cy.nodes(':not([ghost]):not([edgeHandle])').forEach((n) => {
-      const gnId = n.data('gnId') as string;
+      const gnId = asGnId(n.data('gnId') as string);
       existingNodeIds.add(gnId);
       if (!desiredNodes.has(gnId)) {
         n.remove();
@@ -482,7 +490,7 @@ export class Canvas {
     });
 
     // Add new nodes
-    const newNodeGnIds: string[] = [];
+    const newNodeGnIds: GnId[] = [];
     const newNodeElements: cytoscape.ElementDefinition[] = [];
     for (const [gnId, rawNode] of desiredNodes) {
       if (existingNodeIds.has(gnId)) continue;
@@ -503,23 +511,23 @@ export class Canvas {
 
     // ── Edges ──────────────────────────────────────────────────────────────
     cy.edges(':not([ghost])').forEach((e) => {
-      const gnId = e.data('gnId') as string;
+      const gnId = asGnId(e.data('gnId') as string);
       if (!desiredEdges.has(gnId)) e.remove();
     });
 
-    const existingEdgeIds = new Set<string>(
-      cy.edges(':not([ghost])').map((e) => e.data('gnId') as string),
+    const existingEdgeIds = new Set<GnId>(
+      cy.edges(':not([ghost])').map((e) => asGnId(e.data('gnId') as string)),
     );
     const newEdgeElements: cytoscape.ElementDefinition[] = [];
     for (const [gnId, rawEdge] of desiredEdges) {
       if (existingEdgeIds.has(gnId)) continue;
-      const def = edgeElementDef(rawEdge, nodes);
+      const def = edgeElementDef(rawEdge, internalIdToGnId);
       if (def) newEdgeElements.push(def);
     }
     if (newEdgeElements.length > 0) cy.add(newEdgeElements);
   }
 
-  private placeNewNodes(gnIds: string[]): void {
+  private placeNewNodes(gnIds: GnId[]): void {
     if (gnIds.length === 0) return;
     const cy = this.cy;
     const occupied = cy.nodes(':not([ghost]):not([edgeHandle])').map((n) => n.position());
@@ -531,10 +539,10 @@ export class Canvas {
     });
   }
 
-  getPositions(): Record<string, { x: number; y: number }> {
-    const positions: Record<string, { x: number; y: number }> = {};
+  getPositions(): PositionMap {
+    const positions: PositionMap = {} as PositionMap;
     this.cy.nodes(':not([ghost]):not([edgeHandle])').forEach((n) => {
-      const gnId = n.data('gnId') as string;
+      const gnId = asGnId(n.data('gnId') as string);
       if (gnId) positions[gnId] = { ...n.position() };
     });
     return positions;
@@ -544,7 +552,7 @@ export class Canvas {
    * Dim all elements except those matching the given gnId sets.
    * Pass empty sets to call clearHighlight() instead.
    */
-  highlightByGnId(nodeGnIds: Set<string>, edgeGnIds: Set<string>): void {
+  highlightByGnId(nodeGnIds: Set<GnId>, edgeGnIds: Set<GnId>): void {
     const cy = this.cy;
     cy.elements().removeClass('query-match query-dimmed');
 
@@ -564,7 +572,7 @@ export class Canvas {
       cy.edges(':not([ghost])').forEach((edge) => {
         const src = edge.source();
         const tgt = edge.target();
-        if (nodeGnIds.has(src.id()) && nodeGnIds.has(tgt.id())) {
+        if (nodeGnIds.has(asGnId(src.id())) && nodeGnIds.has(asGnId(tgt.id()))) {
           edge.removeClass('query-dimmed').addClass('query-match');
         }
       });

@@ -1,5 +1,6 @@
 import init, { WasmGraph } from 'egrph-wasm';
-import type { RawNode, RawEdge, PropertyValue } from '../types.js';
+import { asGnId } from '../types.js';
+import type { GnId, RawNode, RawEdge, PropertyValue } from '../types.js';
 
 function escStr(s: string): string {
   return s
@@ -51,8 +52,8 @@ export class GraphDB {
    * can be referenced even after the WasmGraph is recreated from localStorage.
    * Returns the gnId of the created node.
    */
-  createNode(label: string, extraProps: Record<string, PropertyValue> = {}): string {
-    const gnId = crypto.randomUUID();
+  createNode(label: string, extraProps: Record<string, PropertyValue> = {}): GnId {
+    const gnId = asGnId(crypto.randomUUID());
     const allProps: Record<string, PropertyValue> = {
       ...extraProps,
       gnId: gnId,
@@ -67,7 +68,7 @@ export class GraphDB {
    */
   createNodeWithGnId(
     label: string,
-    gnId: string,
+    gnId: GnId,
     extraProps: Record<string, PropertyValue> = {},
   ): void {
     const allProps: Record<string, PropertyValue> = { ...extraProps, gnId: gnId };
@@ -79,10 +80,10 @@ export class GraphDB {
    * Create an edge with a specific gnId (used when restoring from localStorage).
    */
   createEdgeWithGnId(
-    srcGnId: string,
-    dstGnId: string,
+    srcGnId: GnId,
+    dstGnId: GnId,
     type: string,
-    gnId: string,
+    gnId: GnId,
     extraProps: Record<string, PropertyValue> = {},
   ): void {
     const allProps: Record<string, PropertyValue> = { ...extraProps, gnId: gnId };
@@ -98,12 +99,12 @@ export class GraphDB {
    * Returns the edge's gnId.
    */
   createEdge(
-    srcGnId: string,
-    dstGnId: string,
+    srcGnId: GnId,
+    dstGnId: GnId,
     type: string,
     extraProps: Record<string, PropertyValue> = {},
-  ): string {
-    const gnId = crypto.randomUUID();
+  ): GnId {
+    const gnId = asGnId(crypto.randomUUID());
     const allProps: Record<string, PropertyValue> = { ...extraProps, gnId: gnId };
     const propsStr = buildPropsString(allProps);
     this.graph.execute(
@@ -116,14 +117,14 @@ export class GraphDB {
   /**
    * Change a node's label (type). Removes the old label and sets the new one.
    */
-  relabelNode(gnId: string, oldLabel: string, newLabel: string): void {
+  relabelNode(gnId: GnId, oldLabel: string, newLabel: string): void {
     this.graph.execute(
       `MATCH (n) WHERE n.gnId = "${escStr(gnId)}" REMOVE n:${oldLabel} SET n:${newLabel}`,
     );
   }
 
   /** Update a single property on a node identified by gnId. */
-  updateNodeProperty(gnId: string, key: string, value: PropertyValue): void {
+  updateNodeProperty(gnId: GnId, key: string, value: PropertyValue): void {
     const val = propValueToCypher(value);
     this.graph.execute(
       `MATCH (n) WHERE n.gnId = "${escStr(gnId)}" SET n.${key} = ${val}`,
@@ -131,7 +132,7 @@ export class GraphDB {
   }
 
   /** Update a single property on an edge identified by gnId. */
-  updateEdgeProperty(gnId: string, key: string, value: PropertyValue): void {
+  updateEdgeProperty(gnId: GnId, key: string, value: PropertyValue): void {
     const val = propValueToCypher(value);
     this.graph.execute(
       `MATCH ()-[r]->() WHERE r.gnId = "${escStr(gnId)}" SET r.${key} = ${val}`,
@@ -139,7 +140,7 @@ export class GraphDB {
   }
 
   /** Delete a node (and its connected edges) identified by gnId. */
-  deleteNode(gnId: string): void {
+  deleteNode(gnId: GnId): void {
     // Delete incoming/outgoing edges first
     try {
       this.graph.execute(
@@ -158,7 +159,7 @@ export class GraphDB {
   }
 
   /** Delete an edge identified by gnId. */
-  deleteEdge(gnId: string): void {
+  deleteEdge(gnId: GnId): void {
     try {
       this.graph.execute(
         `MATCH ()-[r]->() WHERE r.gnId = "${escStr(gnId)}" DELETE r`,
@@ -168,7 +169,7 @@ export class GraphDB {
     }
   }
 
-  getNodeByGnId(gnId: string): RawNode | null {
+  getNodeByGnId(gnId: GnId): RawNode | null {
     try {
       const rows = this.execute<{ n: RawNode }>(
         `MATCH (n) WHERE n.gnId = "${escStr(gnId)}" RETURN n`,
@@ -179,7 +180,7 @@ export class GraphDB {
     }
   }
 
-  getEdgeByGnId(gnId: string): RawEdge | null {
+  getEdgeByGnId(gnId: GnId): RawEdge | null {
     try {
       const rows = this.execute<{ r: RawEdge }>(
         `MATCH ()-[r]->() WHERE r.gnId = "${escStr(gnId)}" RETURN r`,

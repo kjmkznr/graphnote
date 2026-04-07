@@ -1,4 +1,4 @@
-import type { RawNode, RawEdge, PropertyValue } from '../types.js';
+import type { GnId, RawNode, RawEdge, PropertyValue } from '../types.js';
 import type { TypeRegistry } from '../graph/typeRegistry.js';
 
 // Properties that are internal and should never be shown to the user
@@ -23,14 +23,14 @@ export class Sidebar {
   private elNewPropVal = document.getElementById('new-prop-val') as HTMLInputElement;
   private elAddPropBtn = document.getElementById('add-prop-btn')!;
 
-  private currentGnId: string | null = null;
+  private currentGnId: GnId | null = null;
   private currentType: 'node' | 'edge' | null = null;
   private currentLabel: string | null = null;
 
-  private onNoteChangeCb: ((gnId: string, note: string) => void) | null = null;
-  private onPropertyChangeCb: ((gnId: string, key: string, value: PropertyValue) => void) | null = null;
-  private onAddPropertyCb: ((gnId: string, key: string, value: string) => void) | null = null;
-  private onLabelChangeCb: ((gnId: string, oldLabel: string, newLabel: string) => void) | null = null;
+  private onNoteChangeCb: ((gnId: GnId, note: string) => void) | null = null;
+  private onPropertyChangeCb: ((gnId: GnId, key: string, value: PropertyValue) => void) | null = null;
+  private onAddPropertyCb: ((gnId: GnId, key: string, value: string) => void) | null = null;
+  private onLabelChangeCb: ((gnId: GnId, oldLabel: string, newLabel: string) => void) | null = null;
 
   setRegistry(registry: TypeRegistry): void {
     this.registry = registry;
@@ -60,7 +60,7 @@ export class Sidebar {
   }
 
   showNode(node: RawNode): void {
-    this.currentGnId = node._properties['gnId'] as string ?? null;
+    this.currentGnId = node._properties['gnId'] as GnId ?? null;
     this.currentType = 'node';
     this.currentLabel = node._labels[0] ?? 'Node';
 
@@ -71,7 +71,7 @@ export class Sidebar {
   }
 
   showEdge(edge: RawEdge): void {
-    this.currentGnId = edge._properties['gnId'] as string ?? null;
+    this.currentGnId = edge._properties['gnId'] as GnId ?? null;
     this.currentType = 'edge';
     this.currentLabel = null;
 
@@ -93,10 +93,10 @@ export class Sidebar {
     this.elContent.style.display = 'none';
   }
 
-  onNoteChange(cb: (gnId: string, note: string) => void): void { this.onNoteChangeCb = cb; }
-  onPropertyChange(cb: (gnId: string, key: string, value: PropertyValue) => void): void { this.onPropertyChangeCb = cb; }
-  onAddProperty(cb: (gnId: string, key: string, value: string) => void): void { this.onAddPropertyCb = cb; }
-  onLabelChange(cb: (gnId: string, oldLabel: string, newLabel: string) => void): void { this.onLabelChangeCb = cb; }
+  onNoteChange(cb: (gnId: GnId, note: string) => void): void { this.onNoteChangeCb = cb; }
+  onPropertyChange(cb: (gnId: GnId, key: string, value: PropertyValue) => void): void { this.onPropertyChangeCb = cb; }
+  onAddProperty(cb: (gnId: GnId, key: string, value: string) => void): void { this.onAddPropertyCb = cb; }
+  onLabelChange(cb: (gnId: GnId, oldLabel: string, newLabel: string) => void): void { this.onLabelChangeCb = cb; }
 
   private renderNodeHeader(label: string): void {
     // Ensure current label exists in registry

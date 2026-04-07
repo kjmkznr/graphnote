@@ -9,13 +9,14 @@ import { showCreateNodeDialog } from './ui/createNodeDialog.js';
 import { showTypeManagerDialog } from './ui/typeManagerDialog.js';
 import { showCreateEdgeDialog } from './ui/createEdgeDialog.js';
 import { showToast } from './ui/toast.js';
-import type { CanvasEvent, InteractionMode } from './types.js';
+import { asGnId } from './types.js';
+import type { GnId, CanvasEvent, InteractionMode } from './types.js';
 
 // ── Query result gnId extraction ─────────────────────────────────────────────
 
-function extractMatchedGnIds(rows: unknown[]): { nodeGnIds: Set<string>; edgeGnIds: Set<string> } {
-  const nodeGnIds = new Set<string>();
-  const edgeGnIds = new Set<string>();
+function extractMatchedGnIds(rows: unknown[]): { nodeGnIds: Set<GnId>; edgeGnIds: Set<GnId> } {
+  const nodeGnIds = new Set<GnId>();
+  const edgeGnIds = new Set<GnId>();
   for (const row of rows) {
     if (typeof row !== 'object' || row === null) continue;
     for (const val of Object.values(row as Record<string, unknown>)) {
@@ -23,10 +24,10 @@ function extractMatchedGnIds(rows: unknown[]): { nodeGnIds: Set<string>; edgeGnI
       const v = val as Record<string, unknown>;
       if (Array.isArray(v['_labels']) && typeof v['_properties'] === 'object' && v['_properties'] !== null) {
         const gnId = (v['_properties'] as Record<string, unknown>)['gnId'];
-        if (typeof gnId === 'string') nodeGnIds.add(gnId);
+        if (typeof gnId === 'string') nodeGnIds.add(asGnId(gnId));
       } else if (typeof v['_type'] === 'string' && '_src' in v && '_dst' in v && typeof v['_properties'] === 'object' && v['_properties'] !== null) {
         const gnId = (v['_properties'] as Record<string, unknown>)['gnId'];
-        if (typeof gnId === 'string') edgeGnIds.add(gnId);
+        if (typeof gnId === 'string') edgeGnIds.add(asGnId(gnId));
       }
     }
   }
@@ -138,17 +139,17 @@ export class App {
     });
   }
 
-  private handleNodeClicked(gnId: string): void {
+  private handleNodeClicked(gnId: GnId): void {
     const node = this.db.getNodeByGnId(gnId);
     if (node) this.sidebar.showNode(node);
   }
 
-  private handleEdgeClicked(gnId: string): void {
+  private handleEdgeClicked(gnId: GnId): void {
     const edge = this.db.getEdgeByGnId(gnId);
     if (edge) this.sidebar.showEdge(edge);
   }
 
-  private handleEdgeCreated(sourceGnId: string, targetGnId: string): void {
+  private handleEdgeCreated(sourceGnId: GnId, targetGnId: GnId): void {
     showCreateEdgeDialog().then((type) => {
       this.applyMode('edit');
       if (!type) return;
@@ -162,7 +163,7 @@ export class App {
     });
   }
 
-  private handleNodeContext(gnId: string, x: number, y: number): void {
+  private handleNodeContext(gnId: GnId, x: number, y: number): void {
     showContextMenu(this.ctxMenu, [{
       label: 'ノードを削除', danger: true,
       action: () => {
@@ -173,7 +174,7 @@ export class App {
     }], x, y);
   }
 
-  private handleEdgeContext(gnId: string, x: number, y: number): void {
+  private handleEdgeContext(gnId: GnId, x: number, y: number): void {
     showContextMenu(this.ctxMenu, [{
       label: 'エッジを削除', danger: true,
       action: () => {
