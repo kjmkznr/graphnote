@@ -78,6 +78,9 @@ async function main(): Promise<void> {
   const registry = new TypeRegistry();
   const savedPositions = await loadGraph(db);
 
+  // Forward-declared so canvas event handlers can reference it before definition
+  let applyMode: (mode: InteractionMode) => void = () => {};
+
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
   function scheduleSave(): void {
     if (saveTimer) clearTimeout(saveTimer);
@@ -111,6 +114,7 @@ async function main(): Promise<void> {
       case 'canvas-clicked': {
         const clickPos = event.position;
         showCreateNodeDialog(registry).then((result) => {
+          applyMode('edit');
           if (!result) return;
           registry.ensure(result.type);
           const gnId = db.createNode(result.type, { name: result.name });
@@ -135,6 +139,7 @@ async function main(): Promise<void> {
       case 'edge-created': {
         const { sourceGnId, targetGnId } = event;
         showCreateEdgeDialog().then((type) => {
+          applyMode('edit');
           if (!type) return;
           try {
             db.createEdge(sourceGnId, targetGnId, type);
@@ -146,6 +151,10 @@ async function main(): Promise<void> {
         });
         break;
       }
+
+      case 'edge-drag-cancelled':
+        applyMode('edit');
+        break;
 
       case 'node-context':
         showContextMenu(
@@ -243,15 +252,35 @@ async function main(): Promise<void> {
     }
   });
 
-  // ── Mode buttons ─────────────────────────────────────────────────────────────
+  // ── Mode controls ─────────────────────────────────────────────────────────────
 
-  document.querySelectorAll<HTMLButtonElement>('.mode-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.mode-btn').forEach((b) => b.classList.remove('active'));
-      btn.classList.add('active');
-      canvas.setMode(btn.dataset['mode'] as InteractionMode);
-    });
+  const elToggle = document.getElementById('view-edit-toggle')!;
+  const elActionBtns = document.getElementById('canvas-action-btns')!;
+  const elAddNodeBtn = document.getElementById('add-node-btn')!;
+
+  applyMode = (mode: InteractionMode): void => {
+    canvas.setMode(mode);
+    const isEdit = mode === 'edit' || mode === 'node';
+    elToggle.textContent = isEdit ? 'View' : 'Edit';
+    elToggle.classList.toggle('active', isEdit);
+    elActionBtns.style.display = isEdit ? 'flex' : 'none';
+    elAddNodeBtn.classList.toggle('active', mode === 'node');
+  };
+
+  elToggle.addEventListener('click', () => {
+    applyMode(canvas.getMode() === 'view' ? 'edit' : 'view');
   });
+
+  elAddNodeBtn.addEventListener('click', () => {
+    applyMode(canvas.getMode() === 'node' ? 'edit' : 'node');
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && canvas.getMode() === 'node') applyMode('edit');
+  });
+
+  // Initialize in edit mode
+  applyMode('edit');
 
   document.getElementById('fit-btn')?.addEventListener('click', () => canvas.fitView());
 

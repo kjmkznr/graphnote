@@ -163,10 +163,27 @@ html, body {
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
-  transition: border-color 0.15s, color 0.15s;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
   z-index: 10;
 }
 .canvas-overlay-btn:hover { border-color: var(--accent); color: var(--accent); }
+.canvas-overlay-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(108,142,247,0.12);
+}
+
+#canvas-action-btns {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: none;
+  gap: 6px;
+  z-index: 10;
+}
+#canvas-action-btns .canvas-overlay-btn {
+  position: static;
+}
 
 /* ── Sidebar ── */
 

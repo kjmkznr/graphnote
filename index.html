@@ -17,9 +17,7 @@
       <span class="logo">graphnote</span>
       <div class="header-divider"></div>
       <div id="mode-buttons">
-        <button class="mode-btn active" data-mode="select" title="ノード/エッジを選択・移動">Select</button>
-        <button class="mode-btn" data-mode="node" title="空白クリックでノード作成">+ Node</button>
-        <button class="mode-btn" data-mode="edge" title="ノードからドラッグでエッジ作成">+ Edge</button>
+        <button id="view-edit-toggle" class="mode-btn active" title="表示モード / 編集モードを切り替え">View</button>
       </div>
       <div class="header-stats">
         <span class="stat">Nodes: <span class="stat-value" id="node-count">0</span></span>
@@ -34,6 +32,9 @@
     <!-- Canvas -->
     <div id="canvas-wrap">
       <div id="cy"></div>
+      <div id="canvas-action-btns">
+        <button id="add-node-btn" class="canvas-overlay-btn" title="キャンバスをクリックしてノードを作成">+ Node</button>
+      </div>
       <button id="fit-btn" class="canvas-overlay-btn">Fit</button>
     </div>
 

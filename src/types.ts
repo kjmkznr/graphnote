@@ -35,13 +35,14 @@ export interface PersistedGraph {
   positions: Record<string, { x: number; y: number }>;
 }
 
-export type InteractionMode = 'select' | 'node' | 'edge';
+export type InteractionMode = 'view' | 'edit' | 'node';
 
 export type CanvasEvent =
   | { kind: 'node-clicked'; gnId: string }
   | { kind: 'edge-clicked'; gnId: string }
   | { kind: 'canvas-clicked'; position: { x: number; y: number } }
   | { kind: 'edge-created'; sourceGnId: string; targetGnId: string }
+  | { kind: 'edge-drag-cancelled' }
   | { kind: 'node-context'; gnId: string; x: number; y: number }
   | { kind: 'edge-context'; gnId: string; x: number; y: number }
   | { kind: 'bg-context'; x: number; y: number };

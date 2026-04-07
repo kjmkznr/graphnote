@@ -77,13 +77,16 @@ function edgeElementDef(
 export class Canvas {
   private cy: cytoscape.Core;
   private onEvent: (e: CanvasEvent) => void;
-  private mode: InteractionMode = 'select';
+  private mode: InteractionMode = 'edit';
 
   // edge-creation drag state
   private dragState: { active: false } | { active: true; sourceGnId: string } = { active: false };
 
   // Positions hinted from outside (e.g. click position) for the next refresh
   private positionHints = new Map<string, { x: number; y: number }>();
+
+  // timer for delayed edge handle removal
+  private edgeHandleTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(container: HTMLElement, onEvent: (e: CanvasEvent) => void) {
     this.onEvent = onEvent;
@@ -165,6 +168,32 @@ export class Canvas {
           },
         },
         {
+          selector: 'node[?edgeHandle]',
+          style: {
+            'width': 18,
+            'height': 18,
+            'shape': 'ellipse',
+            'background-color': '#6c8ef7',
+            'border-width': 0,
+            'label': 'data(arrowLabel)',
+            'color': '#fff',
+            'font-size': '11px',
+            'text-valign': 'center',
+            'text-halign': 'center',
+            'opacity': 0.9,
+            'z-index': 999,
+          },
+        },
+        {
+          selector: 'node[?edgeHandle]:hover',
+          style: {
+            'background-color': '#a78bfa',
+            'opacity': 1,
+            'width': 22,
+            'height': 22,
+          },
+        },
+        {
           selector: '.query-dimmed',
           style: { 'opacity': 0.12 },
         },
@@ -240,20 +269,49 @@ export class Canvas {
       this.onEvent({ kind: 'bg-context', x: orig.clientX, y: orig.clientY });
     });
 
-    // Edge-creation drag
-    cy.on('mousedown', 'node:not([ghost])', (e) => {
-      if (this.mode !== 'edge') return;
+    // ── Edge handle hover ──────────────────────────────────────────────────────
+
+    // Remove handles when user grabs (mousedown) a real node
+    cy.on('grab', 'node', (e) => {
+      const t = e.target as cytoscape.NodeSingular;
+      if (t.data('edgeHandle') || t.data('ghost')) return;
+      this.removeEdgeHandles();
+    });
+
+    cy.on('mouseover', 'node', (e) => {
+      const t = e.target as cytoscape.NodeSingular;
+      if (t.data('edgeHandle')) {
+        if (this.edgeHandleTimer) { clearTimeout(this.edgeHandleTimer); this.edgeHandleTimer = null; }
+        // Hide all other handles, keep only the hovered one
+        this.cy.$('node[?edgeHandle]').forEach((h) => { if (h.id() !== t.id()) h.remove(); });
+        return;
+      }
+      if (t.data('ghost')) return;
+      if (this.mode !== 'edit') return;
+      if (this.edgeHandleTimer) { clearTimeout(this.edgeHandleTimer); this.edgeHandleTimer = null; }
+      this.showEdgeHandles(t);
+    });
+
+    cy.on('mouseout', 'node', (e) => {
+      const t = e.target as cytoscape.NodeSingular;
+      if (t.data('ghost')) return;
+      this.edgeHandleTimer = setTimeout(() => this.removeEdgeHandles(), 200);
+    });
+
+    // ── Edge-creation drag from handle ────────────────────────────────────────
+
+    cy.on('mousedown', 'node[?edgeHandle]', (e) => {
       e.preventDefault();
-      const gnId = e.target.data('gnId') as string;
-      if (!gnId) return;
+      const sourceGnId = e.target.data('sourceGnId') as string;
+      if (!sourceGnId) return;
 
-      this.dragState = { active: true, sourceGnId: gnId };
+      this.removeEdgeHandles();
+      this.dragState = { active: true, sourceGnId };
 
-      // Add ghost target + ghost edge
-      const pos = e.target.position();
+      const pos = e.position;
       cy.add([
-        { group: 'nodes', data: { id: '__ghost_target', ghost: true }, position: { x: pos.x + 1, y: pos.y + 1 } },
-        { group: 'edges', data: { id: '__ghost_edge', source: e.target.id(), target: '__ghost_target', ghost: true } },
+        { group: 'nodes', data: { id: '__ghost_target', ghost: true }, position: { x: pos.x, y: pos.y } },
+        { group: 'edges', data: { id: '__ghost_edge', source: sourceGnId, target: '__ghost_target', ghost: true } },
       ]);
     });
 
@@ -264,7 +322,7 @@ export class Canvas {
       if (ghost.length) ghost.position({ x: pos.x, y: pos.y });
     });
 
-    cy.on('mouseup', 'node:not([ghost])', (e) => {
+    cy.on('mouseup', 'node:not([ghost]):not([edgeHandle])', (e) => {
       if (!this.dragState.active) return;
       const targetGnId = e.target.data('gnId') as string;
       const { sourceGnId } = this.dragState;
@@ -276,10 +334,10 @@ export class Canvas {
 
     cy.on('mouseup', (e) => {
       if (!this.dragState.active) return;
-      // Clean up ghost if mouseup was on background or on the ghost node itself
       const target = e.target as unknown;
       if (target === cy) {
         this.cleanupGhost();
+        this.onEvent({ kind: 'edge-drag-cancelled' });
       }
     });
   }
@@ -291,17 +349,44 @@ export class Canvas {
     cy.$('#__ghost_target').remove();
   }
 
+  getMode(): InteractionMode { return this.mode; }
+
   setMode(mode: InteractionMode): void {
     this.mode = mode;
-    if (mode === 'edge') {
-      // Disable node dragging in edge-creation mode
-      this.cy.nodes(':not([ghost])').forEach((n) => { n.ungrabify(); });
-      this.cy.userPanningEnabled(false);
-    } else {
-      // select and node modes: nodes are draggable
-      this.cy.nodes(':not([ghost])').forEach((n) => { n.grabify(); });
-      this.cy.userPanningEnabled(mode === 'select');
+    // All modes: nodes draggable, panning enabled
+    this.cy.nodes(':not([ghost]):not([edgeHandle])').forEach((n) => { n.grabify(); });
+    this.cy.userPanningEnabled(true);
+    // Crosshair cursor in node-pending state
+    const container = this.cy.container();
+    if (container) container.style.cursor = mode === 'node' ? 'crosshair' : '';
+    // Remove handles when leaving edit mode
+    if (mode !== 'edit') this.removeEdgeHandles();
+  }
+
+  private showEdgeHandles(sourceNode: cytoscape.NodeSingular): void {
+    this.removeEdgeHandles();
+    const pos = sourceNode.position();
+    const gnId = sourceNode.data('gnId') as string;
+    const d = 52; // distance from node center
+    const handles = [
+      { id: '__handle_e', x: pos.x + d, y: pos.y,     arrowLabel: '→' },
+      { id: '__handle_w', x: pos.x - d, y: pos.y,     arrowLabel: '←' },
+      { id: '__handle_s', x: pos.x,     y: pos.y + d, arrowLabel: '↓' },
+      { id: '__handle_n', x: pos.x,     y: pos.y - d, arrowLabel: '↑' },
+    ];
+    for (const h of handles) {
+      this.cy.add({
+        group: 'nodes',
+        data: { id: h.id, edgeHandle: true, sourceGnId: gnId, arrowLabel: h.arrowLabel },
+        position: { x: h.x, y: h.y },
+      });
+      this.cy.getElementById(h.id).ungrabify();
     }
+  }
+
+  private removeEdgeHandles(): void {
+    if (this.edgeHandleTimer) { clearTimeout(this.edgeHandleTimer); this.edgeHandleTimer = null; }
+    this.cy.$('node[?edgeHandle]').remove();
   }
 
   /** Hint where a newly created node (by gnId) should be placed on next refresh. */
@@ -383,7 +468,7 @@ export class Canvas {
 
     // ── Nodes ──────────────────────────────────────────────────────────────
     const existingNodeIds = new Set<string>();
-    cy.nodes(':not([ghost])').forEach((n) => {
+    cy.nodes(':not([ghost]):not([edgeHandle])').forEach((n) => {
       const gnId = n.data('gnId') as string;
       existingNodeIds.add(gnId);
       if (!desiredNodes.has(gnId)) {
@@ -437,7 +522,7 @@ export class Canvas {
   private placeNewNodes(gnIds: string[]): void {
     if (gnIds.length === 0) return;
     const cy = this.cy;
-    const occupied = cy.nodes(':not([ghost])').map((n) => n.position());
+    const occupied = cy.nodes(':not([ghost]):not([edgeHandle])').map((n) => n.position());
     const selector = gnIds.map((id) => `#${CSS.escape(id)}`).join(', ');
     cy.$(selector).forEach((n) => {
       const pos = findFreePosition(occupied);
@@ -448,7 +533,7 @@ export class Canvas {
 
   getPositions(): Record<string, { x: number; y: number }> {
     const positions: Record<string, { x: number; y: number }> = {};
-    this.cy.nodes(':not([ghost])').forEach((n) => {
+    this.cy.nodes(':not([ghost]):not([edgeHandle])').forEach((n) => {
       const gnId = n.data('gnId') as string;
       if (gnId) positions[gnId] = { ...n.position() };
     });
