@@ -1,6 +1,6 @@
 import './styles/main.css';
 import { GraphDB } from './graph/db.js';
-import { saveGraph, loadGraph, clearSaved } from './graph/persistence.js';
+import { saveGraph, loadGraph, clearSaved, exportToFile, importFromFile } from './graph/persistence.js';
 import { TypeRegistry } from './graph/typeRegistry.js';
 import { Canvas } from './ui/canvas.js';
 import { Sidebar } from './ui/sidebar.js';
@@ -266,6 +266,25 @@ async function main(): Promise<void> {
     sidebar.hide();
     canvas.refreshGraph([], []);
     updateStats();
+  });
+
+  document.getElementById('export-btn')?.addEventListener('click', () => {
+    exportToFile(db, canvas.getPositions());
+    showToast('エクスポートしました');
+  });
+
+  document.getElementById('import-btn')?.addEventListener('click', () => {
+    importFromFile(db).then((positions) => {
+      if (positions === null) {
+        showToast('インポートをキャンセルしました', 'warn');
+        return;
+      }
+      saveGraph(db, positions);
+      sidebar.hide();
+      canvas.refreshGraph(db.getAllNodes(), db.getAllEdges(), positions);
+      updateStats();
+      showToast('インポートしました');
+    });
   });
 
   // ── Resize handles ──────────────────────────────────────────────────────────

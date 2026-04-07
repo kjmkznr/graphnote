@@ -89,3 +89,107 @@ export async function loadGraph(db: GraphDB): Promise<Record<string, { x: number
 export function clearSaved(): void {
   localStorage.removeItem(STORAGE_KEY);
 }
+
+export function exportToFile(
+  db: GraphDB,
+  positions: Record<string, { x: number; y: number }>,
+): void {
+  const nodes = db.getAllNodes();
+  const edges = db.getAllEdges();
+
+  const data: PersistedGraph = {
+    version: 1,
+    nodes: nodes.map((n) => ({
+      id: n._properties['gnId'] as string,
+      labels: n._labels,
+      properties: n._properties,
+    })),
+    edges: edges.map((e) => {
+      const srcNode = nodes.find((n) => n._id === e._src);
+      const dstNode = nodes.find((n) => n._id === e._dst);
+      return {
+        id: e._properties['gnId'] as string,
+        type: e._type,
+        srcId: srcNode?._properties['gnId'] as string ?? '',
+        dstId: dstNode?._properties['gnId'] as string ?? '',
+        properties: e._properties,
+      };
+    }).filter((e) => e.srcId && e.dstId),
+    positions,
+  };
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const now = new Date();
+  const ts = now.toISOString().slice(0, 19).replace(/[T:]/g, '-');
+  a.download = `graphnote-${ts}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export async function importFromFile(db: GraphDB): Promise<Record<string, { x: number; y: number }> | null> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,application/json';
+
+    input.addEventListener('change', () => {
+      const file = input.files?.[0];
+      if (!file) { resolve(null); return; }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        let saved: PersistedGraph;
+        try {
+          saved = JSON.parse(reader.result as string) as PersistedGraph;
+        } catch {
+          resolve(null);
+          return;
+        }
+
+        if (saved.version !== 1 || !Array.isArray(saved.nodes) || !Array.isArray(saved.edges)) {
+          resolve(null);
+          return;
+        }
+
+        db.reset();
+
+        for (const pNode of saved.nodes) {
+          if (!pNode.id || !pNode.labels[0]) continue;
+          const label = pNode.labels[0];
+          const props: Record<string, string | number | boolean | null> = {};
+          for (const [k, v] of Object.entries(pNode.properties)) {
+            if (k !== 'gnId') props[k] = v;
+          }
+          try {
+            db.createNodeWithGnId(label, pNode.id, props);
+          } catch (err) {
+            console.warn('Failed to restore node:', err);
+          }
+        }
+
+        for (const pEdge of saved.edges) {
+          if (!pEdge.srcId || !pEdge.dstId) continue;
+          const props: Record<string, string | number | boolean | null> = {};
+          for (const [k, v] of Object.entries(pEdge.properties)) {
+            if (k !== 'gnId') props[k] = v;
+          }
+          try {
+            db.createEdgeWithGnId(pEdge.srcId, pEdge.dstId, pEdge.type, pEdge.id, props);
+          } catch (err) {
+            console.warn('Failed to restore edge:', err);
+          }
+        }
+
+        resolve(saved.positions ?? {});
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsText(file);
+    });
+
+    input.addEventListener('cancel', () => resolve(null));
+    input.click();
+  });
+}
