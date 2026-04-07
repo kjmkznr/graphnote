@@ -1,219 +1,33 @@
 import cytoscape from 'cytoscape';
 import { asGnId } from '../types.js';
 import type { GnId, RawNode, RawEdge, CanvasEvent, InteractionMode } from '../types.js';
+import { GraphRenderer } from './graphRenderer.js';
+import type { PositionMap } from './graphRenderer.js';
+import { CYTOSCAPE_STYLES } from './cytoscapeStyles.js';
 
-const NODE_SPACING = 110; // minimum distance between node centers
+export type { PositionMap };
 
 /**
- * Find a position that doesn't overlap with any of the occupied positions.
- * Searches outward in a spiral from the centroid of existing nodes.
+ * Owns the Cytoscape instance and handles all user interactions:
+ * click/context/drag events, mode switching, and edge-creation handles.
+ *
+ * Graph element rendering is delegated to GraphRenderer.
  */
-function findFreePosition(occupied: Array<{ x: number; y: number }>): { x: number; y: number } {
-  if (occupied.length === 0) return { x: 0, y: 0 };
-
-  const cx = occupied.reduce((s, p) => s + p.x, 0) / occupied.length;
-  const cy = occupied.reduce((s, p) => s + p.y, 0) / occupied.length;
-
-  const isFree = (x: number, y: number) =>
-    occupied.every((p) => Math.hypot(p.x - x, p.y - y) >= NODE_SPACING);
-
-  for (let r = NODE_SPACING; r <= NODE_SPACING * 20; r += NODE_SPACING) {
-    const steps = Math.max(6, Math.round((2 * Math.PI * r) / NODE_SPACING));
-    for (let i = 0; i < steps; i++) {
-      const angle = (2 * Math.PI * i) / steps;
-      const x = cx + r * Math.cos(angle);
-      const y = cy + r * Math.sin(angle);
-      if (isFree(x, y)) return { x, y };
-    }
-  }
-
-  // Fallback: offset from centroid
-  return { x: cx + NODE_SPACING, y: cy + NODE_SPACING };
-}
-
-const PALETTE = [
-  '#6c8ef7', '#a78bfa', '#34d399', '#f87171',
-  '#fbbf24', '#38bdf8', '#fb923c', '#e879f9',
-];
-
-const labelColors = new Map<string, string>();
-let paletteIdx = 0;
-
-function colorForLabel(label: string): string {
-  if (!labelColors.has(label)) {
-    labelColors.set(label, PALETTE[paletteIdx % PALETTE.length] ?? '#6c8ef7');
-    paletteIdx++;
-  }
-  return labelColors.get(label)!;
-}
-
-type PositionMap = Record<GnId, { x: number; y: number }>;
-
-function nodeDisplayData(node: RawNode): { displayLabel: string; color: string } {
-  const label = node._labels[0] ?? '';
-  const name = (node._properties['name'] as string | undefined) ?? (label || (node._properties['gnId'] as string).slice(0, 8));
-  return {
-    displayLabel: `${name}\n:${label}`,
-    color: colorForLabel(label),
-  };
-}
-
-function edgeElementDef(
-  edge: RawEdge,
-  internalIdToGnId: Map<string, GnId>,
-): cytoscape.ElementDefinition | null {
-  const gnId = edge._properties['gnId'] as GnId | undefined;
-  if (!gnId) return null;
-  const srcGnId = internalIdToGnId.get(edge._src);
-  const dstGnId = internalIdToGnId.get(edge._dst);
-  if (!srcGnId || !dstGnId) return null;
-  return {
-    group: 'edges',
-    data: { id: `e-${gnId}`, gnId, source: srcGnId, target: dstGnId, label: edge._type },
-  };
-}
-
 export class Canvas {
   private cy: cytoscape.Core;
-  private onEvent: (e: CanvasEvent) => void;
+  private renderer: GraphRenderer;
   private mode: InteractionMode = 'edit';
 
-  // edge-creation drag state
+  // Edge-creation drag state
   private dragState: { active: false } | { active: true; sourceGnId: GnId } = { active: false };
 
-  // Positions hinted from outside (e.g. click position) for the next refresh
-  private positionHints = new Map<GnId, { x: number; y: number }>();
-
-  // timer for delayed edge handle removal
+  // Timer for delayed edge-handle removal (prevents flicker on node→handle transitions)
   private edgeHandleTimer: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(container: HTMLElement, onEvent: (e: CanvasEvent) => void) {
-    this.onEvent = onEvent;
-
+  constructor(container: HTMLElement, private onEvent: (e: CanvasEvent) => void) {
     this.cy = cytoscape({
       container,
-      style: [
-        {
-          selector: 'node',
-          style: {
-            'background-color': 'data(color)',
-            'label': 'data(displayLabel)',
-            'color': '#fff',
-            'text-valign': 'center',
-            'text-halign': 'center',
-            'font-size': '11px',
-            'font-family': 'ui-monospace, monospace',
-            'width': 56,
-            'height': 56,
-            'text-wrap': 'wrap',
-            'text-max-width': '64px',
-            'border-width': 2,
-            'border-color': 'data(borderColor)',
-          },
-        },
-        {
-          selector: 'node:selected',
-          style: {
-            'border-width': 3,
-            'border-color': '#fff',
-          },
-        },
-        {
-          selector: 'node[?ghost]',
-          style: {
-            'width': 10,
-            'height': 10,
-            'background-color': 'transparent',
-            'border-width': 0,
-            'label': '',
-            'events': 'no',
-          },
-        },
-        {
-          selector: 'edge',
-          style: {
-            'width': 2,
-            'line-color': '#4a5568',
-            'target-arrow-color': '#4a5568',
-            'target-arrow-shape': 'triangle',
-            'curve-style': 'bezier',
-            'label': 'data(label)',
-            'font-size': '10px',
-            'font-family': 'ui-monospace, monospace',
-            'color': '#8892a4',
-            'text-background-color': '#0f1117',
-            'text-background-opacity': 1,
-            'text-background-padding': '2px',
-          },
-        },
-        {
-          selector: 'edge:selected',
-          style: {
-            'line-color': '#6c8ef7',
-            'target-arrow-color': '#6c8ef7',
-            'color': '#e2e8f0',
-          },
-        },
-        {
-          selector: 'edge[?ghost]',
-          style: {
-            'width': 2,
-            'line-color': '#6c8ef7',
-            'target-arrow-color': '#6c8ef7',
-            'target-arrow-shape': 'triangle',
-            'line-style': 'dashed',
-            'opacity': 0.6,
-            'events': 'no',
-          },
-        },
-        {
-          selector: 'node[?edgeHandle]',
-          style: {
-            'width': 18,
-            'height': 18,
-            'shape': 'ellipse',
-            'background-color': '#6c8ef7',
-            'border-width': 0,
-            'label': 'data(arrowLabel)',
-            'color': '#fff',
-            'font-size': '11px',
-            'text-valign': 'center',
-            'text-halign': 'center',
-            'opacity': 0.9,
-            'z-index': 999,
-          },
-        },
-        {
-          selector: 'node[?edgeHandle]:hover',
-          style: {
-            'background-color': '#a78bfa',
-            'opacity': 1,
-            'width': 22,
-            'height': 22,
-          },
-        },
-        {
-          selector: '.query-dimmed',
-          style: { 'opacity': 0.12 },
-        },
-        {
-          selector: 'node.query-match',
-          style: {
-            'border-width': 3,
-            'border-color': '#fbbf24',
-            'background-color': 'data(color)',
-          },
-        },
-        {
-          selector: 'edge.query-match',
-          style: {
-            'line-color': '#fbbf24',
-            'target-arrow-color': '#fbbf24',
-            'width': 3,
-            'color': '#fbbf24',
-          },
-        },
-      ],
+      style: CYTOSCAPE_STYLES,
       layout: { name: 'preset' },
       wheelSensitivity: 0.3,
       userZoomingEnabled: true,
@@ -221,26 +35,65 @@ export class Canvas {
       boxSelectionEnabled: false,
     });
 
+    this.renderer = new GraphRenderer(this.cy);
     this.bindEvents();
   }
+
+  // ── Public API ──────────────────────────────────────────────────────────────
+
+  getMode(): InteractionMode { return this.mode; }
+
+  setMode(mode: InteractionMode): void {
+    this.mode = mode;
+    // All modes keep nodes draggable and panning enabled
+    this.cy.nodes(':not([ghost]):not([edgeHandle])').forEach((n) => { n.grabify(); });
+    this.cy.userPanningEnabled(true);
+    const container = this.cy.container();
+    if (container) container.style.cursor = mode === 'node' ? 'crosshair' : '';
+    if (mode !== 'edit') this.removeEdgeHandles();
+  }
+
+  /** Pre-assign a canvas position for a node that will appear on the next refresh. */
+  hintPosition(gnId: GnId, pos: { x: number; y: number }): void {
+    this.renderer.hintPosition(gnId, pos);
+  }
+
+  refreshGraph(nodes: RawNode[], edges: RawEdge[], savedPositions?: PositionMap): void {
+    this.renderer.refreshGraph(nodes, edges, savedPositions);
+    // Re-apply mode settings to any newly added nodes
+    this.setMode(this.mode);
+  }
+
+  getPositions(): PositionMap { return this.renderer.getPositions(); }
+
+  highlightByGnId(nodeGnIds: Set<GnId>, edgeGnIds: Set<GnId>): void {
+    this.renderer.highlightByGnId(nodeGnIds, edgeGnIds);
+  }
+
+  clearHighlight(): void { this.renderer.clearHighlight(); }
+
+  fitView(): void { this.cy.fit(undefined, 40); }
+
+  resize(): void { this.cy.resize(); }
+
+  deselectAll(): void { this.cy.elements().unselect(); }
+
+  // ── Event binding ───────────────────────────────────────────────────────────
 
   private bindEvents(): void {
     const cy = this.cy;
 
-    // Click on node
     cy.on('tap', 'node:not([ghost])', (e) => {
       if (this.dragState.active) return;
       const gnId = asGnId(e.target.data('gnId') as string);
       if (gnId) this.onEvent({ kind: 'node-clicked', gnId });
     });
 
-    // Click on edge
     cy.on('tap', 'edge:not([ghost])', (e) => {
       const gnId = asGnId(e.target.data('gnId') as string);
       if (gnId) this.onEvent({ kind: 'edge-clicked', gnId });
     });
 
-    // Click on background — node creation mode
     cy.on('tap', (e) => {
       if (e.target !== cy) return;
       if (this.mode === 'node') {
@@ -249,7 +102,6 @@ export class Canvas {
       }
     });
 
-    // Right-click context menu
     cy.on('cxttap', 'node:not([ghost])', (e) => {
       const gnId = asGnId(e.target.data('gnId') as string);
       const orig = e.originalEvent as MouseEvent;
@@ -268,9 +120,8 @@ export class Canvas {
       this.onEvent({ kind: 'bg-context', x: orig.clientX, y: orig.clientY });
     });
 
-    // ── Edge handle hover ──────────────────────────────────────────────────────
+    // ── Edge handle hover ────────────────────────────────────────────────────
 
-    // Remove handles when user grabs (mousedown) a real node
     cy.on('grab', 'node', (e) => {
       const t = e.target as cytoscape.NodeSingular;
       if (t.data('edgeHandle') || t.data('ghost')) return;
@@ -281,7 +132,7 @@ export class Canvas {
       const t = e.target as cytoscape.NodeSingular;
       if (t.data('edgeHandle')) {
         if (this.edgeHandleTimer) { clearTimeout(this.edgeHandleTimer); this.edgeHandleTimer = null; }
-        // Hide all other handles, keep only the hovered one
+        // Keep only the hovered handle; remove the others
         this.cy.$('node[?edgeHandle]').forEach((h) => { if (h.id() !== t.id()) h.remove(); });
         return;
       }
@@ -297,7 +148,7 @@ export class Canvas {
       this.edgeHandleTimer = setTimeout(() => this.removeEdgeHandles(), 200);
     });
 
-    // ── Edge-creation drag from handle ────────────────────────────────────────
+    // ── Edge-creation drag from handle ───────────────────────────────────────
 
     cy.on('mousedown', 'node[?edgeHandle]', (e) => {
       e.preventDefault();
@@ -316,9 +167,8 @@ export class Canvas {
 
     cy.on('mousemove', (e) => {
       if (!this.dragState.active) return;
-      const pos = e.position;
       const ghost = cy.$('#__ghost_target');
-      if (ghost.length) ghost.position({ x: pos.x, y: pos.y });
+      if (ghost.length) ghost.position({ x: e.position.x, y: e.position.y });
     });
 
     cy.on('mouseup', 'node:not([ghost]):not([edgeHandle])', (e) => {
@@ -333,40 +183,20 @@ export class Canvas {
 
     cy.on('mouseup', (e) => {
       if (!this.dragState.active) return;
-      const target = e.target as unknown;
-      if (target === cy) {
+      if ((e.target as unknown) === cy) {
         this.cleanupGhost();
         this.onEvent({ kind: 'edge-drag-cancelled' });
       }
     });
   }
 
-  private cleanupGhost(): void {
-    this.dragState = { active: false };
-    const cy = this.cy;
-    cy.$('#__ghost_edge').remove();
-    cy.$('#__ghost_target').remove();
-  }
-
-  getMode(): InteractionMode { return this.mode; }
-
-  setMode(mode: InteractionMode): void {
-    this.mode = mode;
-    // All modes: nodes draggable, panning enabled
-    this.cy.nodes(':not([ghost]):not([edgeHandle])').forEach((n) => { n.grabify(); });
-    this.cy.userPanningEnabled(true);
-    // Crosshair cursor in node-pending state
-    const container = this.cy.container();
-    if (container) container.style.cursor = mode === 'node' ? 'crosshair' : '';
-    // Remove handles when leaving edit mode
-    if (mode !== 'edit') this.removeEdgeHandles();
-  }
+  // ── Edge handles ────────────────────────────────────────────────────────────
 
   private showEdgeHandles(sourceNode: cytoscape.NodeSingular): void {
     this.removeEdgeHandles();
     const pos = sourceNode.position();
     const gnId = asGnId(sourceNode.data('gnId') as string);
-    const d = 52; // distance from node center
+    const d = 52;
     const handles = [
       { id: '__handle_e', x: pos.x + d, y: pos.y,     arrowLabel: '→' },
       { id: '__handle_w', x: pos.x - d, y: pos.y,     arrowLabel: '←' },
@@ -388,210 +218,9 @@ export class Canvas {
     this.cy.$('node[?edgeHandle]').remove();
   }
 
-  /** Hint where a newly created node (by gnId) should be placed on next refresh. */
-  hintPosition(gnId: GnId, pos: { x: number; y: number }): void {
-    this.positionHints.set(gnId, pos);
-  }
-
-  refreshGraph(
-    nodes: RawNode[],
-    edges: RawEdge[],
-    savedPositions?: Record<string, { x: number; y: number }>,
-  ): void {
-    if (savedPositions) {
-      this.fullRefresh(nodes, edges, savedPositions);
-    } else {
-      this.diffRefresh(nodes, edges);
-    }
-    // Re-apply mode settings to any newly added nodes
-    this.setMode(this.mode);
-  }
-
-  /**
-   * Full clear + rebuild used only on initial load (when savedPositions is provided).
-   */
-  private fullRefresh(
-    nodes: RawNode[],
-    edges: RawEdge[],
-    savedPositions: PositionMap,
-  ): void {
-    const cy = this.cy;
-    cy.elements().remove();
-
-    const internalIdToGnId = new Map<string, GnId>(
-      nodes.map((n) => [n._id, n._properties['gnId'] as GnId]),
-    );
-
-    const elements: cytoscape.ElementDefinition[] = [];
-    const newNodeGnIds: GnId[] = [];
-
-    for (const node of nodes) {
-      const gnId = node._properties['gnId'] as GnId | undefined;
-      if (!gnId) continue;
-      const { displayLabel, color } = nodeDisplayData(node);
-      const pos = savedPositions[gnId] ?? this.positionHints.get(gnId);
-      if (!pos) newNodeGnIds.push(gnId);
-      elements.push({
-        group: 'nodes',
-        data: { id: gnId, gnId, displayLabel, nodeLabel: node._labels[0] ?? '', color, borderColor: color },
-        ...(pos ? { position: pos } : {}),
-      });
-    }
-
-    this.positionHints.clear();
-
-    for (const edge of edges) {
-      const def = edgeElementDef(edge, internalIdToGnId);
-      if (def) elements.push(def);
-    }
-
-    cy.add(elements);
-    this.placeNewNodes(newNodeGnIds);
-  }
-
-  /**
-   * Incremental diff update: add/remove/update only changed elements.
-   * Node positions are preserved.
-   */
-  private diffRefresh(nodes: RawNode[], edges: RawEdge[]): void {
-    const cy = this.cy;
-
-    // Build lookup maps for the desired state
-    const desiredNodes = new Map<GnId, RawNode>();
-    for (const n of nodes) {
-      const gnId = n._properties['gnId'] as GnId | undefined;
-      if (gnId) desiredNodes.set(gnId, n);
-    }
-
-    const desiredEdges = new Map<GnId, RawEdge>();
-    for (const e of edges) {
-      const gnId = e._properties['gnId'] as GnId | undefined;
-      if (gnId) desiredEdges.set(gnId, e);
-    }
-
-    // Map from WasmGraph internal _id (ephemeral) to stable gnId, for edge src/dst lookup
-    const internalIdToGnId = new Map<string, GnId>(
-      nodes.map((n) => [n._id, n._properties['gnId'] as GnId]),
-    );
-
-    // ── Nodes ──────────────────────────────────────────────────────────────
-    const existingNodeIds = new Set<GnId>();
-    cy.nodes(':not([ghost]):not([edgeHandle])').forEach((n) => {
-      const gnId = asGnId(n.data('gnId') as string);
-      existingNodeIds.add(gnId);
-      if (!desiredNodes.has(gnId)) {
-        n.remove();
-      } else {
-        // Update mutable display data (label/name may change)
-        const rawNode = desiredNodes.get(gnId)!;
-        const { displayLabel, color } = nodeDisplayData(rawNode);
-        n.data({ displayLabel, nodeLabel: rawNode._labels[0] ?? '', color, borderColor: color });
-      }
-    });
-
-    // Add new nodes
-    const newNodeGnIds: GnId[] = [];
-    const newNodeElements: cytoscape.ElementDefinition[] = [];
-    for (const [gnId, rawNode] of desiredNodes) {
-      if (existingNodeIds.has(gnId)) continue;
-      const { displayLabel, color } = nodeDisplayData(rawNode);
-      const pos = this.positionHints.get(gnId);
-      if (!pos) newNodeGnIds.push(gnId);
-      newNodeElements.push({
-        group: 'nodes',
-        data: { id: gnId, gnId, displayLabel, nodeLabel: rawNode._labels[0] ?? '', color, borderColor: color },
-        ...(pos ? { position: pos } : {}),
-      });
-    }
-
-    this.positionHints.clear();
-
-    if (newNodeElements.length > 0) cy.add(newNodeElements);
-    this.placeNewNodes(newNodeGnIds);
-
-    // ── Edges ──────────────────────────────────────────────────────────────
-    cy.edges(':not([ghost])').forEach((e) => {
-      const gnId = asGnId(e.data('gnId') as string);
-      if (!desiredEdges.has(gnId)) e.remove();
-    });
-
-    const existingEdgeIds = new Set<GnId>(
-      cy.edges(':not([ghost])').map((e) => asGnId(e.data('gnId') as string)),
-    );
-    const newEdgeElements: cytoscape.ElementDefinition[] = [];
-    for (const [gnId, rawEdge] of desiredEdges) {
-      if (existingEdgeIds.has(gnId)) continue;
-      const def = edgeElementDef(rawEdge, internalIdToGnId);
-      if (def) newEdgeElements.push(def);
-    }
-    if (newEdgeElements.length > 0) cy.add(newEdgeElements);
-  }
-
-  private placeNewNodes(gnIds: GnId[]): void {
-    if (gnIds.length === 0) return;
-    const cy = this.cy;
-    const occupied = cy.nodes(':not([ghost]):not([edgeHandle])').map((n) => n.position());
-    const selector = gnIds.map((id) => `#${CSS.escape(id)}`).join(', ');
-    cy.$(selector).forEach((n) => {
-      const pos = findFreePosition(occupied);
-      n.position(pos);
-      occupied.push(pos);
-    });
-  }
-
-  getPositions(): PositionMap {
-    const positions: PositionMap = {} as PositionMap;
-    this.cy.nodes(':not([ghost]):not([edgeHandle])').forEach((n) => {
-      const gnId = asGnId(n.data('gnId') as string);
-      if (gnId) positions[gnId] = { ...n.position() };
-    });
-    return positions;
-  }
-
-  /**
-   * Dim all elements except those matching the given gnId sets.
-   * Pass empty sets to call clearHighlight() instead.
-   */
-  highlightByGnId(nodeGnIds: Set<GnId>, edgeGnIds: Set<GnId>): void {
-    const cy = this.cy;
-    cy.elements().removeClass('query-match query-dimmed');
-
-    if (nodeGnIds.size === 0 && edgeGnIds.size === 0) return;
-
-    cy.elements().addClass('query-dimmed');
-    for (const gnId of nodeGnIds) {
-      cy.getElementById(gnId).removeClass('query-dimmed').addClass('query-match');
-    }
-    for (const gnId of edgeGnIds) {
-      const edge = cy.getElementById(`e-${gnId}`);
-      edge.removeClass('query-dimmed').addClass('query-match');
-      edge.connectedNodes().removeClass('query-dimmed').addClass('query-match');
-    }
-    // Highlight edges where both endpoints are matched nodes
-    if (nodeGnIds.size > 0) {
-      cy.edges(':not([ghost])').forEach((edge) => {
-        const src = edge.source();
-        const tgt = edge.target();
-        if (nodeGnIds.has(asGnId(src.id())) && nodeGnIds.has(asGnId(tgt.id()))) {
-          edge.removeClass('query-dimmed').addClass('query-match');
-        }
-      });
-    }
-  }
-
-  clearHighlight(): void {
-    this.cy.elements().removeClass('query-match query-dimmed');
-  }
-
-  fitView(): void {
-    this.cy.fit(undefined, 40);
-  }
-
-  resize(): void {
-    this.cy.resize();
-  }
-
-  deselectAll(): void {
-    this.cy.elements().unselect();
+  private cleanupGhost(): void {
+    this.dragState = { active: false };
+    this.cy.$('#__ghost_edge').remove();
+    this.cy.$('#__ghost_target').remove();
   }
 }
