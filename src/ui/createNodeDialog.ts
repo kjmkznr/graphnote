@@ -1,4 +1,5 @@
 import type { TypeRegistry } from '../graph/typeRegistry.js';
+import { el, clearChildren } from './domUtils.js';
 
 export interface CreateNodeResult {
   type: string;
@@ -15,9 +16,10 @@ export function showCreateNodeDialog(registry: TypeRegistry): Promise<CreateNode
     const cancelBtn = document.getElementById('cnd-cancel') as HTMLButtonElement;
 
     // Populate type options
-    typeSelect.innerHTML = registry.getAll()
-      .map((t) => `<option value="${t}">${t}</option>`)
-      .join('');
+    clearChildren(typeSelect);
+    for (const t of registry.getAll()) {
+      typeSelect.appendChild(el('option', { value: t }, t));
+    }
 
     nameInput.value = '';
 

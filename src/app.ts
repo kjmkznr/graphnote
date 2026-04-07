@@ -11,6 +11,7 @@ import { showCreateEdgeDialog } from './ui/createEdgeDialog.js';
 import { showToast } from './ui/toast.js';
 import { asGnId } from './types.js';
 import type { GnId, CanvasEvent, InteractionMode } from './types.js';
+import { el, clearChildren } from './ui/domUtils.js';
 
 // ── Query result gnId extraction ─────────────────────────────────────────────
 
@@ -39,16 +40,15 @@ function extractMatchedGnIds(rows: unknown[]): { nodeGnIds: Set<GnId>; edgeGnIds
 type MenuItem = { label: string; danger?: boolean; action: () => void };
 
 function showContextMenu(ctxMenu: HTMLElement, items: MenuItem[], x: number, y: number): void {
-  ctxMenu.innerHTML = items
-    .map((item, i) => `<button class="ctx-item${item.danger ? ' danger' : ''}" data-idx="${i}">${item.label}</button>`)
-    .join('');
-
-  ctxMenu.querySelectorAll<HTMLButtonElement>('.ctx-item').forEach((btn) => {
+  clearChildren(ctxMenu);
+  for (const item of items) {
+    const btn = el('button', { class: item.danger ? 'ctx-item danger' : 'ctx-item' }, item.label);
     btn.addEventListener('click', () => {
-      items[Number(btn.dataset['idx'])]?.action();
+      item.action();
       hideContextMenu(ctxMenu);
     });
-  });
+    ctxMenu.appendChild(btn);
+  }
 
   ctxMenu.style.left = `${x}px`;
   ctxMenu.style.top = `${y}px`;

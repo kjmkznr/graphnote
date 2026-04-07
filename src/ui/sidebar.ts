@@ -1,16 +1,9 @@
 import type { GnId, RawNode, RawEdge, PropertyValue } from '../types.js';
 import type { TypeRegistry } from '../graph/typeRegistry.js';
+import { el, clearChildren } from './domUtils.js';
 
 // Properties that are internal and should never be shown to the user
 const HIDDEN_PROPS = new Set(['gnId', 'note']);
-
-function escHtml(s: string): string {
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
 
 export class Sidebar {
   private registry!: TypeRegistry;
@@ -75,10 +68,9 @@ export class Sidebar {
     this.currentType = 'edge';
     this.currentLabel = null;
 
-    this.elHeader.innerHTML = `
-      <div class="element-type-badge badge-edge">Edge</div>
-      <div class="element-title">${escHtml(edge._type)}</div>
-    `;
+    clearChildren(this.elHeader);
+    this.elHeader.appendChild(el('div', { class: 'element-type-badge badge-edge' }, 'Edge'));
+    this.elHeader.appendChild(el('div', { class: 'element-title' }, edge._type));
 
     this.renderProps(edge._properties);
     this.elNoteTextarea.value = (edge._properties['note'] as string | undefined) ?? '';
@@ -99,36 +91,39 @@ export class Sidebar {
   onLabelChange(cb: (gnId: GnId, oldLabel: string, newLabel: string) => void): void { this.onLabelChangeCb = cb; }
 
   private renderNodeHeader(label: string): void {
-    // Ensure current label exists in registry
     this.registry?.ensure(label);
-
     const types = this.registry?.getAll() ?? [label];
-    const options = types.map((t) =>
-      `<option value="${escHtml(t)}"${t === label ? ' selected' : ''}>${escHtml(t)}</option>`,
-    ).join('');
-    // Add current label as option even if not in registry
-    const hasLabel = types.includes(label);
-    const extraOption = !hasLabel
-      ? `<option value="${escHtml(label)}" selected>${escHtml(label)}</option>`
-      : '';
 
-    this.elHeader.innerHTML = `
-      <div class="element-type-badge badge-node">Node</div>
-      <div class="label-row">
-        <span class="label-prefix">Type:</span>
-        <select id="label-select" class="label-input" title="ノードのタイプ。色分けやフィルタリングに使われます">
-          ${extraOption}${options}
-        </select>
-      </div>
-    `;
+    const select = el('select', {
+      id: 'label-select',
+      class: 'label-input',
+      title: 'ノードのタイプ。色分けやフィルタリングに使われます',
+    });
 
-    const select = document.getElementById('label-select') as HTMLSelectElement;
+    // Add current label as first option if it's not in the registry
+    if (!types.includes(label)) {
+      select.appendChild(el('option', { value: label }, label));
+    }
+    for (const t of types) {
+      select.appendChild(el('option', { value: t }, t));
+    }
+    select.value = label;
+
     select.addEventListener('change', () => {
       const newLabel = select.value;
       if (!newLabel || !this.currentGnId || !this.currentLabel || newLabel === this.currentLabel) return;
       this.onLabelChangeCb?.(this.currentGnId, this.currentLabel, newLabel);
       this.currentLabel = newLabel;
     });
+
+    clearChildren(this.elHeader);
+    this.elHeader.appendChild(el('div', { class: 'element-type-badge badge-node' }, 'Node'));
+    this.elHeader.appendChild(
+      el('div', { class: 'label-row' },
+        el('span', { class: 'label-prefix' }, 'Type:'),
+        select,
+      ),
+    );
   }
 
   private showContent(): void {
@@ -138,27 +133,22 @@ export class Sidebar {
 
   private renderProps(props: Record<string, PropertyValue>): void {
     const visible = Object.entries(props).filter(([k]) => !HIDDEN_PROPS.has(k));
-    this.elPropsList.innerHTML = visible.map(([k, v]) => {
-      const strVal = v === null ? '' : String(v);
-      const hint = k === 'name' ? ' title="グラフ上に表示される名前"' : '';
-      return `
-        <div class="prop-row">
-          <span class="prop-key"${hint}>${escHtml(k)}</span>
-          <input
-            class="prop-value-input"
-            data-key="${escHtml(k)}"
-            value="${escHtml(strVal)}"
-          />
-        </div>
-      `;
-    }).join('');
+    clearChildren(this.elPropsList);
 
-    this.elPropsList.querySelectorAll<HTMLInputElement>('.prop-value-input').forEach((input) => {
+    for (const [k, v] of visible) {
+      const strVal = v === null ? '' : String(v);
+      const input = el('input', { class: 'prop-value-input', 'data-key': k, value: strVal });
       input.addEventListener('change', () => {
-        const key = input.dataset['key'];
-        if (!key || !this.currentGnId) return;
-        this.onPropertyChangeCb?.(this.currentGnId, key, input.value);
+        if (!this.currentGnId) return;
+        this.onPropertyChangeCb?.(this.currentGnId, k, input.value);
       });
-    });
+
+      const keyAttrs: Record<string, string> = { class: 'prop-key' };
+      if (k === 'name') keyAttrs['title'] = 'グラフ上に表示される名前';
+
+      this.elPropsList.appendChild(
+        el('div', { class: 'prop-row' }, el('span', keyAttrs, k), input),
+      );
+    }
   }
 }

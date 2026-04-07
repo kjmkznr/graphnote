@@ -1,10 +1,4 @@
-function escHtml(s: string): string {
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
+import { escHtml } from './domUtils.js';
 
 function renderValue(v: unknown): string {
   if (v === null || v === undefined) return `<span class="val-null">null</span>`;

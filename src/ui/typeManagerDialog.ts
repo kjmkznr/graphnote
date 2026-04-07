@@ -1,4 +1,5 @@
 import type { TypeRegistry } from '../graph/typeRegistry.js';
+import { el, clearChildren } from './domUtils.js';
 
 export function showTypeManagerDialog(registry: TypeRegistry): Promise<void> {
   return new Promise((resolve) => {
@@ -10,14 +11,10 @@ export function showTypeManagerDialog(registry: TypeRegistry): Promise<void> {
     const closeBtn = document.getElementById('tm-close-btn') as HTMLButtonElement;
 
     function renderList(): void {
-      list.innerHTML = registry.getAll().map((t) => `
-        <div class="tm-item" data-type="${t}">
-          <input class="tm-item-input" value="${t}" data-orig="${t}" />
-          <button class="tm-delete-btn" data-type="${t}" title="削除">✕</button>
-        </div>
-      `).join('');
-
-      list.querySelectorAll<HTMLInputElement>('.tm-item-input').forEach((input) => {
+      clearChildren(list);
+      for (const t of registry.getAll()) {
+        const input = el('input', { class: 'tm-item-input', value: t });
+        input.dataset['orig'] = t;
         input.addEventListener('change', () => {
           const orig = input.dataset['orig']!;
           const next = input.value.trim();
@@ -25,14 +22,15 @@ export function showTypeManagerDialog(registry: TypeRegistry): Promise<void> {
           registry.rename(orig, next);
           input.dataset['orig'] = next;
         });
-      });
 
-      list.querySelectorAll<HTMLButtonElement>('.tm-delete-btn').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          registry.remove(btn.dataset['type']!);
+        const deleteBtn = el('button', { class: 'tm-delete-btn', title: '削除' }, '✕');
+        deleteBtn.addEventListener('click', () => {
+          registry.remove(t);
           renderList();
         });
-      });
+
+        list.appendChild(el('div', { class: 'tm-item', 'data-type': t }, input, deleteBtn));
+      }
     }
 
     renderList();
