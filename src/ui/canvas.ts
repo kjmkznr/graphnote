@@ -50,7 +50,7 @@ export class Canvas {
     this.cy.userPanningEnabled(true);
     const container = this.cy.container();
     if (container) container.style.cursor = mode === 'node' ? 'crosshair' : '';
-    if (mode !== 'edit') this.removeEdgeHandles();
+    if (mode === 'node') this.removeEdgeHandles();
   }
 
   /** Pre-assign a canvas position for a node that will appear on the next refresh. */

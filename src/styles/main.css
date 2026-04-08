@@ -99,7 +99,7 @@ html, body {
 
 .header-divider { width: 1px; height: 20px; background: var(--border); }
 
-#mode-buttons { display: flex; gap: 4px; }
+#mode-buttons { display: flex; gap: 4px; margin-right: auto; }
 
 .mode-btn {
   padding: 4px 12px;
@@ -116,7 +116,6 @@ html, body {
 .mode-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
 .header-stats {
-  margin-left: auto;
   display: flex;
   gap: 16px;
   font-size: 12px;
@@ -177,13 +176,14 @@ html, body {
   position: absolute;
   top: 10px;
   left: 10px;
-  display: none;
+  display: flex;
   gap: 6px;
   z-index: 10;
 }
 #canvas-action-btns .canvas-overlay-btn {
   position: static;
 }
+
 
 /* ── Sidebar ── */
 

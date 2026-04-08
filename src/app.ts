@@ -56,9 +56,8 @@ export class App {
   private registry!: TypeRegistry;
 
   private ctxMenu = document.getElementById('context-menu')!;
-  private elToggle = document.getElementById('view-edit-toggle')!;
-  private elActionBtns = document.getElementById('canvas-action-btns')!;
   private elAddNodeBtn = document.getElementById('add-node-btn')!;
+  private elActionBtns = document.getElementById('canvas-action-btns')!;
 
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -230,18 +229,11 @@ export class App {
 
   private applyMode(mode: InteractionMode): void {
     this.canvas.setMode(mode);
-    const isEdit = mode === 'edit' || mode === 'node';
-    this.elToggle.textContent = isEdit ? 'View' : 'Edit';
-    this.elToggle.classList.toggle('active', isEdit);
-    this.elActionBtns.style.display = isEdit ? 'flex' : 'none';
     this.elAddNodeBtn.classList.toggle('active', mode === 'node');
+    this.elActionBtns.style.display = 'flex';
   }
 
   private setupModeControls(): void {
-    this.elToggle.addEventListener('click', () => {
-      this.applyMode(this.canvas.getMode() === 'view' ? 'edit' : 'view');
-    });
-
     this.elAddNodeBtn.addEventListener('click', () => {
       this.applyMode(this.canvas.getMode() === 'node' ? 'edit' : 'node');
     });

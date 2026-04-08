@@ -44,7 +44,7 @@ export interface PersistedGraph {
   positions: Record<GnId, { x: number; y: number }>;
 }
 
-export type InteractionMode = 'view' | 'edit' | 'node';
+export type InteractionMode = 'edit' | 'node';
 
 export type CanvasEvent =
   | { kind: 'node-clicked'; gnId: GnId }
