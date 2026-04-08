@@ -5,6 +5,7 @@ describe('GraphDB', () => {
   it('should call executor with correct cypher for getAllNodes', () => {
     const mockExecutor: IGraphExecutor = {
       execute: vi.fn().mockReturnValue('[]'),
+      exportCypher: vi.fn().mockReturnValue(''),
       nodeCount: vi.fn(),
       edgeCount: vi.fn(),
       reset: vi.fn()
@@ -19,6 +20,7 @@ describe('GraphDB', () => {
   it('should create node and return gnId', () => {
     const mockExecutor: IGraphExecutor = {
       execute: vi.fn().mockReturnValue('[]'),
+      exportCypher: vi.fn().mockReturnValue(''),
       nodeCount: vi.fn(),
       edgeCount: vi.fn(),
       reset: vi.fn()

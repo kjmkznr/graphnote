@@ -23,7 +23,13 @@
         <span class="stat">Edges: <span class="stat-value" id="edge-count">0</span></span>
       </div>
       <button class="header-btn" id="types-btn">Types</button>
-      <button class="header-btn" id="export-btn">Export</button>
+      <div class="dropdown">
+        <button class="header-btn" id="export-btn">Export</button>
+        <div class="dropdown-content">
+          <button id="export-json-btn">JSON (.json)</button>
+          <button id="export-cypher-btn">Cypher (.cypher)</button>
+        </div>
+      </div>
       <button class="header-btn" id="import-btn">Import</button>
       <button class="header-btn danger" id="reset-btn">Reset</button>
     </header>

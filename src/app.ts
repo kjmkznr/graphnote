@@ -1,5 +1,5 @@
 import { GraphDB } from './graph/db.js';
-import { saveGraph, loadGraph, clearSaved, exportToFile, importFromFile } from './graph/persistence.js';
+import { saveGraph, loadGraph, clearSaved, exportToFile, exportToCypher, importFromFile } from './graph/persistence.js';
 import { TypeRegistry } from './graph/typeRegistry.js';
 import { Canvas } from './ui/canvas.js';
 import { Sidebar } from './ui/sidebar.js';
@@ -263,9 +263,14 @@ export class App {
       this.updateStats();
     });
 
-    document.getElementById('export-btn')?.addEventListener('click', () => {
+    document.getElementById('export-json-btn')?.addEventListener('click', () => {
       exportToFile(this.db, this.canvas.getPositions());
-      showToast('エクスポートしました');
+      showToast('JSON形式でエクスポートしました', 'success');
+    });
+
+    document.getElementById('export-cypher-btn')?.addEventListener('click', () => {
+      exportToCypher(this.db, this.canvas.getPositions());
+      showToast('Cypher形式でエクスポートしました', 'success');
     });
 
     document.getElementById('import-btn')?.addEventListener('click', () => {
@@ -278,7 +283,7 @@ export class App {
         this.sidebar.hide();
         this.canvas.refreshGraph(this.db.getAllNodes(), this.db.getAllEdges(), positions);
         this.updateStats();
-        showToast('インポートしました');
+        showToast('インポートしました', 'success');
       });
     });
   }

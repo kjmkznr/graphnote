@@ -1,4 +1,4 @@
-type ToastLevel = 'error' | 'warn' | 'info';
+type ToastLevel = 'error' | 'warn' | 'info' | 'success';
 
 const container = (() => {
   const el = document.createElement('div');

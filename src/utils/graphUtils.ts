@@ -1,6 +1,15 @@
 import { asGnId } from '../types.js';
 import type { GnId } from '../types.js';
 
+export function escStr(s: string): string {
+  return s
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\t/g, '\\t');
+}
+
 export function extractMatchedGnIds(rows: unknown[]): { nodeGnIds: Set<GnId>; edgeGnIds: Set<GnId> } {
   const nodeGnIds = new Set<GnId>();
   const edgeGnIds = new Set<GnId>();

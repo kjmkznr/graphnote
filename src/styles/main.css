@@ -137,6 +137,48 @@ html, body {
 .header-btn:hover { border-color: var(--accent); color: var(--accent); }
 .header-btn.danger:hover { border-color: var(--red); color: var(--red); }
 
+/* ── Dropdown ── */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: var(--surface2);
+  min-width: 140px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5);
+  z-index: 100;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding-top: 4px;
+}
+
+.dropdown-content button {
+  color: var(--text);
+  padding: 8px 12px;
+  text-decoration: none;
+  display: block;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.dropdown-content button:hover {
+  background-color: var(--surface);
+  color: var(--accent);
+}
+
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
 /* ── Canvas ── */
 
 #canvas-wrap {
@@ -673,4 +715,9 @@ tr:hover td { background: rgba(108,142,247,0.05); }
   background: rgba(108,142,247,0.12);
   border-color: var(--accent);
   color: var(--accent);
+}
+.toast-success {
+  background: rgba(52,211,153,0.12);
+  border-color: var(--green);
+  color: var(--green);
 }

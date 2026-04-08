@@ -148,6 +148,44 @@ export function exportToFile(
   URL.revokeObjectURL(url);
 }
 
+
+export function exportToCypher(
+  db: GraphDB,
+  positions: Record<GnId, { x: number; y: number }>,
+): void {
+  const baseCypher = db.exportCypher();
+  if (!baseCypher) return;
+
+  // Append position comments to each node line
+  const lines = baseCypher.split('\n');
+  const processedLines = lines.map(line => {
+    // Look for gnId: "..." in the line
+    const match = line.match(/gnId: "([^"]+)"/);
+    if (match && match[1]) {
+      const gnId = asGnId(match[1]);
+      const pos = positions[gnId];
+      if (pos) {
+        return `${line} // position: {"x": ${pos.x}, "y": ${pos.y}}`;
+      }
+    }
+    return line;
+  });
+
+  let cypher = '// Graphnote Cypher Export\n';
+  cypher += `// Generated: ${new Date().toISOString()}\n\n`;
+  cypher += processedLines.join('\n');
+
+  const blob = new Blob([cypher], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const now = new Date();
+  const ts = now.toISOString().slice(0, 19).replace(/[T:]/g, '-');
+  a.download = `graphnote-${ts}.cypher`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export async function importFromFile(db: GraphDB): Promise<Record<GnId, { x: number; y: number }> | null> {
   return new Promise((resolve) => {
     const input = document.createElement('input');

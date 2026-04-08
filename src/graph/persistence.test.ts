@@ -6,6 +6,7 @@ describe('persistence', () => {
   it('saveGraph should call storage.setItem', () => {
     const mockExecutor: IGraphExecutor = {
       execute: vi.fn().mockReturnValue('[]'),
+      exportCypher: vi.fn().mockReturnValue(''),
       nodeCount: vi.fn(),
       edgeCount: vi.fn(),
       reset: vi.fn()
@@ -26,6 +27,7 @@ describe('persistence', () => {
   it('loadGraph should call storage.getItem and restore data', async () => {
     const mockExecutor: IGraphExecutor = {
       execute: vi.fn().mockReturnValue('[]'),
+      exportCypher: vi.fn().mockReturnValue(''),
       nodeCount: vi.fn(),
       edgeCount: vi.fn(),
       reset: vi.fn()

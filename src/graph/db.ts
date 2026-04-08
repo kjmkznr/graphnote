@@ -1,9 +1,11 @@
 import { WasmGraph } from '@kjmkznr/egrph-wasm';
 import { asGnId } from '../types.js';
 import type { GnId, RawNode, RawEdge, PropertyValue } from '../types.js';
+import { escStr } from '../utils/graphUtils.js';
 
 export interface IGraphExecutor {
   execute(cypher: string): string;
+  exportCypher(): string;
   nodeCount(): number;
   edgeCount(): number;
   reset(): void;
@@ -13,6 +15,9 @@ class WasmGraphExecutor implements IGraphExecutor {
   constructor(private graph: WasmGraph) {}
   execute(cypher: string): string {
     return this.graph.execute(cypher);
+  }
+  exportCypher(): string {
+    return this.graph.exportCypher();
   }
   nodeCount(): number {
     return this.graph.nodeCount();
@@ -25,14 +30,6 @@ class WasmGraphExecutor implements IGraphExecutor {
   }
 }
 
-function escStr(s: string): string {
-  return s
-    .replace(/\\/g, '\\\\')
-    .replace(/"/g, '\\"')
-    .replace(/\n/g, '\\n')
-    .replace(/\r/g, '\\r')
-    .replace(/\t/g, '\\t');
-}
 
 function propValueToCypher(v: PropertyValue): string {
   if (v === null) return 'null';
@@ -61,6 +58,10 @@ export class GraphDB {
   execute<T = unknown>(cypher: string): T[] {
     const json = this.executor.execute(cypher);
     return JSON.parse(json) as T[];
+  }
+
+  exportCypher(): string {
+    return this.executor.exportCypher();
   }
 
   getAllNodes(): RawNode[] {
