@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { saveGraph, loadGraph, type IStorage } from './persistence';
 import { GraphDB, type IGraphExecutor } from './db';
-import { asGnId } from '../types';
 
 describe('persistence', () => {
   it('saveGraph should call storage.setItem', () => {

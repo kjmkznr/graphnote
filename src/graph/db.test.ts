@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
 import { GraphDB, type IGraphExecutor } from './db';
-import { asGnId } from '../types';
 
 describe('GraphDB', () => {
   it('should call executor with correct cypher for getAllNodes', () => {
