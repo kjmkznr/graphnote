@@ -1,8 +1,9 @@
 import { defineConfig } from 'vite';
+import wasm from 'vite-plugin-wasm';
 import topLevelAwait from 'vite-plugin-top-level-await';
 
 export default defineConfig({
-  plugins: [topLevelAwait()],
+  plugins: [wasm(), topLevelAwait()],
   build: {
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
@@ -13,18 +14,7 @@ export default defineConfig({
       },
     },
   },
-  resolve: {
-    alias: {
-      'egrph-wasm': '/Users/kkojima/src/github.com/kjmkznr/egrph/egrph-wasm/pkg/egrph_wasm.js',
-    },
-  },
   optimizeDeps: {
-    exclude: ['egrph-wasm'],
-  },
-  server: {
-    fs: {
-      // egrph-wasm/pkg が graphnote の親ディレクトリに存在するため許可
-      allow: ['..'],
-    },
+    exclude: ['@kjmkznr/egrph-wasm'],
   },
 });

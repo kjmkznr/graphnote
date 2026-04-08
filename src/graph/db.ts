@@ -1,4 +1,4 @@
-import init, { WasmGraph } from 'egrph-wasm';
+import { WasmGraph } from '@kjmkznr/egrph-wasm';
 import { asGnId } from '../types.js';
 import type { GnId, RawNode, RawEdge, PropertyValue } from '../types.js';
 
@@ -51,7 +51,6 @@ export class GraphDB {
   private executor!: IGraphExecutor;
 
   async init(): Promise<void> {
-    await init();
     this.executor = new WasmGraphExecutor(new WasmGraph());
   }
 

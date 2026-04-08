@@ -10,9 +10,7 @@
     "outDir": "dist",
     "rootDir": "src",
     "skipLibCheck": true,
-    "paths": {
-      "egrph-wasm": ["../egrph/egrph-wasm/pkg/egrph_wasm.d.ts"]
-    }
+    "allowSyntheticDefaultImports": true
   },
   "include": ["src"]
 }

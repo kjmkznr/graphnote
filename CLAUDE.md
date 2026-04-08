@@ -44,7 +44,7 @@ Wires all modules together. The async `main()` function:
 
 ### egrph-wasm integration
 
-The WASM package lives at `../egrph/egrph-wasm/pkg/` (outside this repo). Vite resolves `import ... from 'egrph-wasm'` via the alias in `vite.config.ts`. `server.fs.allow: ['..']` is required so Vite's dev server can serve the `.wasm` binary from the parent directory. `vite-plugin-wasm` is intentionally **not** used — it conflicts with wasm-bindgen's `fetch(new URL(..., import.meta.url))` loading pattern.
+`@kjmkznr/egrph-wasm` is published to GitHub Packages and installed as a regular npm dependency. The package is built with `wasm-pack --target bundler`, which generates `import * as wasm from "./egrph_wasm_bg.wasm"` (ESM Wasm proposal syntax). `vite-plugin-wasm` transforms this for Vite. `optimizeDeps.exclude` prevents Vite's esbuild pre-bundler from mangling the WASM URL. No manual `init()` call is needed — the module initialises automatically on import.
 
 ### Layout
 

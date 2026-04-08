@@ -9,6 +9,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@kjmkznr/egrph-wasm": "^0.1.0",
     "cytoscape": "^3.30.2"
   },
   "devDependencies": {
