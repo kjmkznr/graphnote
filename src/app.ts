@@ -9,7 +9,6 @@ import { showCreateNodeDialog } from './ui/createNodeDialog.js';
 import { showTypeManagerDialog } from './ui/typeManagerDialog.js';
 import { showCreateEdgeDialog } from './ui/createEdgeDialog.js';
 import { showToast } from './ui/toast.js';
-import { asGnId } from './types.js';
 import type { GnId, CanvasEvent, InteractionMode } from './types.js';
 import { el, clearChildren } from './ui/domUtils.js';
 import { extractMatchedGnIds } from './utils/graphUtils.js';
