@@ -73,7 +73,7 @@ export class App {
     await this.db.init();
 
     this.registry = new TypeRegistry();
-    const savedPositions = await loadGraph(this.db);
+    const { positions: savedPositions, viewport: savedViewport } = await loadGraph(this.db);
 
     this.canvas = new Canvas(document.getElementById('cy')!, (event) => this.handleCanvasEvent(event));
 
@@ -101,10 +101,23 @@ export class App {
       () => this.canvas.clearHighlight(),
     );
 
-    this.canvas.refreshGraph(this.db.getAllNodes(), this.db.getAllEdges(), savedPositions);
-    this.updateStats();
-
     document.getElementById('loading')?.remove();
+
+    // Ensure the canvas container has its final size before placing nodes.
+    // Two nested rAFs guarantee the browser has completed layout (including
+    // removal of the #loading overlay) before Cytoscape measures the container.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        this.canvas.resize();
+        this.canvas.refreshGraph(this.db.getAllNodes(), this.db.getAllEdges(), savedPositions);
+        if (savedViewport) {
+          this.canvas.setViewport(savedViewport.pan, savedViewport.zoom);
+        } else if (this.db.getAllNodes().length > 0) {
+          this.canvas.fitView();
+        }
+        this.updateStats();
+      });
+    });
   }
 
   // ── Tab switching ─────────────────────────────────────────────────────────────
@@ -345,14 +358,14 @@ export class App {
     });
 
     document.getElementById('import-btn')?.addEventListener('click', () => {
-      importFromFile(this.db).then((positions) => {
-        if (positions === null) {
+      importFromFile(this.db).then((result) => {
+        if (result === null) {
           showToast('インポートをキャンセルしました', 'warn');
           return;
         }
-        saveGraph(this.db, positions);
+        saveGraph(this.db, result.positions);
         this.sidebar.hide();
-        this.canvas.refreshGraph(this.db.getAllNodes(), this.db.getAllEdges(), positions);
+        this.canvas.refreshGraph(this.db.getAllNodes(), this.db.getAllEdges(), result.positions);
         this.updateStats();
         showToast('インポートしました', 'success');
       });
@@ -364,7 +377,7 @@ export class App {
   private scheduleSave(): void {
     if (this.saveTimer) clearTimeout(this.saveTimer);
     this.saveTimer = setTimeout(() => {
-      saveGraph(this.db, this.canvas.getPositions());
+      saveGraph(this.db, this.canvas.getPositions(), this.canvas.getViewport());
       this.updateStats();
     }, 300);
   }

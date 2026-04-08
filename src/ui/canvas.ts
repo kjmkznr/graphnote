@@ -66,6 +66,14 @@ export class Canvas {
 
   getPositions(): PositionMap { return this.renderer.getPositions(); }
 
+  getViewport(): { pan: { x: number; y: number }; zoom: number } {
+    return { pan: this.cy.pan(), zoom: this.cy.zoom() };
+  }
+
+  setViewport(pan: { x: number; y: number }, zoom: number): void {
+    this.cy.viewport({ pan, zoom });
+  }
+
   highlightByGnId(nodeGnIds: Set<GnId>, edgeGnIds: Set<GnId>): void {
     this.renderer.highlightByGnId(nodeGnIds, edgeGnIds);
   }
@@ -74,7 +82,12 @@ export class Canvas {
 
   fitView(): void { this.cy.fit(undefined, 40); }
 
-  resize(): void { this.cy.resize(); }
+  resize(): void {
+    const pan = this.cy.pan();
+    const zoom = this.cy.zoom();
+    this.cy.resize();
+    this.cy.viewport({ pan, zoom });
+  }
 
   png(): string { return this.cy.png({ full: true, scale: 1 }); }
 

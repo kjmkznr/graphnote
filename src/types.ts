@@ -42,6 +42,7 @@ export interface PersistedGraph {
   nodes: PersistedNode[];
   edges: PersistedEdge[];
   positions: Record<GnId, { x: number; y: number }>;
+  viewport?: { pan: { x: number; y: number }; zoom: number };
 }
 
 export type InteractionMode = 'edit' | 'node';

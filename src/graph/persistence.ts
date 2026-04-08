@@ -13,6 +13,7 @@ function buildPersistedGraph(
   nodes: RawNode[],
   edges: RawEdge[],
   positions: Record<GnId, { x: number; y: number }>,
+  viewport?: { pan: { x: number; y: number }; zoom: number },
 ): PersistedGraph {
   // Map from WasmGraph internal _id (ephemeral) to stable gnId
   const internalIdToGnId = new Map<string, GnId>(
@@ -40,6 +41,7 @@ function buildPersistedGraph(
       }))
       .filter((e) => e.id && e.srcId && e.dstId),
     positions,
+    viewport,
   };
 }
 
@@ -64,11 +66,12 @@ export class BrowserStorage implements IStorage {
 export function saveGraph(
   db: GraphDB,
   positions: Record<GnId, { x: number; y: number }>,
+  viewport?: { pan: { x: number; y: number }; zoom: number },
   storage: IStorage = new BrowserStorage()
 ): void {
   const nodes = db.getAllNodes();
   const edges = db.getAllEdges();
-  const data = buildPersistedGraph(nodes, edges, positions);
+  const data = buildPersistedGraph(nodes, edges, positions, viewport);
 
   try {
     storage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -80,18 +83,18 @@ export function saveGraph(
 export async function loadGraph(
   db: GraphDB,
   storage: IStorage = new BrowserStorage()
-): Promise<Record<GnId, { x: number; y: number }>> {
+): Promise<{ positions: Record<GnId, { x: number; y: number }>; viewport?: { pan: { x: number; y: number }; zoom: number } }> {
   const raw = storage.getItem(STORAGE_KEY);
-  if (!raw) return {};
+  if (!raw) return { positions: {} };
 
   let saved: PersistedGraph;
   try {
     saved = JSON.parse(raw) as PersistedGraph;
   } catch {
-    return {};
+    return { positions: {} };
   }
 
-  if (saved.version !== 1) return {};
+  if (saved.version !== 1) return { positions: {} };
 
   db.reset();
 
@@ -122,7 +125,7 @@ export async function loadGraph(
     }
   }
 
-  return saved.positions ?? {} as Record<GnId, { x: number; y: number }>;
+  return { positions: saved.positions ?? {} as Record<GnId, { x: number; y: number }>, viewport: saved.viewport };
 }
 
 export function clearSaved(storage: IStorage = new BrowserStorage()): void {
@@ -186,7 +189,7 @@ export function exportToCypher(
   URL.revokeObjectURL(url);
 }
 
-export async function importFromFile(db: GraphDB): Promise<Record<GnId, { x: number; y: number }> | null> {
+export async function importFromFile(db: GraphDB): Promise<{ positions: Record<GnId, { x: number; y: number }> } | null> {
   return new Promise((resolve) => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -240,7 +243,7 @@ export async function importFromFile(db: GraphDB): Promise<Record<GnId, { x: num
           }
         }
 
-        resolve(saved.positions ?? {} as Record<GnId, { x: number; y: number }>);
+        resolve({ positions: saved.positions ?? {} as Record<GnId, { x: number; y: number }> });
       };
       reader.onerror = () => resolve(null);
       reader.readAsText(file);

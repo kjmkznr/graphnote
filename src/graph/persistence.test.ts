@@ -20,7 +20,7 @@ describe('persistence', () => {
       removeItem: vi.fn()
     };
 
-    saveGraph(db, {}, mockStorage);
+    saveGraph(db, {}, undefined, mockStorage);
     expect(mockStorage.setItem).toHaveBeenCalledWith('graphnote:v1', expect.any(String));
   });
 
@@ -48,9 +48,9 @@ describe('persistence', () => {
       removeItem: vi.fn()
     };
 
-    const positions = await loadGraph(db, mockStorage);
+    const result = await loadGraph(db, mockStorage);
     expect(mockStorage.getItem).toHaveBeenCalledWith('graphnote:v1');
-    expect(positions).toEqual({ n1: { x: 10, y: 20 } });
+    expect(result.positions).toEqual({ n1: { x: 10, y: 20 } });
     expect(mockExecutor.execute).toHaveBeenCalledWith(expect.stringContaining('CREATE (:Person {gnId: "n1"})'));
   });
 });
