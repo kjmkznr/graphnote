@@ -43,23 +43,45 @@ function buildPersistedGraph(
   };
 }
 
+export interface IStorage {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+}
+
+export class BrowserStorage implements IStorage {
+  getItem(key: string): string | null {
+    return localStorage.getItem(key);
+  }
+  setItem(key: string, value: string): void {
+    localStorage.setItem(key, value);
+  }
+  removeItem(key: string): void {
+    localStorage.removeItem(key);
+  }
+}
+
 export function saveGraph(
   db: GraphDB,
   positions: Record<GnId, { x: number; y: number }>,
+  storage: IStorage = new BrowserStorage()
 ): void {
   const nodes = db.getAllNodes();
   const edges = db.getAllEdges();
   const data = buildPersistedGraph(nodes, edges, positions);
 
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    storage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (err) {
-    console.warn('Failed to save to localStorage:', err);
+    console.warn('Failed to save to storage:', err);
   }
 }
 
-export async function loadGraph(db: GraphDB): Promise<Record<GnId, { x: number; y: number }>> {
-  const raw = localStorage.getItem(STORAGE_KEY);
+export async function loadGraph(
+  db: GraphDB,
+  storage: IStorage = new BrowserStorage()
+): Promise<Record<GnId, { x: number; y: number }>> {
+  const raw = storage.getItem(STORAGE_KEY);
   if (!raw) return {};
 
   let saved: PersistedGraph;
@@ -103,8 +125,8 @@ export async function loadGraph(db: GraphDB): Promise<Record<GnId, { x: number; 
   return saved.positions ?? {} as Record<GnId, { x: number; y: number }>;
 }
 
-export function clearSaved(): void {
-  localStorage.removeItem(STORAGE_KEY);
+export function clearSaved(storage: IStorage = new BrowserStorage()): void {
+  storage.removeItem(STORAGE_KEY);
 }
 
 export function exportToFile(

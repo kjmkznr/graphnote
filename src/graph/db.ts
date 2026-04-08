@@ -2,6 +2,29 @@ import init, { WasmGraph } from 'egrph-wasm';
 import { asGnId } from '../types.js';
 import type { GnId, RawNode, RawEdge, PropertyValue } from '../types.js';
 
+export interface IGraphExecutor {
+  execute(cypher: string): string;
+  nodeCount(): number;
+  edgeCount(): number;
+  reset(): void;
+}
+
+class WasmGraphExecutor implements IGraphExecutor {
+  constructor(private graph: WasmGraph) {}
+  execute(cypher: string): string {
+    return this.graph.execute(cypher);
+  }
+  nodeCount(): number {
+    return this.graph.nodeCount();
+  }
+  edgeCount(): number {
+    return this.graph.edgeCount();
+  }
+  reset(): void {
+    this.graph = new WasmGraph();
+  }
+}
+
 function escStr(s: string): string {
   return s
     .replace(/\\/g, '\\\\')
@@ -25,15 +48,19 @@ function buildPropsString(props: Record<string, PropertyValue>): string {
 }
 
 export class GraphDB {
-  private graph!: WasmGraph;
+  private executor!: IGraphExecutor;
 
   async init(): Promise<void> {
     await init();
-    this.graph = new WasmGraph();
+    this.executor = new WasmGraphExecutor(new WasmGraph());
+  }
+
+  setExecutor(executor: IGraphExecutor): void {
+    this.executor = executor;
   }
 
   execute<T = unknown>(cypher: string): T[] {
-    const json = this.graph.execute(cypher);
+    const json = this.executor.execute(cypher);
     return JSON.parse(json) as T[];
   }
 
@@ -59,7 +86,7 @@ export class GraphDB {
       gnId: gnId,
     };
     const propsStr = buildPropsString(allProps);
-    this.graph.execute(`CREATE (:${label} {${propsStr}})`);
+    this.executor.execute(`CREATE (:${label} {${propsStr}})`);
     return gnId;
   }
 
@@ -73,7 +100,7 @@ export class GraphDB {
   ): void {
     const allProps: Record<string, PropertyValue> = { ...extraProps, gnId: gnId };
     const propsStr = buildPropsString(allProps);
-    this.graph.execute(`CREATE (:${label} {${propsStr}})`);
+    this.executor.execute(`CREATE (:${label} {${propsStr}})`);
   }
 
   /**
@@ -88,7 +115,7 @@ export class GraphDB {
   ): void {
     const allProps: Record<string, PropertyValue> = { ...extraProps, gnId: gnId };
     const propsStr = buildPropsString(allProps);
-    this.graph.execute(
+    this.executor.execute(
       `MATCH (a), (b) WHERE a.gnId = "${escStr(srcGnId)}" AND b.gnId = "${escStr(dstGnId)}" ` +
         `CREATE (a)-[:${type} {${propsStr}}]->(b)`,
     );
@@ -107,7 +134,7 @@ export class GraphDB {
     const gnId = asGnId(crypto.randomUUID());
     const allProps: Record<string, PropertyValue> = { ...extraProps, gnId: gnId };
     const propsStr = buildPropsString(allProps);
-    this.graph.execute(
+    this.executor.execute(
       `MATCH (a), (b) WHERE a.gnId = "${escStr(srcGnId)}" AND b.gnId = "${escStr(dstGnId)}" ` +
         `CREATE (a)-[:${type} {${propsStr}}]->(b)`,
     );
@@ -118,7 +145,7 @@ export class GraphDB {
    * Change a node's label (type). Removes the old label and sets the new one.
    */
   relabelNode(gnId: GnId, oldLabel: string, newLabel: string): void {
-    this.graph.execute(
+    this.executor.execute(
       `MATCH (n) WHERE n.gnId = "${escStr(gnId)}" REMOVE n:${oldLabel} SET n:${newLabel}`,
     );
   }
@@ -126,7 +153,7 @@ export class GraphDB {
   /** Update a single property on a node identified by gnId. */
   updateNodeProperty(gnId: GnId, key: string, value: PropertyValue): void {
     const val = propValueToCypher(value);
-    this.graph.execute(
+    this.executor.execute(
       `MATCH (n) WHERE n.gnId = "${escStr(gnId)}" SET n.${key} = ${val}`,
     );
   }
@@ -134,7 +161,7 @@ export class GraphDB {
   /** Update a single property on an edge identified by gnId. */
   updateEdgeProperty(gnId: GnId, key: string, value: PropertyValue): void {
     const val = propValueToCypher(value);
-    this.graph.execute(
+    this.executor.execute(
       `MATCH ()-[r]->() WHERE r.gnId = "${escStr(gnId)}" SET r.${key} = ${val}`,
     );
   }
@@ -143,14 +170,14 @@ export class GraphDB {
   deleteNode(gnId: GnId): void {
     // Delete incoming/outgoing edges first
     try {
-      this.graph.execute(
+      this.executor.execute(
         `MATCH (n)-[r]-() WHERE n.gnId = "${escStr(gnId)}" DELETE r`,
       );
     } catch {
       // no edges — fine
     }
     try {
-      this.graph.execute(
+      this.executor.execute(
         `MATCH (n) WHERE n.gnId = "${escStr(gnId)}" DELETE n`,
       );
     } catch {
@@ -161,7 +188,7 @@ export class GraphDB {
   /** Delete an edge identified by gnId. */
   deleteEdge(gnId: GnId): void {
     try {
-      this.graph.execute(
+      this.executor.execute(
         `MATCH ()-[r]->() WHERE r.gnId = "${escStr(gnId)}" DELETE r`,
       );
     } catch {
@@ -192,14 +219,14 @@ export class GraphDB {
   }
 
   nodeCount(): number {
-    return this.graph.nodeCount();
+    return this.executor.nodeCount();
   }
 
   edgeCount(): number {
-    return this.graph.edgeCount();
+    return this.executor.edgeCount();
   }
 
   reset(): void {
-    this.graph = new WasmGraph();
+    this.executor.reset();
   }
 }
