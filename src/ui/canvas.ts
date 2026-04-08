@@ -76,6 +76,8 @@ export class Canvas {
 
   resize(): void { this.cy.resize(); }
 
+  png(): string { return this.cy.png({ full: true, scale: 1 }); }
+
   deselectAll(): void { this.cy.elements().unselect(); }
 
   // ── Event binding ───────────────────────────────────────────────────────────

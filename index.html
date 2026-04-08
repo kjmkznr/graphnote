@@ -16,6 +16,11 @@
     <header id="header">
       <span class="logo">graphnote</span>
       <div class="header-divider"></div>
+      <div id="tab-buttons">
+        <button class="tab-btn active" data-tab="graph">Graph</button>
+        <button class="tab-btn" data-tab="notebook">Notebook</button>
+      </div>
+      <div class="header-divider"></div>
       <div id="mode-buttons">
       </div>
       <div class="header-stats">
@@ -33,6 +38,9 @@
       <button class="header-btn" id="import-btn">Import</button>
       <button class="header-btn danger" id="reset-btn">Reset</button>
     </header>
+
+    <!-- Graph Tab -->
+    <div id="tab-graph" class="tab-panel">
 
     <!-- Canvas -->
     <div id="canvas-wrap">
@@ -76,7 +84,7 @@
     </div>
 
     <!-- Query Panel -->
-    <div id="query-panel">
+    <div id="query-panel" class="query-panel-inner">
       <div id="query-panel-header">
         <span class="panel-label">Cypher</span>
         <span class="shortcut-hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> to run</span>
@@ -92,6 +100,13 @@
         </div>
       </div>
     </div>
+
+    </div><!-- /#tab-graph -->
+
+    <!-- Notebook Tab -->
+    <div id="tab-notebook" style="display:none">
+    </div><!-- /#tab-notebook -->
+
   </div>
 
   <!-- Context Menu -->

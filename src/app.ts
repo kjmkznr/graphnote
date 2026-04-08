@@ -4,12 +4,14 @@ import { TypeRegistry } from './graph/typeRegistry.js';
 import { Canvas } from './ui/canvas.js';
 import { Sidebar } from './ui/sidebar.js';
 import { QueryPanel } from './ui/queryPanel.js';
+import { Notebook } from './ui/notebook.js';
+import { NotebookStore } from './notebook/notebookStore.js';
 import { initResizers } from './ui/resizer.js';
 import { showCreateNodeDialog } from './ui/createNodeDialog.js';
 import { showTypeManagerDialog } from './ui/typeManagerDialog.js';
 import { showCreateEdgeDialog } from './ui/createEdgeDialog.js';
 import { showToast } from './ui/toast.js';
-import type { GnId, CanvasEvent, InteractionMode } from './types.js';
+import type { GnId, CanvasEvent, InteractionMode, TabKind, QueryResultCell, SnapshotCell } from './types.js';
 import { el, clearChildren } from './ui/domUtils.js';
 import { extractMatchedGnIds } from './utils/graphUtils.js';
 
@@ -53,10 +55,16 @@ export class App {
   private sidebar!: Sidebar;
   private queryPanel!: QueryPanel;
   private registry!: TypeRegistry;
+  private notebookStore!: NotebookStore;
+  private notebook!: Notebook;
+
+  private activeTab: TabKind = 'graph';
 
   private ctxMenu = document.getElementById('context-menu')!;
   private elAddNodeBtn = document.getElementById('add-node-btn')!;
   private elActionBtns = document.getElementById('canvas-action-btns')!;
+  private elTabGraph = document.getElementById('tab-graph')!;
+  private elTabNotebook = document.getElementById('tab-notebook')!;
 
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -76,8 +84,17 @@ export class App {
     this.queryPanel = new QueryPanel();
     this.setupQueryPanel();
 
+    this.notebookStore = new NotebookStore();
+    this.notebookStore.load();
+    this.notebook = new Notebook(this.elTabNotebook, this.notebookStore);
+    this.notebook.onSnapshotClick((cell: SnapshotCell) => {
+      this.switchTab('graph');
+      this.canvas.refreshGraph(this.db.getAllNodes(), this.db.getAllEdges(), cell.positions);
+    });
+
     this.setupModeControls();
     this.setupToolbarButtons();
+    this.setupTabButtons();
 
     initResizers(
       () => this.canvas.resize(),
@@ -88,6 +105,29 @@ export class App {
     this.updateStats();
 
     document.getElementById('loading')?.remove();
+  }
+
+  // ── Tab switching ─────────────────────────────────────────────────────────────
+
+  private setupTabButtons(): void {
+    document.querySelectorAll<HTMLButtonElement>('.tab-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset['tab'] as TabKind;
+        if (tab) this.switchTab(tab);
+      });
+    });
+  }
+
+  private switchTab(tab: TabKind): void {
+    this.activeTab = tab;
+    this.elTabGraph.style.display = tab === 'graph' ? 'contents' : 'none';
+    this.elTabNotebook.style.display = tab === 'notebook' ? 'flex' : 'none';
+    document.querySelectorAll<HTMLButtonElement>('.tab-btn').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset['tab'] === tab);
+    });
+    if (tab === 'graph') {
+      requestAnimationFrame(() => this.canvas.resize());
+    }
   }
 
   // ── Canvas event dispatch ────────────────────────────────────────────────────
@@ -163,17 +203,39 @@ export class App {
   }
 
   private handleBgContext(x: number, y: number): void {
-    showContextMenu(this.ctxMenu, [{
-      label: 'ノードを作成',
-      action: () => {
-        showCreateNodeDialog(this.registry).then((result) => {
-          if (!result) return;
-          this.registry.ensure(result.type);
-          this.db.createNode(result.type, { name: result.name });
-          this.refreshAndSave();
-        });
+    showContextMenu(this.ctxMenu, [
+      {
+        label: 'ノードを作成',
+        action: () => {
+          showCreateNodeDialog(this.registry).then((result) => {
+            if (!result) return;
+            this.registry.ensure(result.type);
+            this.db.createNode(result.type, { name: result.name });
+            this.refreshAndSave();
+          });
+        },
       },
-    }], x, y);
+      {
+        label: 'Notebook にスナップショットを送る',
+        action: () => this.sendSnapshotToNotebook(),
+      },
+    ], x, y);
+  }
+
+  private sendSnapshotToNotebook(): void {
+    const label = `Snapshot ${new Date().toLocaleString('ja-JP')}`;
+    const positions = this.canvas.getPositions();
+    const pngDataUrl = this.canvas.png();
+    const cell: SnapshotCell = {
+      id: crypto.randomUUID(),
+      kind: 'snapshot',
+      createdAt: Date.now(),
+      label,
+      positions,
+      pngDataUrl,
+    };
+    this.notebookStore.addCell(cell);
+    showToast('Notebook にスナップショットを送りました', 'success');
   }
 
   // ── Sidebar callbacks ────────────────────────────────────────────────────────
@@ -217,6 +279,16 @@ export class App {
         this.scheduleSave();
         const { nodeGnIds, edgeGnIds } = extractMatchedGnIds(rows);
         this.canvas.highlightByGnId(nodeGnIds, edgeGnIds);
+
+        const cell: QueryResultCell = {
+          id: crypto.randomUUID(),
+          kind: 'query-result',
+          createdAt: Date.now(),
+          query,
+          rows: rows as Record<string, unknown>[],
+          elapsedMs: elapsed,
+        };
+        this.notebookStore.addCell(cell);
       } catch (err) {
         this.queryPanel.showError(String(err));
         showToast(String(err), 'warn');

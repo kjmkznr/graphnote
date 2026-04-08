@@ -46,6 +46,39 @@ export interface PersistedGraph {
 
 export type InteractionMode = 'edit' | 'node';
 
+export type TabKind = 'graph' | 'notebook';
+
+// ── Notebook cell types ────────────────────────────────────────────────────────
+
+export type NotebookCellKind = 'markdown' | 'query-result' | 'snapshot';
+
+interface NotebookCellBase {
+  id: string;
+  kind: NotebookCellKind;
+  createdAt: number;
+}
+
+export interface MarkdownCell extends NotebookCellBase {
+  kind: 'markdown';
+  content: string;
+}
+
+export interface QueryResultCell extends NotebookCellBase {
+  kind: 'query-result';
+  query: string;
+  rows: Record<string, unknown>[];
+  elapsedMs: number;
+}
+
+export interface SnapshotCell extends NotebookCellBase {
+  kind: 'snapshot';
+  label: string;
+  positions: Record<GnId, { x: number; y: number }>;
+  pngDataUrl: string;
+}
+
+export type NotebookCell = MarkdownCell | QueryResultCell | SnapshotCell;
+
 export type CanvasEvent =
   | { kind: 'node-clicked'; gnId: GnId }
   | { kind: 'edge-clicked'; gnId: GnId }
