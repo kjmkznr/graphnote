@@ -12,7 +12,7 @@ import { showTypeManagerDialog } from './ui/typeManagerDialog.js';
 import { showCreateEdgeDialog } from './ui/createEdgeDialog.js';
 import { showToast } from './ui/toast.js';
 import type { GnId, CanvasEvent, InteractionMode, TabKind, QueryResultCell, SnapshotCell } from './types.js';
-import { el, clearChildren } from './ui/domUtils.js';
+import { el, clearChildren, afterNextPaint } from './ui/domUtils.js';
 import { extractMatchedGnIds } from './utils/graphUtils.js';
 
 // ── Context Menu ──────────────────────────────────────────────────────────────
@@ -103,20 +103,15 @@ export class App {
 
     document.getElementById('loading')?.remove();
 
-    // Ensure the canvas container has its final size before placing nodes.
-    // Two nested rAFs guarantee the browser has completed layout (including
-    // removal of the #loading overlay) before Cytoscape measures the container.
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        this.canvas.resize();
-        this.canvas.refreshGraph(this.db.getAllNodes(), this.db.getAllEdges(), savedPositions);
-        if (savedViewport) {
-          this.canvas.setViewport(savedViewport.pan, savedViewport.zoom);
-        } else if (this.db.getAllNodes().length > 0) {
-          this.canvas.fitView();
-        }
-        this.updateStats();
-      });
+    afterNextPaint(() => {
+      this.canvas.resize();
+      this.canvas.refreshGraph(this.db.getAllNodes(), this.db.getAllEdges(), savedPositions);
+      if (savedViewport) {
+        this.canvas.setViewport(savedViewport.pan, savedViewport.zoom);
+      } else if (this.db.getAllNodes().length > 0) {
+        this.canvas.fitView();
+      }
+      this.updateStats();
     });
   }
 

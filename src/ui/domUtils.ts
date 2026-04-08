@@ -42,6 +42,13 @@ export function el<K extends keyof HTMLElementTagNameMap>(
   return node;
 }
 
+/**
+ * Schedule a callback to run after the browser has painted the next frame.
+ */
+export function afterNextPaint(callback: () => void): void {
+  requestAnimationFrame(callback);
+}
+
 /** Remove all child nodes from an element. */
 export function clearChildren(element: Element): void {
   while (element.firstChild) element.removeChild(element.firstChild);
