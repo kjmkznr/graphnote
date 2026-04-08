@@ -4,6 +4,7 @@ import topLevelAwait from 'vite-plugin-top-level-await';
 
 export default defineConfig({
   plugins: [wasm(), topLevelAwait()],
+  base: '/graphnote/',
   build: {
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
