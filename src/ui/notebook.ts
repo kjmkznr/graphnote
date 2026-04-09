@@ -1,6 +1,7 @@
 import type { NotebookCell, MarkdownCell, QueryResultCell, SnapshotCell } from '../types.js';
 import type { NotebookStore } from '../notebook/notebookStore.js';
 import { el } from './domUtils.js';
+import { marked } from 'marked';
 
 export class Notebook {
   private container: HTMLElement;
@@ -68,12 +69,55 @@ export class Notebook {
     const header = this.makeCellHeader('Note', cell.id);
     wrap.appendChild(header);
 
+    const preview = el('div', { class: 'nb-markdown-preview' });
     const textarea = el('textarea', { class: 'nb-markdown-input', placeholder: 'Markdown でメモを書く…' }) as HTMLTextAreaElement;
     textarea.value = cell.content;
+
+    const updatePreview = (): void => {
+      preview.innerHTML = marked.parse(textarea.value) as string;
+    };
+    updatePreview();
+
+    const showPreview = (): void => {
+      textarea.classList.add('nb-hidden');
+      preview.classList.remove('nb-hidden');
+    };
+    const showEditor = (): void => {
+      preview.classList.add('nb-hidden');
+      textarea.classList.remove('nb-hidden');
+      textarea.focus();
+    };
+
+    // 初期状態: コンテンツがあればプレビュー、なければエディタ
+    if (cell.content) {
+      showPreview();
+    } else {
+      preview.classList.add('nb-hidden');
+    }
+
     textarea.addEventListener('input', () => {
-      this.store.updateCell(cell.id, { content: textarea.value });
+      this.store.updateCell(cell.id, { content: textarea.value }, true);
+      updatePreview();
     });
+    textarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.metaKey) {
+        e.preventDefault();
+        if (textarea.value) {
+          showPreview();
+        }
+      }
+    });
+    textarea.addEventListener('blur', () => {
+      if (textarea.value) {
+        showPreview();
+      }
+    });
+    preview.addEventListener('click', () => {
+      showEditor();
+    });
+
     wrap.appendChild(textarea);
+    wrap.appendChild(preview);
 
     return wrap;
   }

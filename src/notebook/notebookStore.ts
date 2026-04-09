@@ -30,12 +30,12 @@ export class NotebookStore {
     this.notify();
   }
 
-  updateCell(id: string, patch: Partial<MarkdownCell> | Partial<QueryResultCell> | Partial<SnapshotCell>): void {
+  updateCell(id: string, patch: Partial<MarkdownCell> | Partial<QueryResultCell> | Partial<SnapshotCell>, silent = false): void {
     const idx = this.cells.findIndex((c) => c.id === id);
     if (idx === -1) return;
     this.cells[idx] = { ...this.cells[idx], ...patch } as NotebookCell;
     this.save();
-    this.notify();
+    if (!silent) this.notify();
   }
 
   deleteCell(id: string): void {
