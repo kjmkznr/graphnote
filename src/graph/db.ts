@@ -1,7 +1,7 @@
 import { WasmGraph } from '@kjmkznr/egrph-wasm';
 import { asGnId } from '../types.js';
 import type { GnId, RawNode, RawEdge, PropertyValue } from '../types.js';
-import { escStr } from '../utils/graphUtils.js';
+import { escStr, escLabel } from '../utils/graphUtils.js';
 
 export interface IGraphExecutor {
   execute(cypher: string): string;
@@ -40,7 +40,7 @@ function propValueToCypher(v: PropertyValue): string {
 
 function buildPropsString(props: Record<string, PropertyValue>): string {
   return Object.entries(props)
-    .map(([k, v]) => `${k}: ${propValueToCypher(v)}`)
+    .map(([k, v]) => `${escLabel(k)}: ${propValueToCypher(v)}`)
     .join(', ');
 }
 
@@ -86,7 +86,7 @@ export class GraphDB {
       gnId: gnId,
     };
     const propsStr = buildPropsString(allProps);
-    this.executor.execute(`CREATE (:${label} {${propsStr}})`);
+    this.executor.execute(`CREATE (:${escLabel(label)} {${propsStr}})`);
     return gnId;
   }
 
@@ -100,7 +100,7 @@ export class GraphDB {
   ): void {
     const allProps: Record<string, PropertyValue> = { ...extraProps, gnId: gnId };
     const propsStr = buildPropsString(allProps);
-    this.executor.execute(`CREATE (:${label} {${propsStr}})`);
+    this.executor.execute(`CREATE (:${escLabel(label)} {${propsStr}})`);
   }
 
   /**
@@ -117,7 +117,7 @@ export class GraphDB {
     const propsStr = buildPropsString(allProps);
     this.executor.execute(
       `MATCH (a), (b) WHERE a.gnId = "${escStr(srcGnId)}" AND b.gnId = "${escStr(dstGnId)}" ` +
-        `CREATE (a)-[:${type} {${propsStr}}]->(b)`,
+        `CREATE (a)-[:${escLabel(type)} {${propsStr}}]->(b)`,
     );
   }
 
@@ -136,7 +136,7 @@ export class GraphDB {
     const propsStr = buildPropsString(allProps);
     this.executor.execute(
       `MATCH (a), (b) WHERE a.gnId = "${escStr(srcGnId)}" AND b.gnId = "${escStr(dstGnId)}" ` +
-        `CREATE (a)-[:${type} {${propsStr}}]->(b)`,
+        `CREATE (a)-[:${escLabel(type)} {${propsStr}}]->(b)`,
     );
     return gnId;
   }
@@ -146,7 +146,7 @@ export class GraphDB {
    */
   relabelNode(gnId: GnId, oldLabel: string, newLabel: string): void {
     this.executor.execute(
-      `MATCH (n) WHERE n.gnId = "${escStr(gnId)}" REMOVE n:${oldLabel} SET n:${newLabel}`,
+      `MATCH (n) WHERE n.gnId = "${escStr(gnId)}" REMOVE n:${escLabel(oldLabel)} SET n:${escLabel(newLabel)}`,
     );
   }
 

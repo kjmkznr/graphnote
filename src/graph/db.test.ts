@@ -34,7 +34,7 @@ describe('GraphDB', () => {
     
     expect(gnId).toBeDefined();
     expect(mockExecutor.execute).toHaveBeenCalledWith(
-      expect.stringContaining('CREATE (:Person {name: "Alice", gnId: "')
+      expect.stringContaining('CREATE (:`Person` {`name`: "Alice", `gnId`: "')
     );
   });
 });
