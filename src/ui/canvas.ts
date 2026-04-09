@@ -89,7 +89,7 @@ export class Canvas {
     this.cy.viewport({ pan, zoom });
   }
 
-  png(): string { return this.cy.png({ full: true, scale: 1 }); }
+  png(): string { return this.cy.png({ full: true, scale: 0.5, maxWidth: 800, maxHeight: 600 }); }
 
   deselectAll(): void { this.cy.elements().unselect(); }
 

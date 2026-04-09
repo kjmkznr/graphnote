@@ -11,18 +11,12 @@ export class Scrapbook {
   private store: ScrapbookStore;
   private db: GraphDB | null = null;
   private cellListEl!: HTMLElement;
-  private snapshotClickListeners: Array<(cell: SnapshotCell) => void> = [];
-
   constructor(container: HTMLElement, store: ScrapbookStore, db?: GraphDB) {
     this.container = container;
     this.store = store;
     this.db = db ?? null;
     this.render();
     this.store.onChange(() => this.renderCells());
-  }
-
-  onSnapshotClick(listener: (cell: SnapshotCell) => void): void {
-    this.snapshotClickListeners.push(listener);
   }
 
   // ── Initial render ────────────────────────────────────────────────────────────
@@ -575,19 +569,23 @@ export class Scrapbook {
     const label = el('div', { class: 'nb-snapshot-label' }, cell.label);
     wrap.appendChild(label);
 
-    const img = el('img', { class: 'nb-snapshot-img', src: cell.pngDataUrl, alt: cell.label }) as HTMLImageElement;
-    const hint = el('div', { class: 'nb-snapshot-hint' }, 'クリックで Graph タブに切り替え');
+    const img = el('img', { class: 'nb-snapshot-thumbnail', src: cell.pngDataUrl, alt: cell.label }) as HTMLImageElement;
     const imgWrap = el('div', { class: 'nb-snapshot-img-wrap' });
     imgWrap.appendChild(img);
-    imgWrap.appendChild(hint);
     imgWrap.addEventListener('click', () => {
-      for (const listener of this.snapshotClickListeners) {
-        listener(cell);
-      }
+      this.openSnapshotModal(cell);
     });
     wrap.appendChild(imgWrap);
 
     return wrap;
+  }
+
+  private openSnapshotModal(cell: SnapshotCell): void {
+    const overlay = el('div', { class: 'nb-snapshot-modal-overlay' });
+    const modalImg = el('img', { class: 'nb-snapshot-modal-img', src: cell.pngDataUrl, alt: cell.label }) as HTMLImageElement;
+    overlay.appendChild(modalImg);
+    overlay.addEventListener('click', () => overlay.remove());
+    document.body.appendChild(overlay);
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────────

@@ -85,10 +85,6 @@ export class App {
     this.scrapbookStore = new ScrapbookStore();
     this.scrapbookStore.load();
     this.scrapbook = new Scrapbook(this.elTabScrapbook, this.scrapbookStore, this.db);
-    this.scrapbook.onSnapshotClick((cell: SnapshotCell) => {
-      this.switchTab('graph');
-      this.canvas.refreshGraph(this.db.getAllNodes(), this.db.getAllEdges(), cell.positions);
-    });
 
     this.setupModeControls();
     this.setupToolbarButtons();
