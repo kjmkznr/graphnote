@@ -207,7 +207,7 @@ html, body {
   display: contents;
 }
 
-#tab-notebook {
+#tab-scrapbook {
   display: none;
   flex-direction: column;
   grid-column: 1 / -1;
@@ -761,7 +761,7 @@ tr:hover td { background: rgba(108,142,247,0.05); }
 
 /* ── Notebook ── */
 
-.notebook-root {
+.scrapbook-root {
   display: flex;
   flex-direction: column;
   min-height: 100%;
@@ -769,7 +769,7 @@ tr:hover td { background: rgba(108,142,247,0.05); }
   overflow: visible;
 }
 
-.notebook-cell-list {
+.scrapbook-cell-list {
   flex: 1;
   padding: 24px;
   display: flex;
@@ -777,7 +777,7 @@ tr:hover td { background: rgba(108,142,247,0.05); }
   gap: 16px;
 }
 
-.notebook-empty {
+.scrapbook-empty {
   color: var(--text-muted);
   font-size: 13px;
   text-align: center;
@@ -785,7 +785,7 @@ tr:hover td { background: rgba(108,142,247,0.05); }
   line-height: 1.7;
 }
 
-.notebook-footer {
+.scrapbook-footer {
   padding: 12px 24px;
   border-top: 1px solid var(--border);
   background: var(--surface);
@@ -793,7 +793,7 @@ tr:hover td { background: rgba(108,142,247,0.05); }
   gap: 8px;
 }
 
-.notebook-add-btn {
+.scrapbook-add-btn {
   padding: 6px 14px;
   background: transparent;
   border: 1px dashed var(--border);
@@ -804,7 +804,7 @@ tr:hover td { background: rgba(108,142,247,0.05); }
   font-weight: 600;
   transition: border-color 0.15s, color 0.15s;
 }
-.notebook-add-btn:hover { border-color: var(--accent); color: var(--accent); }
+.scrapbook-add-btn:hover { border-color: var(--accent); color: var(--accent); }
 
 /* ── Notebook cell ── */
 

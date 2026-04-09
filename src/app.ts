@@ -4,8 +4,8 @@ import { TypeRegistry } from './graph/typeRegistry.js';
 import { Canvas } from './ui/canvas.js';
 import { Sidebar } from './ui/sidebar.js';
 import { QueryPanel } from './ui/queryPanel.js';
-import { Notebook } from './ui/notebook.js';
-import { NotebookStore } from './notebook/notebookStore.js';
+import { Scrapbook } from './ui/scrapbook.js';
+import { ScrapbookStore } from './notebook/scrapbookStore.js';
 import { initResizers } from './ui/resizer.js';
 import { showCreateNodeDialog } from './ui/createNodeDialog.js';
 import { showTypeManagerDialog } from './ui/typeManagerDialog.js';
@@ -55,14 +55,14 @@ export class App {
   private sidebar!: Sidebar;
   private queryPanel!: QueryPanel;
   private registry!: TypeRegistry;
-  private notebookStore!: NotebookStore;
-  private notebook!: Notebook;
+  private scrapbookStore!: ScrapbookStore;
+  private scrapbook!: Scrapbook;
 
   private ctxMenu = byId('context-menu');
   private elAddNodeBtn = byId('add-node-btn');
   private elActionBtns = byId('canvas-action-btns');
   private elTabGraph = byId('tab-graph');
-  private elTabNotebook = byId('tab-notebook');
+  private elTabScrapbook = byId('tab-scrapbook');
 
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -82,10 +82,10 @@ export class App {
     this.queryPanel = new QueryPanel();
     this.setupQueryPanel();
 
-    this.notebookStore = new NotebookStore();
-    this.notebookStore.load();
-    this.notebook = new Notebook(this.elTabNotebook, this.notebookStore, this.db);
-    this.notebook.onSnapshotClick((cell: SnapshotCell) => {
+    this.scrapbookStore = new ScrapbookStore();
+    this.scrapbookStore.load();
+    this.scrapbook = new Scrapbook(this.elTabScrapbook, this.scrapbookStore, this.db);
+    this.scrapbook.onSnapshotClick((cell: SnapshotCell) => {
       this.switchTab('graph');
       this.canvas.refreshGraph(this.db.getAllNodes(), this.db.getAllEdges(), cell.positions);
     });
@@ -126,7 +126,7 @@ export class App {
 
   private switchTab(tab: TabKind): void {
     this.elTabGraph.style.display = tab === 'graph' ? 'contents' : 'none';
-    this.elTabNotebook.style.display = tab === 'notebook' ? 'flex' : 'none';
+    this.elTabScrapbook.style.display = tab === 'scrapbook' ? 'flex' : 'none';
     document.querySelectorAll<HTMLButtonElement>('.tab-btn').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset['tab'] === tab);
     });
@@ -229,13 +229,13 @@ export class App {
         },
       },
       {
-        label: 'Notebook にスナップショットを送る',
-        action: () => this.sendSnapshotToNotebook(),
+        label: 'Scrapbook にスナップショットを送る',
+        action: () => this.sendSnapshotToScrapbook(),
       },
     ], x, y);
   }
 
-  private sendSnapshotToNotebook(): void {
+  private sendSnapshotToScrapbook(): void {
     const label = `Snapshot ${new Date().toLocaleString('ja-JP')}`;
     const positions = this.canvas.getPositions();
     const pngDataUrl = this.canvas.png();
@@ -247,8 +247,8 @@ export class App {
       positions,
       pngDataUrl,
     };
-    this.notebookStore.addCell(cell);
-    showToast('Notebook にスナップショットを送りました', 'success');
+    this.scrapbookStore.addCell(cell);
+    showToast('Scrapbook にスナップショットを送りました', 'success');
   }
 
   // ── Sidebar callbacks ────────────────────────────────────────────────────────
@@ -309,7 +309,7 @@ export class App {
           rows: rows as Record<string, unknown>[],
           elapsedMs: elapsed,
         };
-        this.notebookStore.addCell(cell);
+        this.scrapbookStore.addCell(cell);
       } catch (err) {
         this.queryPanel.showError(String(err));
         showToast(String(err), 'warn');

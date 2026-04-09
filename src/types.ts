@@ -47,38 +47,38 @@ export interface PersistedGraph {
 
 export type InteractionMode = 'edit' | 'node';
 
-export type TabKind = 'graph' | 'notebook';
+export type TabKind = 'graph' | 'scrapbook';
 
-// ── Notebook cell types ────────────────────────────────────────────────────────
+// ── Scrapbook cell types ────────────────────────────────────────────────────────
 
-export type NotebookCellKind = 'markdown' | 'query-result' | 'snapshot';
+export type ScrapbookCellKind = 'markdown' | 'query-result' | 'snapshot';
 
-interface NotebookCellBase {
+interface ScrapbookCellBase {
   id: string;
-  kind: NotebookCellKind;
+  kind: ScrapbookCellKind;
   createdAt: number;
 }
 
-export interface MarkdownCell extends NotebookCellBase {
+export interface MarkdownCell extends ScrapbookCellBase {
   kind: 'markdown';
   content: string;
 }
 
-export interface QueryResultCell extends NotebookCellBase {
+export interface QueryResultCell extends ScrapbookCellBase {
   kind: 'query-result';
   query: string;
   rows: Record<string, unknown>[];
   elapsedMs: number;
 }
 
-export interface SnapshotCell extends NotebookCellBase {
+export interface SnapshotCell extends ScrapbookCellBase {
   kind: 'snapshot';
   label: string;
   positions: Record<GnId, { x: number; y: number }>;
   pngDataUrl: string;
 }
 
-export type NotebookCell = MarkdownCell | QueryResultCell | SnapshotCell;
+export type ScrapbookCell = MarkdownCell | QueryResultCell | SnapshotCell;
 
 export type CanvasEvent =
   | { kind: 'node-clicked'; gnId: GnId }

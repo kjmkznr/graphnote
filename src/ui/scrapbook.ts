@@ -1,19 +1,19 @@
 import cytoscape from 'cytoscape';
-import type { NotebookCell, MarkdownCell, QueryResultCell, SnapshotCell, RawNode, RawEdge } from '../types.js';
-import type { NotebookStore } from '../notebook/notebookStore.js';
+import type { ScrapbookCell, MarkdownCell, QueryResultCell, SnapshotCell, RawNode, RawEdge } from '../types.js';
+import type { ScrapbookStore } from '../notebook/scrapbookStore.js';
 import type { GraphDB } from '../graph/db.js';
 import { el } from './domUtils.js';
 import { marked } from 'marked';
 import { CYTOSCAPE_STYLES } from './cytoscapeStyles.js';
 
-export class Notebook {
+export class Scrapbook {
   private container: HTMLElement;
-  private store: NotebookStore;
+  private store: ScrapbookStore;
   private db: GraphDB | null = null;
   private cellListEl!: HTMLElement;
   private snapshotClickListeners: Array<(cell: SnapshotCell) => void> = [];
 
-  constructor(container: HTMLElement, store: NotebookStore, db?: GraphDB) {
+  constructor(container: HTMLElement, store: ScrapbookStore, db?: GraphDB) {
     this.container = container;
     this.store = store;
     this.db = db ?? null;
@@ -29,13 +29,13 @@ export class Notebook {
 
   private render(): void {
     this.container.innerHTML = '';
-    this.container.className = 'notebook-root';
+    this.container.className = 'scrapbook-root';
 
-    this.cellListEl = el('div', { class: 'notebook-cell-list' });
+    this.cellListEl = el('div', { class: 'scrapbook-cell-list' });
     this.container.appendChild(this.cellListEl);
 
-    const footer = el('div', { class: 'notebook-footer' });
-    const addNoteBtn = el('button', { class: 'notebook-add-btn' }, '+ Note');
+    const footer = el('div', { class: 'scrapbook-footer' });
+    const addNoteBtn = el('button', { class: 'scrapbook-add-btn' }, '+ Note');
     addNoteBtn.addEventListener('click', () => this.addMarkdownCell());
     footer.appendChild(addNoteBtn);
     this.container.appendChild(footer);
@@ -49,7 +49,7 @@ export class Notebook {
     this.cellListEl.innerHTML = '';
     const cells = this.store.getCells();
     if (cells.length === 0) {
-      const empty = el('div', { class: 'notebook-empty' }, 'まだセルがありません。グラフからスナップショットを送るか、「+ Note」でメモを追加してください。');
+      const empty = el('div', { class: 'scrapbook-empty' }, 'まだセルがありません。グラフからスナップショットを送るか、「+ Note」でメモを追加してください。');
       this.cellListEl.appendChild(empty);
       return;
     }
@@ -58,7 +58,7 @@ export class Notebook {
     }
   }
 
-  private renderCell(cell: NotebookCell): HTMLElement {
+  private renderCell(cell: ScrapbookCell): HTMLElement {
     switch (cell.kind) {
       case 'markdown':      return this.renderMarkdownCell(cell);
       case 'query-result':  return this.renderQueryResultCell(cell);
