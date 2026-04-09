@@ -1,7 +1,7 @@
 import { WasmGraph } from '@kjmkznr/egrph-wasm';
 import { asGnId } from '../types.js';
 import type { GnId, RawNode, RawEdge, PropertyValue } from '../types.js';
-import { escStr, escLabel } from '../utils/graphUtils.js';
+import { escStr, assertIdentifier } from '../utils/graphUtils.js';
 
 export interface IGraphExecutor {
   execute(cypher: string): string;
@@ -40,7 +40,10 @@ function propValueToCypher(v: PropertyValue): string {
 
 function buildPropsString(props: Record<string, PropertyValue>): string {
   return Object.entries(props)
-    .map(([k, v]) => `${escLabel(k)}: ${propValueToCypher(v)}`)
+    .map(([k, v]) => {
+      assertIdentifier(k);
+      return `${k}: ${propValueToCypher(v)}`;
+    })
     .join(', ');
 }
 
@@ -80,13 +83,14 @@ export class GraphDB {
    * Returns the gnId of the created node.
    */
   createNode(label: string, extraProps: Record<string, PropertyValue> = {}): GnId {
+    assertIdentifier(label);
     const gnId = asGnId(crypto.randomUUID());
     const allProps: Record<string, PropertyValue> = {
       ...extraProps,
       gnId: gnId,
     };
     const propsStr = buildPropsString(allProps);
-    this.executor.execute(`CREATE (:${escLabel(label)} {${propsStr}})`);
+    this.executor.execute(`CREATE (:${label} {${propsStr}})`);
     return gnId;
   }
 
@@ -98,9 +102,10 @@ export class GraphDB {
     gnId: GnId,
     extraProps: Record<string, PropertyValue> = {},
   ): void {
+    assertIdentifier(label);
     const allProps: Record<string, PropertyValue> = { ...extraProps, gnId: gnId };
     const propsStr = buildPropsString(allProps);
-    this.executor.execute(`CREATE (:${escLabel(label)} {${propsStr}})`);
+    this.executor.execute(`CREATE (:${label} {${propsStr}})`);
   }
 
   /**
@@ -113,11 +118,12 @@ export class GraphDB {
     gnId: GnId,
     extraProps: Record<string, PropertyValue> = {},
   ): void {
+    assertIdentifier(type);
     const allProps: Record<string, PropertyValue> = { ...extraProps, gnId: gnId };
     const propsStr = buildPropsString(allProps);
     this.executor.execute(
       `MATCH (a), (b) WHERE a.gnId = "${escStr(srcGnId)}" AND b.gnId = "${escStr(dstGnId)}" ` +
-        `CREATE (a)-[:${escLabel(type)} {${propsStr}}]->(b)`,
+        `CREATE (a)-[:${type} {${propsStr}}]->(b)`,
     );
   }
 
@@ -131,12 +137,13 @@ export class GraphDB {
     type: string,
     extraProps: Record<string, PropertyValue> = {},
   ): GnId {
+    assertIdentifier(type);
     const gnId = asGnId(crypto.randomUUID());
     const allProps: Record<string, PropertyValue> = { ...extraProps, gnId: gnId };
     const propsStr = buildPropsString(allProps);
     this.executor.execute(
       `MATCH (a), (b) WHERE a.gnId = "${escStr(srcGnId)}" AND b.gnId = "${escStr(dstGnId)}" ` +
-        `CREATE (a)-[:${escLabel(type)} {${propsStr}}]->(b)`,
+        `CREATE (a)-[:${type} {${propsStr}}]->(b)`,
     );
     return gnId;
   }
@@ -145,13 +152,16 @@ export class GraphDB {
    * Change a node's label (type). Removes the old label and sets the new one.
    */
   relabelNode(gnId: GnId, oldLabel: string, newLabel: string): void {
+    assertIdentifier(oldLabel);
+    assertIdentifier(newLabel);
     this.executor.execute(
-      `MATCH (n) WHERE n.gnId = "${escStr(gnId)}" REMOVE n:${escLabel(oldLabel)} SET n:${escLabel(newLabel)}`,
+      `MATCH (n) WHERE n.gnId = "${escStr(gnId)}" REMOVE n:${oldLabel} SET n:${newLabel}`,
     );
   }
 
   /** Update a single property on a node identified by gnId. */
   updateNodeProperty(gnId: GnId, key: string, value: PropertyValue): void {
+    assertIdentifier(key);
     const val = propValueToCypher(value);
     this.executor.execute(
       `MATCH (n) WHERE n.gnId = "${escStr(gnId)}" SET n.${key} = ${val}`,
@@ -160,6 +170,7 @@ export class GraphDB {
 
   /** Update a single property on an edge identified by gnId. */
   updateEdgeProperty(gnId: GnId, key: string, value: PropertyValue): void {
+    assertIdentifier(key);
     const val = propValueToCypher(value);
     this.executor.execute(
       `MATCH ()-[r]->() WHERE r.gnId = "${escStr(gnId)}" SET r.${key} = ${val}`,
