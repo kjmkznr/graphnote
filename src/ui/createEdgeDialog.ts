@@ -1,4 +1,5 @@
 import { byId } from './domUtils.js';
+import { isValidIdentifier } from '../utils/graphUtils.js';
 
 const DEFAULT_TYPE = 'RELATES_TO';
 
@@ -13,6 +14,10 @@ export function showCreateEdgeDialog(): Promise<string | null> {
 
     typeInput.value = DEFAULT_TYPE;
 
+    const errorEl = document.createElement('p');
+    errorEl.style.cssText = 'color:var(--color-danger,#f87171);font-size:12px;margin:4px 0 0';
+    typeInput.insertAdjacentElement('afterend', errorEl);
+
     createNodeDialog.style.display = 'none';
     dialog.style.display = '';
     overlay.style.display = 'flex';
@@ -20,6 +25,7 @@ export function showCreateEdgeDialog(): Promise<string | null> {
     typeInput.select();
 
     function close(result: string | null): void {
+      errorEl.remove();
       overlay.style.display = 'none';
       dialog.style.display = 'none';
       createNodeDialog.style.display = '';
@@ -33,6 +39,10 @@ export function showCreateEdgeDialog(): Promise<string | null> {
     function onConfirm(): void {
       const type = typeInput.value.trim();
       if (!type) return;
+      if (!isValidIdentifier(type)) {
+        errorEl.textContent = `"${type}" は無効です（英数字とアンダースコアのみ、数字始まり不可）`;
+        return;
+      }
       close(type);
     }
 

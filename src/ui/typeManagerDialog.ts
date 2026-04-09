@@ -1,5 +1,6 @@
 import type { TypeRegistry } from '../graph/typeRegistry.js';
 import { el, clearChildren, byId } from './domUtils.js';
+import { isValidIdentifier } from '../utils/graphUtils.js';
 
 export function showTypeManagerDialog(registry: TypeRegistry): Promise<void> {
   return new Promise((resolve) => {
@@ -10,6 +11,12 @@ export function showTypeManagerDialog(registry: TypeRegistry): Promise<void> {
     const addBtn = byId<HTMLButtonElement>('tm-add-btn');
     const closeBtn = byId<HTMLButtonElement>('tm-close-btn');
 
+    const errorEl = el('p', { style: 'color:var(--color-danger,#f87171);font-size:12px;margin:4px 0 0' });
+    newInput.insertAdjacentElement('afterend', errorEl);
+
+    function showError(msg: string): void { errorEl.textContent = msg; }
+    function clearError(): void { errorEl.textContent = ''; }
+
     function renderList(): void {
       clearChildren(list);
       for (const t of registry.getAll()) {
@@ -19,6 +26,12 @@ export function showTypeManagerDialog(registry: TypeRegistry): Promise<void> {
           const orig = input.dataset['orig']!;
           const next = input.value.trim();
           if (!next || next === orig) return;
+          if (!isValidIdentifier(next)) {
+            input.value = orig;
+            showError(`"${next}" は無効です（英数字とアンダースコアのみ使用できます）`);
+            return;
+          }
+          clearError();
           registry.rename(orig, next);
           input.dataset['orig'] = next;
         });
@@ -45,6 +58,11 @@ export function showTypeManagerDialog(registry: TypeRegistry): Promise<void> {
     function onAdd(): void {
       const val = newInput.value.trim();
       if (!val) return;
+      if (!isValidIdentifier(val)) {
+        showError(`"${val}" は無効です（英数字とアンダースコアのみ、数字始まり不可）`);
+        return;
+      }
+      clearError();
       registry.add(val);
       newInput.value = '';
       renderList();

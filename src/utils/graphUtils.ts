@@ -10,12 +10,16 @@ export function escStr(s: string): string {
     .replace(/\t/g, '\\t');
 }
 
-/**
- * Escape a string as a Cypher identifier (label, relationship type, or property key)
- * using backtick quoting. Backticks within the name are doubled per the Cypher spec.
- */
-export function escLabel(s: string): string {
-  return '`' + s.replace(/`/g, '``') + '`';
+/** Returns true if s is a valid unquoted Cypher identifier (letters, digits, underscore; no leading digit). */
+export function isValidIdentifier(s: string): boolean {
+  return /^[A-Za-z_][A-Za-z0-9_]*$/.test(s);
+}
+
+/** Throws a descriptive error if s is not a valid Cypher identifier. */
+export function assertIdentifier(s: string): void {
+  if (!isValidIdentifier(s)) {
+    throw new Error(`"${s}" はCypher識別子として無効です（英数字とアンダースコアのみ、数字始まり不可）`);
+  }
 }
 
 export function extractMatchedGnIds(rows: unknown[]): { nodeGnIds: Set<GnId>; edgeGnIds: Set<GnId> } {

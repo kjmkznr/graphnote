@@ -154,10 +154,14 @@ export class App {
     showCreateNodeDialog(this.registry).then((result) => {
       this.applyMode('edit');
       if (!result) return;
-      this.registry.ensure(result.type);
-      const gnId = this.db.createNode(result.type, { name: result.name });
-      this.canvas.hintPosition(gnId, position);
-      this.refreshAndSave();
+      try {
+        this.registry.ensure(result.type);
+        const gnId = this.db.createNode(result.type, { name: result.name });
+        this.canvas.hintPosition(gnId, position);
+        this.refreshAndSave();
+      } catch (err) {
+        showToast(`ノードの作成に失敗しました: ${String(err)}`, 'warn');
+      }
     });
   }
 
@@ -214,9 +218,13 @@ export class App {
         action: () => {
           showCreateNodeDialog(this.registry).then((result) => {
             if (!result) return;
-            this.registry.ensure(result.type);
-            this.db.createNode(result.type, { name: result.name });
-            this.refreshAndSave();
+            try {
+              this.registry.ensure(result.type);
+              this.db.createNode(result.type, { name: result.name });
+              this.refreshAndSave();
+            } catch (err) {
+              showToast(`ノードの作成に失敗しました: ${String(err)}`, 'warn');
+            }
           });
         },
       },
@@ -258,15 +266,23 @@ export class App {
     });
 
     this.sidebar.onPropertyChange((gnId, key, value) => {
-      this.db.updateNodeProperty(gnId, key, value);
-      this.scheduleSave();
+      try {
+        this.db.updateNodeProperty(gnId, key, value);
+        this.scheduleSave();
+      } catch (err) {
+        showToast(String(err), 'warn');
+      }
     });
 
     this.sidebar.onAddProperty((gnId, key, value) => {
-      this.db.updateNodeProperty(gnId, key, value);
-      const node = this.db.getNodeByGnId(gnId);
-      if (node) this.sidebar.showNode(node);
-      this.scheduleSave();
+      try {
+        this.db.updateNodeProperty(gnId, key, value);
+        const node = this.db.getNodeByGnId(gnId);
+        if (node) this.sidebar.showNode(node);
+        this.scheduleSave();
+      } catch (err) {
+        showToast(String(err), 'warn');
+      }
     });
   }
 
