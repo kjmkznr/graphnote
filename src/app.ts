@@ -84,7 +84,7 @@ export class App {
 
     this.notebookStore = new NotebookStore();
     this.notebookStore.load();
-    this.notebook = new Notebook(this.elTabNotebook, this.notebookStore);
+    this.notebook = new Notebook(this.elTabNotebook, this.notebookStore, this.db);
     this.notebook.onSnapshotClick((cell: SnapshotCell) => {
       this.switchTab('graph');
       this.canvas.refreshGraph(this.db.getAllNodes(), this.db.getAllEdges(), cell.positions);

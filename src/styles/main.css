@@ -956,6 +956,80 @@ tr:hover td { background: rgba(108,142,247,0.05); }
   width: 100%;
 }
 
+/* Graph section (Cytoscape network view in notebook) */
+.nb-graph-section {
+  border-bottom: 1px solid var(--border);
+  padding: 12px 14px;
+  background: var(--surface2);
+}
+
+.nb-graph-container {
+  width: 100%;
+  height: 320px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+/* Chart section */
+.nb-chart-section {
+  border-bottom: 1px solid var(--border);
+  padding: 12px 14px;
+  background: var(--surface2);
+}
+
+.nb-chart-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.nb-chart-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.nb-chart-tab-btn {
+  padding: 3px 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.nb-chart-tab-btn:hover { border-color: var(--accent2); color: var(--text); }
+.nb-chart-tab-btn.active { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+
+.nb-chart-series {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.nb-chart-series-btn {
+  padding: 3px 10px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-family: var(--font-mono), monospace;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.nb-chart-series-btn:hover { border-color: var(--accent); color: var(--text); }
+.nb-chart-series-btn.active { background: rgba(108,142,247,0.15); border-color: var(--accent); color: var(--accent); }
+
+.nb-chart-area {
+  overflow-x: auto;
+}
+
 /* Snapshot cell */
 .nb-snapshot-label {
   padding: 8px 14px;
