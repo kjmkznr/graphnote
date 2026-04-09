@@ -1,13 +1,15 @@
+import { byId } from './domUtils.js';
+
 const DEFAULT_TYPE = 'RELATES_TO';
 
 export function showCreateEdgeDialog(): Promise<string | null> {
   return new Promise((resolve) => {
-    const overlay = document.getElementById('dialog-overlay')!;
-    const createNodeDialog = document.getElementById('create-node-dialog')!;
-    const dialog = document.getElementById('create-edge-dialog')!;
-    const typeInput = document.getElementById('ced-type') as HTMLInputElement;
-    const confirmBtn = document.getElementById('ced-confirm') as HTMLButtonElement;
-    const cancelBtn = document.getElementById('ced-cancel') as HTMLButtonElement;
+    const overlay = byId('dialog-overlay');
+    const createNodeDialog = byId('create-node-dialog');
+    const dialog = byId('create-edge-dialog');
+    const typeInput = byId<HTMLInputElement>('ced-type');
+    const confirmBtn = byId<HTMLButtonElement>('ced-confirm');
+    const cancelBtn = byId<HTMLButtonElement>('ced-cancel');
 
     typeInput.value = DEFAULT_TYPE;
 

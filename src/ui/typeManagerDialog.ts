@@ -1,14 +1,14 @@
 import type { TypeRegistry } from '../graph/typeRegistry.js';
-import { el, clearChildren } from './domUtils.js';
+import { el, clearChildren, byId } from './domUtils.js';
 
 export function showTypeManagerDialog(registry: TypeRegistry): Promise<void> {
   return new Promise((resolve) => {
-    const overlay = document.getElementById('dialog-overlay')!;
-    const dialog = document.getElementById('type-manager-dialog')!;
-    const list = document.getElementById('tm-list')!;
-    const newInput = document.getElementById('tm-new-input') as HTMLInputElement;
-    const addBtn = document.getElementById('tm-add-btn') as HTMLButtonElement;
-    const closeBtn = document.getElementById('tm-close-btn') as HTMLButtonElement;
+    const overlay = byId('dialog-overlay');
+    const dialog = byId('type-manager-dialog');
+    const list = byId('tm-list');
+    const newInput = byId<HTMLInputElement>('tm-new-input');
+    const addBtn = byId<HTMLButtonElement>('tm-add-btn');
+    const closeBtn = byId<HTMLButtonElement>('tm-close-btn');
 
     function renderList(): void {
       clearChildren(list);
@@ -38,7 +38,7 @@ export function showTypeManagerDialog(registry: TypeRegistry): Promise<void> {
     overlay.style.display = 'flex';
 
     // Show type manager, hide create-node dialog
-    document.getElementById('create-node-dialog')!.style.display = 'none';
+    byId('create-node-dialog').style.display = 'none';
     dialog.style.display = 'flex';
     newInput.focus();
 
@@ -53,7 +53,7 @@ export function showTypeManagerDialog(registry: TypeRegistry): Promise<void> {
     function onClose(): void {
       overlay.style.display = 'none';
       dialog.style.display = 'none';
-      document.getElementById('create-node-dialog')!.style.display = 'flex';
+      byId('create-node-dialog').style.display = 'flex';
       addBtn.removeEventListener('click', onAdd);
       closeBtn.removeEventListener('click', onClose);
       overlay.removeEventListener('click', onOverlayClick);

@@ -1,20 +1,20 @@
 import type { GnId, RawNode, RawEdge, PropertyValue } from '../types.js';
 import type { TypeRegistry } from '../graph/typeRegistry.js';
-import { el, clearChildren } from './domUtils.js';
+import { el, clearChildren, byId } from './domUtils.js';
 
 // Properties that are internal and should never be shown to the user
 const HIDDEN_PROPS = new Set(['gnId', 'note']);
 
 export class Sidebar {
   private registry!: TypeRegistry;
-  private elHeader = document.getElementById('element-header')!;
-  private elEmpty = document.getElementById('sidebar-empty')!;
-  private elContent = document.getElementById('sidebar-content')!;
-  private elPropsList = document.getElementById('properties-list')!;
-  private elNoteTextarea = document.getElementById('note-textarea') as HTMLTextAreaElement;
-  private elNewPropKey = document.getElementById('new-prop-key') as HTMLInputElement;
-  private elNewPropVal = document.getElementById('new-prop-val') as HTMLInputElement;
-  private elAddPropBtn = document.getElementById('add-prop-btn')!;
+  private elHeader = byId('element-header');
+  private elEmpty = byId('sidebar-empty');
+  private elContent = byId('sidebar-content');
+  private elPropsList = byId('properties-list');
+  private elNoteTextarea = byId<HTMLTextAreaElement>('note-textarea');
+  private elNewPropKey = byId<HTMLInputElement>('new-prop-key');
+  private elNewPropVal = byId<HTMLInputElement>('new-prop-val');
+  private elAddPropBtn = byId('add-prop-btn');
 
   private currentGnId: GnId | null = null;
   private currentType: 'node' | 'edge' | null = null;

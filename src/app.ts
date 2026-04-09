@@ -12,7 +12,7 @@ import { showTypeManagerDialog } from './ui/typeManagerDialog.js';
 import { showCreateEdgeDialog } from './ui/createEdgeDialog.js';
 import { showToast } from './ui/toast.js';
 import type { GnId, CanvasEvent, InteractionMode, TabKind, QueryResultCell, SnapshotCell } from './types.js';
-import { el, clearChildren, afterNextPaint } from './ui/domUtils.js';
+import { el, clearChildren, afterNextPaint, byId } from './ui/domUtils.js';
 import { extractMatchedGnIds } from './utils/graphUtils.js';
 
 // ── Context Menu ──────────────────────────────────────────────────────────────
@@ -58,11 +58,11 @@ export class App {
   private notebookStore!: NotebookStore;
   private notebook!: Notebook;
 
-  private ctxMenu = document.getElementById('context-menu')!;
-  private elAddNodeBtn = document.getElementById('add-node-btn')!;
-  private elActionBtns = document.getElementById('canvas-action-btns')!;
-  private elTabGraph = document.getElementById('tab-graph')!;
-  private elTabNotebook = document.getElementById('tab-notebook')!;
+  private ctxMenu = byId('context-menu');
+  private elAddNodeBtn = byId('add-node-btn');
+  private elActionBtns = byId('canvas-action-btns');
+  private elTabGraph = byId('tab-graph');
+  private elTabNotebook = byId('tab-notebook');
 
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -73,7 +73,7 @@ export class App {
     this.registry = new TypeRegistry();
     const {positions: savedPositions, viewport: savedViewport} = await loadGraph(this.db);
 
-    this.canvas = new Canvas(document.getElementById('cy')!, (event) => this.handleCanvasEvent(event));
+    this.canvas = new Canvas(byId('cy'), (event) => this.handleCanvasEvent(event));
 
     this.sidebar = new Sidebar();
     this.sidebar.setRegistry(this.registry);

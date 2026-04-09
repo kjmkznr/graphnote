@@ -53,3 +53,10 @@ export function afterNextPaint(callback: () => void): void {
 export function clearChildren(element: Element): void {
   while (element.firstChild) element.removeChild(element.firstChild);
 }
+
+/** Shorthand for document.getElementById. Throws if the element is not found. */
+export function byId<T extends HTMLElement>(id: string): T {
+  const elem = document.getElementById(id);
+  if (!elem) throw new Error(`Element not found: #${id}`);
+  return elem as T;
+}

@@ -1,4 +1,4 @@
-import { escHtml } from './domUtils.js';
+import { escHtml, byId } from './domUtils.js';
 
 function renderValue(v: unknown): string {
   if (v === null || v === undefined) return `<span class="val-null">null</span>`;
@@ -10,9 +10,9 @@ function renderValue(v: unknown): string {
 }
 
 export class QueryPanel {
-  private elInput = document.getElementById('query-input') as HTMLTextAreaElement;
-  private elRunBtn = document.getElementById('run-btn') as HTMLButtonElement;
-  private elResults = document.getElementById('query-results')!;
+  private elInput = byId<HTMLTextAreaElement>('query-input');
+  private elRunBtn = byId<HTMLButtonElement>('run-btn');
+  private elResults = byId('query-results');
 
   private onExecuteCb: ((query: string) => void) | null = null;
 
