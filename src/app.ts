@@ -99,7 +99,7 @@ export class App {
         () => this.canvas.clearHighlight(),
     );
 
-    document.getElementById('loading')?.remove();
+    byId('loading')?.remove();
 
     afterNextPaint(() => {
       this.canvas.resize();
