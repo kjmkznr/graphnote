@@ -58,8 +58,6 @@ export class App {
   private notebookStore!: NotebookStore;
   private notebook!: Notebook;
 
-  private activeTab: TabKind = 'graph';
-
   private ctxMenu = document.getElementById('context-menu')!;
   private elAddNodeBtn = document.getElementById('add-node-btn')!;
   private elActionBtns = document.getElementById('canvas-action-btns')!;
@@ -73,7 +71,7 @@ export class App {
     await this.db.init();
 
     this.registry = new TypeRegistry();
-    const { positions: savedPositions, viewport: savedViewport } = await loadGraph(this.db);
+    const {positions: savedPositions, viewport: savedViewport} = await loadGraph(this.db);
 
     this.canvas = new Canvas(document.getElementById('cy')!, (event) => this.handleCanvasEvent(event));
 
@@ -97,8 +95,8 @@ export class App {
     this.setupTabButtons();
 
     initResizers(
-      () => this.canvas.resize(),
-      () => this.canvas.clearHighlight(),
+        () => this.canvas.resize(),
+        () => this.canvas.clearHighlight(),
     );
 
     document.getElementById('loading')?.remove();
@@ -127,7 +125,6 @@ export class App {
   }
 
   private switchTab(tab: TabKind): void {
-    this.activeTab = tab;
     this.elTabGraph.style.display = tab === 'graph' ? 'contents' : 'none';
     this.elTabNotebook.style.display = tab === 'notebook' ? 'flex' : 'none';
     document.querySelectorAll<HTMLButtonElement>('.tab-btn').forEach((btn) => {
