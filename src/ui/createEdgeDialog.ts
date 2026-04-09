@@ -1,64 +1,79 @@
-import { byId } from './domUtils.js';
-import { isValidIdentifier } from '../utils/graphUtils.js';
-
-const DEFAULT_TYPE = 'RELATES_TO';
-
-export function showCreateEdgeDialog(): Promise<string | null> {
+import type { EdgeTypeRegistry } from '../graph/edgeTypeRegistry.js';
+import { el, clearChildren, byId } from './domUtils.js';
+export function showCreateEdgeDialog(registry: EdgeTypeRegistry): Promise<string | null> {
   return new Promise((resolve) => {
     const overlay = byId('dialog-overlay');
     const createNodeDialog = byId('create-node-dialog');
     const dialog = byId('create-edge-dialog');
-    const typeInput = byId<HTMLInputElement>('ced-type');
+    const typeSelect = byId<HTMLSelectElement>('ced-type');
+    const newTypeInput = byId<HTMLInputElement>('ced-new-type');
+    const addTypeBtn = byId<HTMLButtonElement>('ced-add-type-btn');
     const confirmBtn = byId<HTMLButtonElement>('ced-confirm');
     const cancelBtn = byId<HTMLButtonElement>('ced-cancel');
 
-    typeInput.value = DEFAULT_TYPE;
+    function populateSelect(): void {
+      const current = typeSelect.value;
+      clearChildren(typeSelect);
+      for (const t of registry.getAll()) {
+        typeSelect.appendChild(el('option', { value: t }, t));
+      }
+      if (current && registry.getAll().includes(current)) {
+        typeSelect.value = current;
+      }
+    }
 
-    const errorEl = document.createElement('p');
-    errorEl.style.cssText = 'color:var(--color-danger,#f87171);font-size:12px;margin:4px 0 0';
-    typeInput.insertAdjacentElement('afterend', errorEl);
-
+    populateSelect();
+    newTypeInput.value = '';
     createNodeDialog.style.display = 'none';
     dialog.style.display = '';
     overlay.style.display = 'flex';
-    typeInput.focus();
-    typeInput.select();
+    typeSelect.focus();
 
     function close(result: string | null): void {
-      errorEl.remove();
       overlay.style.display = 'none';
       dialog.style.display = 'none';
       createNodeDialog.style.display = '';
       confirmBtn.removeEventListener('click', onConfirm);
       cancelBtn.removeEventListener('click', onCancel);
+      addTypeBtn.removeEventListener('click', onAddType);
       overlay.removeEventListener('click', onOverlayClick);
       dialog.removeEventListener('keydown', onKeydown);
       resolve(result);
     }
 
-    function onConfirm(): void {
-      const type = typeInput.value.trim();
-      if (!type) return;
-      if (!isValidIdentifier(type)) {
-        errorEl.textContent = `"${type}" は無効です（英数字とアンダースコアのみ、数字始まり不可）`;
-        return;
-      }
-      close(type);
+    function onAddType(): void {
+      const newType = newTypeInput.value.trim();
+      if (!newType) return;
+      registry.add(newType);
+      populateSelect();
+      typeSelect.value = newType;
+      newTypeInput.value = '';
+      typeSelect.focus();
     }
 
+    function onConfirm(): void {
+      const type = typeSelect.value.trim();
+      if (!type) return;
+      close(type);
+    }
     function onCancel(): void { close(null); }
-
     function onOverlayClick(e: MouseEvent): void {
       if (e.target === overlay) close(null);
     }
-
     function onKeydown(e: KeyboardEvent): void {
-      if (e.key === 'Enter') { e.preventDefault(); onConfirm(); }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (document.activeElement === newTypeInput) {
+          onAddType();
+        } else {
+          onConfirm();
+        }
+      }
       if (e.key === 'Escape') close(null);
     }
-
     confirmBtn.addEventListener('click', onConfirm);
     cancelBtn.addEventListener('click', onCancel);
+    addTypeBtn.addEventListener('click', onAddType);
     overlay.addEventListener('click', onOverlayClick);
     dialog.addEventListener('keydown', onKeydown);
   });

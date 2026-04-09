@@ -137,7 +137,11 @@
       <div class="dialog-title">エッジを作成</div>
       <div class="dialog-field">
         <label class="dialog-label" for="ced-type">Type (種類)</label>
-        <input id="ced-type" class="dialog-input" placeholder="例: DEPENDS_ON, KNOWS, USES" />
+        <select id="ced-type" class="dialog-input"></select>
+      </div>
+      <div class="tm-add-row">
+        <input id="ced-new-type" class="dialog-input" placeholder="新しいタイプ名" />
+        <button id="ced-add-type-btn" class="dialog-btn dialog-btn-primary">Add</button>
       </div>
       <div class="dialog-actions">
         <button id="ced-cancel" class="dialog-btn dialog-btn-secondary">Cancel</button>

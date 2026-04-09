@@ -1,6 +1,7 @@
 import { GraphDB } from './graph/db.js';
 import { saveGraph, loadGraph, clearSaved, exportToFile, exportToCypher, importFromFile } from './graph/persistence.js';
 import { TypeRegistry } from './graph/typeRegistry.js';
+import { EdgeTypeRegistry } from './graph/edgeTypeRegistry.js';
 import { Canvas } from './ui/canvas.js';
 import { Sidebar } from './ui/sidebar.js';
 import { QueryPanel } from './ui/queryPanel.js';
@@ -55,6 +56,7 @@ export class App {
   private sidebar!: Sidebar;
   private queryPanel!: QueryPanel;
   private registry!: TypeRegistry;
+  private edgeRegistry!: EdgeTypeRegistry;
   private scrapbookStore!: ScrapbookStore;
   private scrapbook!: Scrapbook;
 
@@ -71,7 +73,11 @@ export class App {
     await this.db.init();
 
     this.registry = new TypeRegistry();
+    this.edgeRegistry = new EdgeTypeRegistry();
     const {positions: savedPositions, viewport: savedViewport} = await loadGraph(this.db);
+    for (const edge of this.db.getAllEdges()) {
+      this.edgeRegistry.ensure(edge._type);
+    }
 
     this.canvas = new Canvas(byId('cy'), (event) => this.handleCanvasEvent(event));
 
@@ -172,7 +178,7 @@ export class App {
   }
 
   private handleEdgeCreated(sourceGnId: GnId, targetGnId: GnId): void {
-    showCreateEdgeDialog().then((type) => {
+    showCreateEdgeDialog(this.edgeRegistry).then((type) => {
       this.applyMode('edit');
       if (!type) return;
       try {
