@@ -10,6 +10,14 @@ export function escStr(s: string): string {
     .replace(/\t/g, '\\t');
 }
 
+/**
+ * Escape a string as a Cypher identifier (label, relationship type, or property key)
+ * using backtick quoting. Backticks within the name are doubled per the Cypher spec.
+ */
+export function escLabel(s: string): string {
+  return '`' + s.replace(/`/g, '``') + '`';
+}
+
 export function extractMatchedGnIds(rows: unknown[]): { nodeGnIds: Set<GnId>; edgeGnIds: Set<GnId> } {
   const nodeGnIds = new Set<GnId>();
   const edgeGnIds = new Set<GnId>();
