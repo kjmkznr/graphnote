@@ -315,7 +315,8 @@ html, body {
 .badge-node { background: rgba(108,142,247,0.2); color: var(--accent); border: 1px solid rgba(108,142,247,0.4); }
 .badge-edge { background: rgba(167,139,250,0.2); color: var(--accent2); border: 1px solid rgba(167,139,250,0.4); }
 
-.element-title { font-size: 14px; font-weight: 600; color: var(--text); font-family: var(--font-mono); }
+.element-title { font-size: 14px; font-weight: 600; color: var(--text);
+  font-family: var(--font-mono), monospace; }
 
 .label-row { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
 .label-prefix { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
