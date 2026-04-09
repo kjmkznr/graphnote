@@ -90,7 +90,7 @@ html, body {
 .logo {
   font-size: 18px;
   font-weight: 700;
-  font-family: var(--font-mono);
+  font-family: var(--font-mono), monospace;
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -119,7 +119,7 @@ html, body {
   display: flex;
   gap: 16px;
   font-size: 12px;
-  font-family: var(--font-mono);
+  font-family: var(--font-mono), monospace;
 }
 .stat { display: flex; align-items: center; gap: 4px; color: var(--text-muted); }
 .stat-value { color: var(--accent); font-weight: 600; }
@@ -327,7 +327,7 @@ html, body {
   color: var(--accent);
   padding: 3px 8px;
   border-radius: 4px;
-  font-family: var(--font-mono);
+  font-family: var(--font-mono), monospace;
   font-size: 13px;
   font-weight: 600;
   outline: none;
@@ -357,7 +357,7 @@ html, body {
 
 .prop-key {
   font-size: 12px;
-  font-family: var(--font-mono);
+  font-family: var(--font-mono), monospace;
   color: var(--accent);
   min-width: 80px;
   flex-shrink: 0;
@@ -370,7 +370,7 @@ html, body {
   color: var(--text);
   padding: 4px 8px;
   border-radius: 4px;
-  font-family: var(--font-mono);
+  font-family: var(--font-mono), monospace;
   font-size: 12px;
   outline: none;
   transition: border-color 0.15s;
@@ -387,7 +387,7 @@ html, body {
   color: var(--text);
   padding: 4px 8px;
   border-radius: 4px;
-  font-family: var(--font-mono);
+  font-family: var(--font-mono), monospace;
   font-size: 12px;
   outline: none;
 }
@@ -413,7 +413,7 @@ html, body {
   color: var(--text);
   padding: 10px 12px;
   border-radius: 6px;
-  font-family: var(--font-mono);
+  font-family: var(--font-mono), monospace;
   font-size: 13px;
   line-height: 1.6;
   resize: vertical;
@@ -457,7 +457,7 @@ kbd {
   border: 1px solid var(--border);
   border-radius: 3px;
   padding: 1px 5px;
-  font-family: var(--font-mono);
+  font-family: var(--font-mono), monospace;
   font-size: 10px;
 }
 
@@ -488,7 +488,7 @@ kbd {
   border-right: 1px solid var(--border);
   color: var(--text);
   padding: 10px 14px;
-  font-family: var(--font-mono);
+  font-family: var(--font-mono), monospace;
   font-size: 13px;
   line-height: 1.6;
   resize: none;
@@ -497,7 +497,7 @@ kbd {
 
 #query-results { flex: 1; overflow: auto; padding: 10px 14px; font-size: 12px; }
 
-.result-tag { font-size: 11px; padding: 1px 8px; border-radius: 10px; font-family: var(--font-mono); display: inline-block; margin-bottom: 8px; }
+.result-tag { font-size: 11px; padding: 1px 8px; border-radius: 10px; font-family: var(--font-mono), monospace; display: inline-block; margin-bottom: 8px; }
 .tag-ok    { background: rgba(52,211,153,0.15);  color: var(--green);  border: 1px solid rgba(52,211,153,0.3); }
 .tag-err   { background: rgba(248,113,113,0.15); color: var(--red);    border: 1px solid rgba(248,113,113,0.3); }
 .tag-empty { background: rgba(251,191,36,0.1);   color: var(--yellow); border: 1px solid rgba(251,191,36,0.2); }
@@ -508,12 +508,12 @@ kbd {
   color: var(--red);
   padding: 8px 12px;
   border-radius: 5px;
-  font-family: var(--font-mono);
+  font-family: var(--font-mono), monospace;
   font-size: 12px;
   line-height: 1.5;
 }
 
-.result-table { border-collapse: collapse; font-size: 12px; font-family: var(--font-mono); width: 100%; }
+.result-table { border-collapse: collapse; font-size: 12px; font-family: var(--font-mono), monospace; width: 100%; }
 .result-table th {
   background: var(--surface2);
   border: 1px solid var(--border);
@@ -623,7 +623,7 @@ tr:hover td { background: rgba(108,142,247,0.05); }
   padding: 3px 6px;
   border-radius: 4px;
   font-size: 13px;
-  font-family: var(--font-mono);
+  font-family: var(--font-mono), monospace;
   outline: none;
   transition: border-color 0.15s, background 0.15s;
 }
@@ -860,7 +860,7 @@ tr:hover td { background: rgba(108,142,247,0.05); }
   border: none;
   color: var(--text);
   padding: 12px 14px;
-  font-family: var(--font-mono);
+  font-family: var(--font-mono), monospace;
   font-size: 13px;
   line-height: 1.6;
   resize: vertical;
@@ -870,7 +870,7 @@ tr:hover td { background: rgba(108,142,247,0.05); }
 /* Query result cell */
 .nb-query-text {
   padding: 10px 14px;
-  font-family: var(--font-mono);
+  font-family: var(--font-mono), monospace;
   font-size: 12px;
   color: var(--accent2);
   white-space: pre-wrap;
