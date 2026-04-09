@@ -324,13 +324,13 @@ export class App {
   // ── Toolbar buttons ───────────────────────────────────────────────────────────
 
   private setupToolbarButtons(): void {
-    document.getElementById('fit-btn')?.addEventListener('click', () => this.canvas.fitView());
+    byId('fit-btn')?.addEventListener('click', () => this.canvas.fitView());
 
-    document.getElementById('types-btn')?.addEventListener('click', () => {
+    byId('types-btn')?.addEventListener('click', () => {
       showTypeManagerDialog(this.registry);
     });
 
-    document.getElementById('reset-btn')?.addEventListener('click', () => {
+    byId('reset-btn')?.addEventListener('click', () => {
       if (!window.confirm('グラフをリセットしますか？この操作は取り消せません。')) return;
       this.db.reset();
       clearSaved();
@@ -339,17 +339,17 @@ export class App {
       this.updateStats();
     });
 
-    document.getElementById('export-json-btn')?.addEventListener('click', () => {
+    byId('export-json-btn')?.addEventListener('click', () => {
       exportToFile(this.db, this.canvas.getPositions());
       showToast('JSON形式でエクスポートしました', 'success');
     });
 
-    document.getElementById('export-cypher-btn')?.addEventListener('click', () => {
+    byId('export-cypher-btn')?.addEventListener('click', () => {
       exportToCypher(this.db, this.canvas.getPositions());
       showToast('Cypher形式でエクスポートしました', 'success');
     });
 
-    document.getElementById('import-btn')?.addEventListener('click', () => {
+    byId('import-btn')?.addEventListener('click', () => {
       importFromFile(this.db).then((result) => {
         if (result === null) {
           showToast('インポートをキャンセルしました', 'warn');
@@ -375,8 +375,8 @@ export class App {
   }
 
   private updateStats(): void {
-    const nc = document.getElementById('node-count');
-    const ec = document.getElementById('edge-count');
+    const nc = byId('node-count');
+    const ec = byId('edge-count');
     if (nc) nc.textContent = String(this.db.nodeCount());
     if (ec) ec.textContent = String(this.db.edgeCount());
   }
