@@ -124,9 +124,15 @@ export class App {
         if (tab) this.switchTab(tab);
       });
     });
+    const hash = location.hash.replace('#', '') as TabKind;
+    const initialTab: TabKind = (hash === 'graph' || hash === 'scrapbook') ? hash : 'graph';
+    this.switchTab(initialTab);
   }
 
-  private switchTab(tab: TabKind): void {
+  private switchTab(tab: TabKind, updateHistory = true): void {
+    if (updateHistory) {
+      history.replaceState(null, '', `#${tab}`);
+    }
     this.elTabGraph.style.display = tab === 'graph' ? 'contents' : 'none';
     this.elTabScrapbook.style.display = tab === 'scrapbook' ? 'flex' : 'none';
     document.querySelectorAll<HTMLButtonElement>('.tab-btn').forEach((btn) => {
