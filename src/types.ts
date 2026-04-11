@@ -47,7 +47,7 @@ export interface PersistedGraph {
 
 export type InteractionMode = 'edit' | 'node';
 
-export type TabKind = 'graph' | 'scrapbook';
+export type TabKind = 'graph' | 'scrapbook' | 'dashboard';
 
 // ── Scrapbook cell types ────────────────────────────────────────────────────────
 

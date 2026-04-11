@@ -8,6 +8,7 @@ import { Canvas } from './ui/canvas.js';
 import { Sidebar } from './ui/sidebar.js';
 import { QueryPanel } from './ui/queryPanel.js';
 import { Scrapbook } from './ui/scrapbook.js';
+import { Dashboard } from './ui/dashboard.js';
 import { ScrapbookStore } from './notebook/scrapbookStore.js';
 import { initResizers } from './ui/resizer.js';
 import { showCreateNodeDialog } from './ui/createNodeDialog.js';
@@ -63,12 +64,14 @@ export class App {
   private undoManager = new UndoManager();
   private scrapbookStore!: ScrapbookStore;
   private scrapbook!: Scrapbook;
+  private dashboard!: Dashboard;
 
   private ctxMenu = byId('context-menu');
   private elAddNodeBtn = byId('add-node-btn');
   private elActionBtns = byId('canvas-action-btns');
   private elTabGraph = byId('tab-graph');
   private elTabScrapbook = byId('tab-scrapbook');
+  private elTabDashboard = byId('tab-dashboard');
   private elUndoBtn = byId<HTMLButtonElement>('undo-btn');
   private elRedoBtn = byId<HTMLButtonElement>('redo-btn');
 
@@ -115,6 +118,7 @@ export class App {
     this.scrapbookStore = new ScrapbookStore();
     this.scrapbookStore.load();
     this.scrapbook = new Scrapbook(this.elTabScrapbook, this.scrapbookStore);
+    this.dashboard = new Dashboard(this.elTabDashboard);
 
     this.setupModeControls();
     this.setupToolbarButtons();
@@ -151,7 +155,7 @@ export class App {
       });
     });
     const hash = location.hash.replace('#', '') as TabKind;
-    const initialTab: TabKind = (hash === 'graph' || hash === 'scrapbook') ? hash : 'graph';
+    const initialTab: TabKind = (hash === 'graph' || hash === 'scrapbook' || hash === 'dashboard') ? hash : 'graph';
     this.switchTab(initialTab);
   }
 
@@ -161,11 +165,15 @@ export class App {
     }
     this.elTabGraph.style.display = tab === 'graph' ? 'contents' : 'none';
     this.elTabScrapbook.style.display = tab === 'scrapbook' ? 'flex' : 'none';
+    this.elTabDashboard.style.display = tab === 'dashboard' ? 'block' : 'none';
     document.querySelectorAll<HTMLButtonElement>('.tab-btn').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset['tab'] === tab);
     });
     if (tab === 'graph') {
       requestAnimationFrame(() => this.canvas.resize());
+    }
+    if (tab === 'dashboard') {
+      this.dashboard.refresh(this.db.getAllNodes(), this.db.getAllEdges());
     }
   }
 
