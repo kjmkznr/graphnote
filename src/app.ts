@@ -155,6 +155,7 @@ export class App {
       case 'node-context':     return this.handleNodeContext(event.gnId, event.x, event.y);
       case 'edge-context':     return this.handleEdgeContext(event.gnId, event.x, event.y);
       case 'bg-context':       return this.handleBgContext(event.x, event.y);
+      case 'delete-selected':  return this.handleDeleteSelected(event.nodeGnIds, event.edgeGnIds);
     }
   }
 
@@ -200,23 +201,26 @@ export class App {
   private handleNodeContext(gnId: GnId, x: number, y: number): void {
     showContextMenu(this.ctxMenu, [{
       label: 'ノードを削除', danger: true,
-      action: () => {
-        this.db.deleteNode(gnId);
-        this.sidebar.hide();
-        this.refreshAndSave();
-      },
+      action: () => this.handleDeleteSelected([gnId], []),
     }], x, y);
   }
 
   private handleEdgeContext(gnId: GnId, x: number, y: number): void {
     showContextMenu(this.ctxMenu, [{
       label: 'エッジを削除', danger: true,
-      action: () => {
-        this.db.deleteEdge(gnId);
-        this.sidebar.hide();
-        this.refreshAndSave();
-      },
+      action: () => this.handleDeleteSelected([], [gnId]),
     }], x, y);
+  }
+
+  private handleDeleteSelected(nodeGnIds: GnId[], edgeGnIds: GnId[]): void {
+    for (const gnId of edgeGnIds) {
+      try { this.db.deleteEdge(gnId); } catch { /* ignore */ }
+    }
+    for (const gnId of nodeGnIds) {
+      try { this.db.deleteNode(gnId); } catch { /* ignore */ }
+    }
+    this.sidebar.hide();
+    this.refreshAndSave();
   }
 
   private handleBgContext(x: number, y: number): void {

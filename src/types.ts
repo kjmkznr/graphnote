@@ -88,4 +88,5 @@ export type CanvasEvent =
   | { kind: 'edge-drag-cancelled' }
   | { kind: 'node-context'; gnId: GnId; x: number; y: number }
   | { kind: 'edge-context'; gnId: GnId; x: number; y: number }
-  | { kind: 'bg-context'; x: number; y: number };
+  | { kind: 'bg-context'; x: number; y: number }
+  | { kind: 'delete-selected'; nodeGnIds: GnId[]; edgeGnIds: GnId[] };

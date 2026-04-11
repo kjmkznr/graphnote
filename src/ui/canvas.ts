@@ -215,6 +215,19 @@ export class Canvas {
         this.onEvent({ kind: 'edge-drag-cancelled' });
       }
     });
+
+    // ── Delete key ───────────────────────────────────────────────────────────
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+      const active = document.activeElement;
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || (active as HTMLElement).isContentEditable)) return;
+      const selected = cy.$(':selected');
+      const nodeGnIds = selected.nodes(':not([ghost]):not([edgeHandle])').map((n) => asGnId(n.data('gnId') as string)).filter(Boolean);
+      const edgeGnIds = selected.edges(':not([ghost])').map((ed) => asGnId(ed.data('gnId') as string)).filter(Boolean);
+      if (nodeGnIds.length === 0 && edgeGnIds.length === 0) return;
+      this.onEvent({ kind: 'delete-selected', nodeGnIds, edgeGnIds });
+    });
   }
 
   // ── Edge handles ────────────────────────────────────────────────────────────
