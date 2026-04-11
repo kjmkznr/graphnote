@@ -91,6 +91,18 @@ export class Canvas {
 
   png(): string { return this.cy.png({ full: false, scale: 0.5, maxWidth: 800, maxHeight: 600 }); }
 
+  /** Convert a client (screen) coordinate to a Cytoscape canvas (model) coordinate. */
+  clientToCanvasPosition(clientX: number, clientY: number): { x: number; y: number } {
+    const container = this.cy.container()!;
+    const rect = container.getBoundingClientRect();
+    const pan = this.cy.pan();
+    const zoom = this.cy.zoom();
+    return {
+      x: (clientX - rect.left - pan.x) / zoom,
+      y: (clientY - rect.top - pan.y) / zoom,
+    };
+  }
+
   deselectAll(): void { this.cy.elements().unselect(); }
 
   // ── Event binding ───────────────────────────────────────────────────────────

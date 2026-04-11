@@ -214,6 +214,7 @@ export class App {
   }
 
   private handleBgContext(x: number, y: number): void {
+    const canvasPos = this.canvas.clientToCanvasPosition(x, y);
     showContextMenu(this.ctxMenu, [
       {
         label: 'ノードを作成',
@@ -222,7 +223,8 @@ export class App {
             if (!result) return;
             try {
               this.registry.ensure(result.type);
-              this.db.createNode(result.type, { name: result.name });
+              const gnId = this.db.createNode(result.type, { name: result.name });
+              this.canvas.hintPosition(gnId, canvasPos);
               this.refreshAndSave();
             } catch (err) {
               showToast(`ノードの作成に失敗しました: ${String(err)}`, 'warn');
