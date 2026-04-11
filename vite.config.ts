@@ -1,16 +1,17 @@
 import { defineConfig } from 'vite';
 import wasm from 'vite-plugin-wasm';
-import topLevelAwait from 'vite-plugin-top-level-await';
 
 export default defineConfig({
-  plugins: [wasm(), topLevelAwait()],
+  plugins: [wasm()],
   base: '/graphnote/',
   build: {
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['cytoscape'],
+        manualChunks: (id) => {
+          if (id.includes('cytoscape')) {
+            return 'vendor';
+          }
         },
       },
     },
