@@ -1,5 +1,6 @@
 import { GraphDB } from './graph/db.js';
 import { saveGraph, loadGraph, clearSaved, exportToFile, exportToCypher, importFromFile } from './graph/persistence.js';
+import { buildShareUrl, parseShareUrl, restoreSharedGraph } from './graph/urlShare.js';
 import { TypeRegistry } from './graph/typeRegistry.js';
 import { EdgeTypeRegistry } from './graph/edgeTypeRegistry.js';
 import { UndoManager } from './graph/undoManager.js';
@@ -78,7 +79,25 @@ export class App {
 
     this.registry = new TypeRegistry();
     this.edgeRegistry = new EdgeTypeRegistry();
-    const {positions: savedPositions, viewport: savedViewport} = await loadGraph(this.db);
+
+    // Check for shared graph in URL before falling back to localStorage
+    let savedPositions: Record<GnId, { x: number; y: number }>;
+    let savedViewport: { pan: { x: number; y: number }; zoom: number } | undefined;
+    const sharedGraph = await parseShareUrl();
+    if (sharedGraph) {
+      const result = restoreSharedGraph(this.db, sharedGraph);
+      savedPositions = result.positions;
+      savedViewport = result.viewport;
+      // Clear the share hash so it doesn't reload on refresh
+      history.replaceState(null, '', location.pathname);
+      // Persist the shared graph to localStorage
+      saveGraph(this.db, savedPositions, savedViewport);
+      showToast('共有されたグラフを読み込みました', 'success');
+    } else {
+      const result = await loadGraph(this.db);
+      savedPositions = result.positions;
+      savedViewport = result.viewport;
+    }
     for (const edge of this.db.getAllEdges()) {
       this.edgeRegistry.ensure(edge._type);
     }
@@ -391,6 +410,26 @@ export class App {
     byId('export-cypher-btn')?.addEventListener('click', () => {
       exportToCypher(this.db, this.canvas.getPositions());
       showToast('Cypher形式でエクスポートしました', 'success');
+    });
+
+    byId('share-btn')?.addEventListener('click', () => {
+      buildShareUrl(this.db, this.canvas.getPositions(), this.canvas.getViewport())
+        .then((url) => {
+          if (!url) {
+            showToast('共有するノードがありません', 'warn');
+            return;
+          }
+          if (url.length > 100_000) {
+            showToast('グラフが大きすぎるためURLでの共有ができません。JSON エクスポートをご利用ください。', 'warn');
+            return;
+          }
+          return navigator.clipboard.writeText(url).then(() => {
+            showToast('共有 URL をクリップボードにコピーしました', 'success');
+          });
+        })
+        .catch((err) => {
+          showToast(`共有 URL の生成に失敗しました: ${String(err)}`, 'warn');
+        });
     });
 
     byId('import-btn')?.addEventListener('click', () => {
