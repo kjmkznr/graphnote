@@ -244,27 +244,39 @@ export class Scrapbook {
     return section;
   }
 
+  private isEdgeOnlyRow(row: Record<string, unknown>): boolean {
+    const values = Object.values(row);
+    if (values.length === 0) return false;
+    return values.every(val => {
+      if (val === null || typeof val !== 'object' || Array.isArray(val)) return false;
+      const obj = val as Record<string, unknown>;
+      return typeof obj['_type'] === 'string' && typeof obj['_src'] === 'string' && typeof obj['_dst'] === 'string';
+    });
+  }
+
   private flattenRows(rows: Record<string, unknown>[]): Record<string, unknown>[] {
-    return rows.map(row => {
-      const flat: Record<string, unknown> = {};
-      for (const [colKey, val] of Object.entries(row)) {
-        if (val !== null && typeof val === 'object' && !Array.isArray(val)) {
-          const obj = val as Record<string, unknown>;
-          // ノード/エッジオブジェクト（_propertiesを持つ）はプロパティを展開
-          if (typeof obj['_properties'] === 'object' && obj['_properties'] !== null) {
-            const props = obj['_properties'] as Record<string, unknown>;
-            for (const [pk, pv] of Object.entries(props)) {
-              flat[`${colKey}.${pk}`] = pv;
+    return rows
+      .filter(row => !this.isEdgeOnlyRow(row))
+      .map(row => {
+        const flat: Record<string, unknown> = {};
+        for (const [colKey, val] of Object.entries(row)) {
+          if (val !== null && typeof val === 'object' && !Array.isArray(val)) {
+            const obj = val as Record<string, unknown>;
+            // ノード/エッジオブジェクト（_propertiesを持つ）はプロパティを展開
+            if (typeof obj['_properties'] === 'object' && obj['_properties'] !== null) {
+              const props = obj['_properties'] as Record<string, unknown>;
+              for (const [pk, pv] of Object.entries(props)) {
+                flat[`${colKey}.${pk}`] = pv;
+              }
+            } else {
+              flat[colKey] = val;
             }
           } else {
             flat[colKey] = val;
           }
-        } else {
-          flat[colKey] = val;
         }
-      }
-      return flat;
-    });
+        return flat;
+      });
   }
 
   private getNumericKeys(rows: Record<string, unknown>[]): string[] {
