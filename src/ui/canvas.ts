@@ -4,6 +4,7 @@ import type { GnId, RawNode, RawEdge, CanvasEvent, InteractionMode } from '../ty
 import { GraphRenderer } from './graphRenderer.js';
 import type { PositionMap } from './graphRenderer.js';
 import { CYTOSCAPE_STYLES } from './cytoscapeStyles.js';
+import { Minimap } from './minimap.js';
 
 export type { PositionMap };
 
@@ -16,6 +17,7 @@ export type { PositionMap };
 export class Canvas {
   private cy: cytoscape.Core;
   private renderer: GraphRenderer;
+  private minimap: Minimap;
   private mode: InteractionMode = 'edit';
 
   // Edge-creation drag state
@@ -36,6 +38,7 @@ export class Canvas {
     });
 
     this.renderer = new GraphRenderer(this.cy);
+    this.minimap = new Minimap(container.parentElement!, this.cy);
     this.bindEvents();
   }
 

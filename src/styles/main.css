@@ -278,6 +278,25 @@ html, body {
   position: static;
 }
 
+/* ── Minimap ── */
+
+#minimap {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  opacity: 0.85;
+  transition: opacity 0.15s;
+  cursor: crosshair;
+}
+#minimap:hover {
+  opacity: 1;
+}
+
 
 /* ── Sidebar ── */
 
