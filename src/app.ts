@@ -2,6 +2,7 @@ import { GraphDB } from './graph/db.js';
 import { saveGraph, loadGraph, clearSaved, exportToFile, exportToCypher, importFromFile } from './graph/persistence.js';
 import { TypeRegistry } from './graph/typeRegistry.js';
 import { EdgeTypeRegistry } from './graph/edgeTypeRegistry.js';
+import { UndoManager } from './graph/undoManager.js';
 import { Canvas } from './ui/canvas.js';
 import { Sidebar } from './ui/sidebar.js';
 import { QueryPanel } from './ui/queryPanel.js';
@@ -57,6 +58,7 @@ export class App {
   private queryPanel!: QueryPanel;
   private registry!: TypeRegistry;
   private edgeRegistry!: EdgeTypeRegistry;
+  private undoManager = new UndoManager();
   private scrapbookStore!: ScrapbookStore;
   private scrapbook!: Scrapbook;
 
@@ -65,6 +67,8 @@ export class App {
   private elActionBtns = byId('canvas-action-btns');
   private elTabGraph = byId('tab-graph');
   private elTabScrapbook = byId('tab-scrapbook');
+  private elUndoBtn = byId<HTMLButtonElement>('undo-btn');
+  private elRedoBtn = byId<HTMLButtonElement>('redo-btn');
 
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -95,6 +99,7 @@ export class App {
     this.setupModeControls();
     this.setupToolbarButtons();
     this.setupTabButtons();
+    this.setupUndoRedo();
 
     initResizers(
         () => this.canvas.resize(),
@@ -164,6 +169,7 @@ export class App {
       this.applyMode('edit');
       if (!result) return;
       try {
+        this.captureForUndo();
         this.registry.ensure(result.type);
         const gnId = this.db.createNode(result.type, { name: result.name });
         this.canvas.hintPosition(gnId, position);
@@ -189,6 +195,7 @@ export class App {
       this.applyMode('edit');
       if (!type) return;
       try {
+        this.captureForUndo();
         this.db.createEdge(sourceGnId, targetGnId, type);
         this.refreshAndSave();
       } catch (err) {
@@ -213,6 +220,7 @@ export class App {
   }
 
   private handleDeleteSelected(nodeGnIds: GnId[], edgeGnIds: GnId[]): void {
+    this.captureForUndo();
     for (const gnId of edgeGnIds) {
       try { this.db.deleteEdge(gnId); } catch { /* ignore */ }
     }
@@ -232,6 +240,7 @@ export class App {
           showCreateNodeDialog(this.registry).then((result) => {
             if (!result) return;
             try {
+              this.captureForUndo();
               this.registry.ensure(result.type);
               const gnId = this.db.createNode(result.type, { name: result.name });
               this.canvas.hintPosition(gnId, canvasPos);
@@ -269,6 +278,7 @@ export class App {
 
   private setupSidebarCallbacks(): void {
     this.sidebar.onLabelChange((gnId, oldLabel, newLabel) => {
+      this.captureForUndo();
       this.db.relabelNode(gnId, oldLabel, newLabel);
       this.canvas.refreshGraph(this.db.getAllNodes(), this.db.getAllEdges());
       this.scheduleSave();
@@ -281,6 +291,7 @@ export class App {
 
     this.sidebar.onPropertyChange((gnId, key, value) => {
       try {
+        this.captureForUndo();
         this.db.updateNodeProperty(gnId, key, value);
         this.scheduleSave();
       } catch (err) {
@@ -290,6 +301,7 @@ export class App {
 
     this.sidebar.onAddProperty((gnId, key, value) => {
       try {
+        this.captureForUndo();
         this.db.updateNodeProperty(gnId, key, value);
         const node = this.db.getNodeByGnId(gnId);
         if (node) this.sidebar.showNode(node);
@@ -305,6 +317,7 @@ export class App {
   private setupQueryPanel(): void {
     this.queryPanel.onExecute((query) => {
       this.canvas.clearHighlight();
+      this.captureForUndo();
       const t0 = performance.now();
       try {
         const rows = this.db.execute(query);
@@ -361,7 +374,8 @@ export class App {
     });
 
     byId('reset-btn')?.addEventListener('click', () => {
-      if (!window.confirm('グラフをリセットしますか？この操作は取り消せません。')) return;
+      if (!window.confirm('グラフをリセットしますか？')) return;
+      this.captureForUndo();
       this.db.reset();
       clearSaved();
       this.sidebar.hide();
@@ -380,11 +394,13 @@ export class App {
     });
 
     byId('import-btn')?.addEventListener('click', () => {
+      const snapshotBeforeImport = UndoManager.captureSnapshot(this.db, this.canvas.getPositions());
       importFromFile(this.db).then((result) => {
         if (result === null) {
           showToast('インポートをキャンセルしました', 'warn');
           return;
         }
+        this.undoManager.pushState(snapshotBeforeImport);
         saveGraph(this.db, result.positions);
         this.sidebar.hide();
         this.canvas.refreshGraph(this.db.getAllNodes(), this.db.getAllEdges(), result.positions);
@@ -434,6 +450,62 @@ export class App {
     } catch {
       return rows;
     }
+  }
+
+  // ── Undo / Redo ──────────────────────────────────────────────────────────────
+
+  private captureForUndo(): void {
+    const snapshot = UndoManager.captureSnapshot(this.db, this.canvas.getPositions());
+    this.undoManager.pushState(snapshot);
+  }
+
+  private performUndo(): void {
+    if (!this.undoManager.canUndo()) return;
+    const current = UndoManager.captureSnapshot(this.db, this.canvas.getPositions());
+    const prev = this.undoManager.undo(current);
+    if (!prev) return;
+    const positions = UndoManager.restoreSnapshot(this.db, prev);
+    this.sidebar.hide();
+    this.canvas.refreshGraph(this.db.getAllNodes(), this.db.getAllEdges(), positions);
+    this.scheduleSave();
+  }
+
+  private performRedo(): void {
+    if (!this.undoManager.canRedo()) return;
+    const current = UndoManager.captureSnapshot(this.db, this.canvas.getPositions());
+    const next = this.undoManager.redo(current);
+    if (!next) return;
+    const positions = UndoManager.restoreSnapshot(this.db, next);
+    this.sidebar.hide();
+    this.canvas.refreshGraph(this.db.getAllNodes(), this.db.getAllEdges(), positions);
+    this.scheduleSave();
+  }
+
+  private updateUndoRedoButtons(): void {
+    this.elUndoBtn.disabled = !this.undoManager.canUndo();
+    this.elRedoBtn.disabled = !this.undoManager.canRedo();
+  }
+
+  private setupUndoRedo(): void {
+    this.undoManager.onChange(() => this.updateUndoRedoButtons());
+
+    this.elUndoBtn.addEventListener('click', () => this.performUndo());
+    this.elRedoBtn.addEventListener('click', () => this.performRedo());
+
+    document.addEventListener('keydown', (e) => {
+      const mod = e.ctrlKey || e.metaKey;
+      if (!mod) return;
+      // Ctrl+Z → undo
+      if (e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        this.performUndo();
+      }
+      // Ctrl+Shift+Z or Ctrl+Y → redo
+      if ((e.key === 'Z' && e.shiftKey) || (e.key === 'y' && !e.shiftKey)) {
+        e.preventDefault();
+        this.performRedo();
+      }
+    });
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────────

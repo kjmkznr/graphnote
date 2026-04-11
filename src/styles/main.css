@@ -99,6 +99,22 @@ html, body {
 
 .header-divider { width: 1px; height: 20px; background: var(--border); }
 
+#undo-redo-buttons { display: flex; gap: 2px; }
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+}
+.icon-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+  pointer-events: none;
+}
+
 #mode-buttons { display: flex; gap: 4px; margin-right: auto; }
 
 .mode-btn {
