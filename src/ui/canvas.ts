@@ -8,6 +8,15 @@ import type { EdgeTypeRegistry } from '../graph/edgeTypeRegistry.js';
 import type { TypeRegistry } from '../graph/typeRegistry.js';
 import { Minimap } from './minimap.js';
 
+function getEventClientPos(e: MouseEvent | TouchEvent): { x: number; y: number } {
+  if ('touches' in e) {
+    const t = e.changedTouches[0] ?? e.touches[0];
+    if (!t) return { x: 0, y: 0 };
+    return { x: t.clientX, y: t.clientY };
+  }
+  return { x: e.clientX, y: e.clientY };
+}
+
 export type { PositionMap };
 
 /**
@@ -163,20 +172,20 @@ export class Canvas {
 
     cy.on('cxttap', 'node:not([ghost])', (e) => {
       const gnId = asGnId(e.target.data('gnId') as string);
-      const orig = e.originalEvent as MouseEvent;
-      if (gnId) this.onEvent({ kind: 'node-context', gnId, x: orig.clientX, y: orig.clientY });
+      const { x, y } = getEventClientPos(e.originalEvent as MouseEvent | TouchEvent);
+      if (gnId) this.onEvent({ kind: 'node-context', gnId, x, y });
     });
 
     cy.on('cxttap', 'edge:not([ghost])', (e) => {
       const gnId = asGnId(e.target.data('gnId') as string);
-      const orig = e.originalEvent as MouseEvent;
-      if (gnId) this.onEvent({ kind: 'edge-context', gnId, x: orig.clientX, y: orig.clientY });
+      const { x, y } = getEventClientPos(e.originalEvent as MouseEvent | TouchEvent);
+      if (gnId) this.onEvent({ kind: 'edge-context', gnId, x, y });
     });
 
     cy.on('cxttap', (e) => {
       if (e.target !== cy) return;
-      const orig = e.originalEvent as MouseEvent;
-      this.onEvent({ kind: 'bg-context', x: orig.clientX, y: orig.clientY });
+      const { x, y } = getEventClientPos(e.originalEvent as MouseEvent | TouchEvent);
+      this.onEvent({ kind: 'bg-context', x, y });
     });
 
     // ── Edge handle hover ────────────────────────────────────────────────────

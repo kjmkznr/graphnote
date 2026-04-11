@@ -68,18 +68,15 @@ export function initResizers(onResize: () => void, onQueryPanelCollapse?: () => 
   // Start collapsed
   applyState();
 
-  toggle.addEventListener('mousedown', (startEvent) => {
-    startEvent.preventDefault();
-    const startY = startEvent.clientY;
+  function handleToggleStart(startX: number, startY: number, addMoveListener: (fn: (x: number, y: number) => void) => void, addUpListener: (fn: () => void) => void): void {
     let dragged = false;
     const startHeight = collapsed ? lastOpenHeight : getVar('--query-h', lastOpenHeight);
 
-    function onMove(e: MouseEvent): void {
-      const delta = startY - e.clientY;
+    addMoveListener((x, y) => {
+      const delta = startY - y;
       if (!dragged && Math.abs(delta) < DRAG_THRESHOLD) return;
 
       if (!dragged) {
-        // First real drag movement: ensure panel is open
         dragged = true;
         collapsed = false;
       }
@@ -88,30 +85,75 @@ export function initResizers(onResize: () => void, onQueryPanelCollapse?: () => 
       setVar('--query-h', newHeight);
       toggleLabel.textContent = 'Cypher  ▼';
       onResize();
-    }
+    });
 
-    function onUp(): void {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
+    addUpListener(() => {
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
       app.style.pointerEvents = '';
 
       if (!dragged) {
-        // Pure click: toggle
         const wasCollapsed = collapsed;
         collapsed = !collapsed;
         if (!collapsed) lastOpenHeight = lastOpenHeight || QUERY_DEFAULT;
         applyState();
         if (!wasCollapsed && collapsed) onQueryPanelCollapse?.();
       }
-    }
+    });
 
     document.body.style.cursor = 'ns-resize';
     document.body.style.userSelect = 'none';
     app.style.pointerEvents = 'none';
     toggle.style.pointerEvents = 'auto';
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
+  }
+
+  toggle.addEventListener('mousedown', (startEvent) => {
+    startEvent.preventDefault();
+
+    function onMove(e: MouseEvent): void { moveCallback(e.clientX, e.clientY); }
+    function onUp(): void {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      upCallback();
+    }
+
+    let moveCallback: (x: number, y: number) => void = () => { /* noop */ };
+    let upCallback: () => void = () => { /* noop */ };
+
+    handleToggleStart(
+      startEvent.clientX,
+      startEvent.clientY,
+      (fn) => { moveCallback = fn; document.addEventListener('mousemove', onMove); },
+      (fn) => { upCallback = fn; document.addEventListener('mouseup', onUp); },
+    );
   });
+
+  toggle.addEventListener('touchstart', (startEvent) => {
+    if (startEvent.touches.length !== 1) return;
+    const touch = startEvent.touches[0];
+    if (!touch) return;
+
+    function onMove(e: TouchEvent): void {
+      if (e.touches.length !== 1) return;
+      e.preventDefault();
+      const t = e.touches[0];
+      if (!t) return;
+      moveCallback(t.clientX, t.clientY);
+    }
+    function onUp(): void {
+      toggle.removeEventListener('touchmove', onMove);
+      toggle.removeEventListener('touchend', onUp);
+      upCallback();
+    }
+
+    let moveCallback: (x: number, y: number) => void = () => { /* noop */ };
+    let upCallback: () => void = () => { /* noop */ };
+
+    handleToggleStart(
+      touch.clientX,
+      touch.clientY,
+      (fn) => { moveCallback = fn; toggle.addEventListener('touchmove', onMove, { passive: false }); },
+      (fn) => { upCallback = fn; toggle.addEventListener('touchend', onUp); },
+    );
+  }, { passive: true });
 }

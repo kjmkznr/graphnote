@@ -76,6 +76,9 @@ export class App {
   private elRedoBtn = byId<HTMLButtonElement>('redo-btn');
 
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
+  private elSidebarToggleBtn = byId('sidebar-toggle-btn');
+  private elSidebarOverlay = byId('sidebar-overlay');
+  private elSidebar = byId('sidebar');
 
   async init(): Promise<void> {
     this.db = new GraphDB();
@@ -124,6 +127,7 @@ export class App {
     this.setupToolbarButtons();
     this.setupTabButtons();
     this.setupUndoRedo();
+    this.setupMobileSidebar();
 
     initResizers(
         () => this.canvas.resize(),
@@ -211,12 +215,18 @@ export class App {
 
   private handleNodeClicked(gnId: GnId): void {
     const node = this.db.getNodeByGnId(gnId);
-    if (node) this.sidebar.showNode(node);
+    if (node) {
+      this.sidebar.showNode(node);
+      if (this.isMobile()) this.openMobileSidebar();
+    }
   }
 
   private handleEdgeClicked(gnId: GnId): void {
     const edge = this.db.getEdgeByGnId(gnId);
-    if (edge) this.sidebar.showEdge(edge);
+    if (edge) {
+      this.sidebar.showEdge(edge);
+      if (this.isMobile()) this.openMobileSidebar();
+    }
   }
 
   private handleEdgeCreated(sourceGnId: GnId, targetGnId: GnId): void {
@@ -563,6 +573,38 @@ export class App {
         e.preventDefault();
         this.performRedo();
       }
+    });
+  }
+
+  // ── Mobile sidebar ──────────────────────────────────────────────────────────
+
+  private isMobile(): boolean {
+    return window.matchMedia('(max-width: 768px)').matches;
+  }
+
+  private openMobileSidebar(): void {
+    this.elSidebar.classList.add('mobile-open');
+    this.elSidebarOverlay.classList.add('active');
+    this.elSidebarToggleBtn.classList.add('active');
+  }
+
+  private closeMobileSidebar(): void {
+    this.elSidebar.classList.remove('mobile-open');
+    this.elSidebarOverlay.classList.remove('active');
+    this.elSidebarToggleBtn.classList.remove('active');
+  }
+
+  private setupMobileSidebar(): void {
+    this.elSidebarToggleBtn.addEventListener('click', () => {
+      if (this.elSidebar.classList.contains('mobile-open')) {
+        this.closeMobileSidebar();
+      } else {
+        this.openMobileSidebar();
+      }
+    });
+
+    this.elSidebarOverlay.addEventListener('click', () => {
+      this.closeMobileSidebar();
     });
   }
 
