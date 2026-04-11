@@ -3,7 +3,8 @@ import { asGnId } from '../types.js';
 import type { GnId, RawNode, RawEdge, CanvasEvent, InteractionMode } from '../types.js';
 import { GraphRenderer } from './graphRenderer.js';
 import type { PositionMap } from './graphRenderer.js';
-import { CYTOSCAPE_STYLES } from './cytoscapeStyles.js';
+import { CYTOSCAPE_STYLES, buildEdgeTypeStyles } from './cytoscapeStyles.js';
+import type { EdgeTypeRegistry } from '../graph/edgeTypeRegistry.js';
 import { Minimap } from './minimap.js';
 
 export type { PositionMap };
@@ -107,6 +108,11 @@ export class Canvas {
   }
 
   deselectAll(): void { this.cy.elements().unselect(); }
+
+  updateEdgeStyles(edgeRegistry: EdgeTypeRegistry): void {
+    const edgeTypeStyles = buildEdgeTypeStyles(edgeRegistry);
+    this.cy.style([...CYTOSCAPE_STYLES, ...edgeTypeStyles]);
+  }
 
   // ── Event binding ───────────────────────────────────────────────────────────
 

@@ -653,6 +653,41 @@ tr:hover td { background: rgba(108,142,247,0.05); }
 .dialog-btn-secondary { background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); }
 
 #type-manager-dialog { width: 360px; }
+#edge-type-style-dialog { width: 480px; }
+
+.ets-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.ets-item:last-child { border-bottom: none; }
+
+.ets-color-input {
+  width: 36px;
+  height: 28px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface2);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ets-line-select {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: var(--font-mono), monospace;
+  outline: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.ets-line-select:focus { border-color: var(--accent); }
 
 .tm-list-wrap { max-height: 260px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; }
 

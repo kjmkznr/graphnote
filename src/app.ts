@@ -13,6 +13,7 @@ import { initResizers } from './ui/resizer.js';
 import { showCreateNodeDialog } from './ui/createNodeDialog.js';
 import { showTypeManagerDialog } from './ui/typeManagerDialog.js';
 import { showCreateEdgeDialog } from './ui/createEdgeDialog.js';
+import { showEdgeTypeStyleDialog } from './ui/edgeTypeStyleDialog.js';
 import { showToast } from './ui/toast.js';
 import type { GnId, CanvasEvent, InteractionMode, TabKind, QueryResultCell, SnapshotCell } from './types.js';
 import { el, clearChildren, afterNextPaint, byId } from './ui/domUtils.js';
@@ -129,6 +130,7 @@ export class App {
 
     afterNextPaint(() => {
       this.canvas.resize();
+      this.canvas.updateEdgeStyles(this.edgeRegistry);
       this.canvas.refreshGraph(this.db.getAllNodes(), this.db.getAllEdges(), savedPositions);
       if (savedViewport) {
         this.canvas.setViewport(savedViewport.pan, savedViewport.zoom);
@@ -392,6 +394,12 @@ export class App {
       showTypeManagerDialog(this.registry);
     });
 
+    byId('edge-types-btn')?.addEventListener('click', () => {
+      showEdgeTypeStyleDialog(this.edgeRegistry).then(() => {
+        this.canvas.updateEdgeStyles(this.edgeRegistry);
+      });
+    });
+
     byId('reset-btn')?.addEventListener('click', () => {
       if (!window.confirm('グラフをリセットしますか？')) return;
       this.captureForUndo();
@@ -566,6 +574,7 @@ export class App {
 
   private refreshAndSave(): void {
     try {
+      this.canvas.updateEdgeStyles(this.edgeRegistry);
       this.canvas.refreshGraph(this.db.getAllNodes(), this.db.getAllEdges());
       this.scheduleSave();
     } catch (err) {

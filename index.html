@@ -36,7 +36,8 @@
         <span class="stat">Nodes: <span class="stat-value" id="node-count">0</span></span>
         <span class="stat">Edges: <span class="stat-value" id="edge-count">0</span></span>
       </div>
-      <button class="header-btn" id="types-btn">Types</button>
+      <button class="header-btn" id="types-btn">Node Types</button>
+      <button class="header-btn" id="edge-types-btn">Edge Types</button>
       <div class="dropdown">
         <button class="header-btn" id="export-btn">Export</button>
         <div class="dropdown-content">
@@ -171,6 +172,21 @@
       </div>
       <div class="dialog-actions">
         <button id="tm-close-btn" class="dialog-btn dialog-btn-secondary">Close</button>
+      </div>
+    </div>
+
+    <!-- Edge Type Style Dialog -->
+    <div id="edge-type-style-dialog" class="dialog-box" style="display:none">
+      <div class="dialog-title">Edge Types を管理</div>
+      <div class="tm-list-wrap">
+        <div id="ets-list"></div>
+      </div>
+      <div class="tm-add-row">
+        <input id="ets-new-input" class="dialog-input" placeholder="新しいタイプ名" />
+        <button id="ets-add-btn" class="dialog-btn dialog-btn-primary">Add</button>
+      </div>
+      <div class="dialog-actions">
+        <button id="ets-close-btn" class="dialog-btn dialog-btn-secondary">Close</button>
       </div>
     </div>
 

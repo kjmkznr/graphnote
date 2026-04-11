@@ -1,4 +1,20 @@
 import type cytoscape from 'cytoscape';
+import type { EdgeTypeRegistry } from '../graph/edgeTypeRegistry.js';
+
+export function buildEdgeTypeStyles(edgeRegistry: EdgeTypeRegistry): cytoscape.StylesheetStyle[] {
+  return edgeRegistry.getAll().map((type) => {
+    const style = edgeRegistry.getStyle(type);
+    const lineStyle = style.lineStyle === 'dotted' ? 'dotted' : style.lineStyle === 'dashed' ? 'dashed' : 'solid';
+    return {
+      selector: `edge[label="${CSS.escape(type)}"]`,
+      style: {
+        'line-color': style.color,
+        'target-arrow-color': style.color,
+        'line-style': lineStyle,
+      },
+    } as cytoscape.StylesheetStyle;
+  });
+}
 
 export const CYTOSCAPE_STYLES: cytoscape.StylesheetStyle[] = [
   {
