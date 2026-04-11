@@ -480,6 +480,20 @@ kbd {
 .run-btn:hover { opacity: 0.85; }
 .run-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+#save-to-scrapbook-btn {
+  padding: 5px 14px;
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+#save-to-scrapbook-btn:hover { opacity: 0.85; }
+#save-to-scrapbook-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
 #query-body { flex: 1; display: flex; overflow: hidden; }
 
 #query-input {

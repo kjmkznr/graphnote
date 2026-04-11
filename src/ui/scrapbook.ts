@@ -1,7 +1,6 @@
 import cytoscape from 'cytoscape';
 import type { ScrapbookCell, MarkdownCell, QueryResultCell, SnapshotCell, RawNode, RawEdge } from '../types.js';
 import type { ScrapbookStore } from '../notebook/scrapbookStore.js';
-import type { GraphDB } from '../graph/db.js';
 import { el } from './domUtils.js';
 import { marked } from 'marked';
 import { CYTOSCAPE_STYLES } from './cytoscapeStyles.js';
@@ -9,12 +8,10 @@ import { CYTOSCAPE_STYLES } from './cytoscapeStyles.js';
 export class Scrapbook {
   private container: HTMLElement;
   private store: ScrapbookStore;
-  private db: GraphDB | null = null;
   private cellListEl!: HTMLElement;
-  constructor(container: HTMLElement, store: ScrapbookStore, db?: GraphDB) {
+  constructor(container: HTMLElement, store: ScrapbookStore) {
     this.container = container;
     this.store = store;
-    this.db = db ?? null;
     this.render();
     this.store.onChange(() => this.renderCells());
   }
@@ -151,40 +148,6 @@ export class Scrapbook {
     return wrap;
   }
 
-  private fetchEdgesBetweenNodes(nodes: RawNode[]): RawEdge[] {
-    if (!this.db || nodes.length === 0) return [];
-    // gnId → 保存されたノードの _id マッピング（_id はセッションごとにリセットされるため）
-    const gnIdToSavedId = new Map<string, string>();
-    for (const node of nodes) {
-      const gnId = node._properties['gnId'];
-      if (typeof gnId === 'string') {
-        gnIdToSavedId.set(gnId, node._id);
-      }
-    }
-    const gnIds = Array.from(gnIdToSavedId.keys());
-    if (gnIds.length === 0) return [];
-    const list = gnIds.map(id => `"${id}"`).join(', ');
-    try {
-      // DBから現在の _id を持つエッジを取得し、src/dst を保存ノードの _id に変換する
-      const rows = this.db.execute<{ a: RawNode; r: RawEdge; b: RawNode }>(
-        `MATCH (a)-[r]->(b) WHERE a.gnId IN [${list}] AND b.gnId IN [${list}] RETURN a, r, b`
-      );
-      return rows.map(row => {
-        const srcGnId = row.a._properties['gnId'];
-        const dstGnId = row.b._properties['gnId'];
-        const savedSrcId = typeof srcGnId === 'string' ? gnIdToSavedId.get(srcGnId) : undefined;
-        const savedDstId = typeof dstGnId === 'string' ? gnIdToSavedId.get(dstGnId) : undefined;
-        return {
-          ...row.r,
-          _src: savedSrcId ?? row.r._src,
-          _dst: savedDstId ?? row.r._dst,
-        };
-      });
-    } catch {
-      return [];
-    }
-  }
-
   private extractGraphElements(rows: Record<string, unknown>[]): { nodes: RawNode[]; edges: RawEdge[] } {
     const nodeMap = new Map<string, RawNode>();
     const edgeMap = new Map<string, RawEdge>();
@@ -212,12 +175,7 @@ export class Scrapbook {
     }
     const nodes = Array.from(nodeMap.values());
     const edges = Array.from(edgeMap.values());
-    // rowsにエッジが含まれない場合（return n,t のみ）、DBから補完する
-    if (edges.length === 0 && nodes.length > 0) {
-      const fetched = this.fetchEdgesBetweenNodes(nodes);
-      fetched.forEach(e => edgeMap.set(e._id, e));
-    }
-    return { nodes, edges: Array.from(edgeMap.values()) };
+    return { nodes, edges };
   }
 
   private buildGraphSection(nodes: RawNode[], edges: RawEdge[]): HTMLElement {

@@ -13,7 +13,6 @@ export class QueryPanel {
   private elInput = byId<HTMLTextAreaElement>('query-input');
   private elRunBtn = byId<HTMLButtonElement>('run-btn');
   private elResults = byId('query-results');
-
   private onExecuteCb: ((query: string) => void) | null = null;
 
   constructor() {

@@ -90,7 +90,7 @@ export class App {
 
     this.scrapbookStore = new ScrapbookStore();
     this.scrapbookStore.load();
-    this.scrapbook = new Scrapbook(this.elTabScrapbook, this.scrapbookStore, this.db);
+    this.scrapbook = new Scrapbook(this.elTabScrapbook, this.scrapbookStore);
 
     this.setupModeControls();
     this.setupToolbarButtons();
@@ -310,7 +310,7 @@ export class App {
           kind: 'query-result',
           createdAt: Date.now(),
           query,
-          rows: rows as Record<string, unknown>[],
+          rows: this.enrichRowsWithEdges(rows as Record<string, unknown>[]),
           elapsedMs: elapsed,
         };
         this.scrapbookStore.addCell(cell);
@@ -382,6 +382,48 @@ export class App {
         showToast('インポートしました', 'success');
       });
     });
+  }
+
+  // ── Query helpers ─────────────────────────────────────────────────────────────
+
+  /**
+   * rowsにエッジが含まれない場合、rowsに含まれるノード間のエッジをDBから取得して補完する。
+   * これにより保存後のScrapbookでもエッジが表示される。
+   */
+  private enrichRowsWithEdges(rows: Record<string, unknown>[]): Record<string, unknown>[] {
+    const hasEdge = rows.some(row =>
+      Object.values(row).some(val => {
+        if (val === null || typeof val !== 'object' || Array.isArray(val)) return false;
+        const obj = val as Record<string, unknown>;
+        return typeof obj['_type'] === 'string' && typeof obj['_src'] === 'string' && typeof obj['_dst'] === 'string';
+      })
+    );
+    if (hasEdge) return rows;
+
+    // ノードのgnIdを収集
+    const gnIds: string[] = [];
+    for (const row of rows) {
+      for (const val of Object.values(row)) {
+        if (val === null || typeof val !== 'object' || Array.isArray(val)) continue;
+        const obj = val as Record<string, unknown>;
+        if (Array.isArray(obj['_labels']) && typeof obj['_properties'] === 'object' && obj['_properties'] !== null) {
+          const props = obj['_properties'] as Record<string, unknown>;
+          if (typeof props['gnId'] === 'string') gnIds.push(props['gnId']);
+        }
+      }
+    }
+    if (gnIds.length === 0) return rows;
+
+    try {
+      const list = gnIds.map(id => `"${id}"`).join(', ');
+      const edgeRows = this.db.execute<Record<string, unknown>>(
+        `MATCH (a)-[r]->(b) WHERE a.gnId IN [${list}] AND b.gnId IN [${list}] RETURN r`
+      );
+      if (edgeRows.length === 0) return rows;
+      return [...rows, ...edgeRows];
+    } catch {
+      return rows;
+    }
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────────
