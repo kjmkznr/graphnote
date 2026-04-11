@@ -1,9 +1,32 @@
 const STORAGE_KEY = 'graphnote:types';
+const STYLE_STORAGE_KEY = 'graphnote:node-type-styles';
 
 const DEFAULT_TYPES = ['Company', 'Person', 'System', 'Service', 'Concept', 'Note'];
 
+export type NodeShape = 'ellipse' | 'rectangle' | 'round-rectangle' | 'diamond' | 'triangle' | 'hexagon' | 'star';
+
+export interface NodeTypeStyle {
+  color: string;
+  shape: NodeShape;
+}
+
+const DEFAULT_COLORS = [
+  '#6c8ef7', '#a78bfa', '#34d399', '#f87171',
+  '#fbbf24', '#38bdf8', '#fb923c', '#e879f9',
+];
+
+const DEFAULT_SHAPES: NodeShape[] = ['ellipse', 'rectangle', 'diamond', 'round-rectangle', 'hexagon', 'triangle'];
+
+function defaultStyleForIndex(index: number): NodeTypeStyle {
+  return {
+    color: DEFAULT_COLORS[index % DEFAULT_COLORS.length] ?? '#6c8ef7',
+    shape: DEFAULT_SHAPES[index % DEFAULT_SHAPES.length] ?? 'ellipse',
+  };
+}
+
 export class TypeRegistry {
   private types: string[];
+  private styles: Map<string, NodeTypeStyle>;
 
   constructor() {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -12,11 +35,45 @@ export class TypeRegistry {
         const parsed = JSON.parse(raw) as unknown;
         if (Array.isArray(parsed) && parsed.every((v) => typeof v === 'string')) {
           this.types = parsed as string[];
-          return;
+        } else {
+          this.types = [...DEFAULT_TYPES];
+        }
+      } catch {
+        this.types = [...DEFAULT_TYPES];
+      }
+    } else {
+      this.types = [...DEFAULT_TYPES];
+    }
+
+    this.styles = new Map();
+    const rawStyles = localStorage.getItem(STYLE_STORAGE_KEY);
+    if (rawStyles) {
+      try {
+        const parsed = JSON.parse(rawStyles) as unknown;
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+            if (
+              v && typeof v === 'object' && !Array.isArray(v) &&
+              typeof (v as Record<string, unknown>)['color'] === 'string' &&
+              typeof (v as Record<string, unknown>)['shape'] === 'string'
+            ) {
+              this.styles.set(k, {
+                color: (v as Record<string, unknown>)['color'] as string,
+                shape: (v as Record<string, unknown>)['shape'] as NodeShape,
+              });
+            }
+          }
         }
       } catch { /* fall through */ }
     }
-    this.types = [...DEFAULT_TYPES];
+
+    // Assign default styles for types that don't have one
+    this.types.forEach((t, i) => {
+      if (!this.styles.has(t)) {
+        this.styles.set(t, defaultStyleForIndex(i));
+      }
+    });
+
     this.save();
   }
 
@@ -24,15 +81,29 @@ export class TypeRegistry {
     return [...this.types];
   }
 
+  getStyle(type: string): NodeTypeStyle {
+    return this.styles.get(type) ?? { color: '#6c8ef7', shape: 'ellipse' };
+  }
+
+  setStyle(type: string, style: NodeTypeStyle): void {
+    this.styles.set(type, style);
+    this.saveStyles();
+  }
+
   add(type: string): void {
     const t = type.trim();
     if (!t || this.types.includes(t)) return;
+    const index = this.types.length;
     this.types.push(t);
+    if (!this.styles.has(t)) {
+      this.styles.set(t, defaultStyleForIndex(index));
+    }
     this.save();
   }
 
   remove(type: string): void {
     this.types = this.types.filter((t) => t !== type);
+    this.styles.delete(type);
     this.save();
   }
 
@@ -42,6 +113,11 @@ export class TypeRegistry {
     const idx = this.types.indexOf(oldType);
     if (idx === -1) return;
     this.types[idx] = t;
+    const oldStyle = this.styles.get(oldType);
+    if (oldStyle) {
+      this.styles.set(t, oldStyle);
+      this.styles.delete(oldType);
+    }
     this.save();
   }
 
@@ -52,5 +128,14 @@ export class TypeRegistry {
 
   private save(): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(this.types));
+    this.saveStyles();
+  }
+
+  private saveStyles(): void {
+    const obj: Record<string, NodeTypeStyle> = {};
+    for (const [k, v] of this.styles.entries()) {
+      obj[k] = v;
+    }
+    localStorage.setItem(STYLE_STORAGE_KEY, JSON.stringify(obj));
   }
 }

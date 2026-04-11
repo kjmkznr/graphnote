@@ -11,9 +11,9 @@ import { Scrapbook } from './ui/scrapbook.js';
 import { ScrapbookStore } from './notebook/scrapbookStore.js';
 import { initResizers } from './ui/resizer.js';
 import { showCreateNodeDialog } from './ui/createNodeDialog.js';
-import { showTypeManagerDialog } from './ui/typeManagerDialog.js';
 import { showCreateEdgeDialog } from './ui/createEdgeDialog.js';
 import { showEdgeTypeStyleDialog } from './ui/edgeTypeStyleDialog.js';
+import { showNodeTypeStyleDialog } from './ui/nodeTypeStyleDialog.js';
 import { showToast } from './ui/toast.js';
 import type { GnId, CanvasEvent, InteractionMode, TabKind, QueryResultCell, SnapshotCell } from './types.js';
 import { el, clearChildren, afterNextPaint, byId } from './ui/domUtils.js';
@@ -130,7 +130,7 @@ export class App {
 
     afterNextPaint(() => {
       this.canvas.resize();
-      this.canvas.updateEdgeStyles(this.edgeRegistry);
+      this.canvas.initRegistries(this.registry, this.edgeRegistry);
       this.canvas.refreshGraph(this.db.getAllNodes(), this.db.getAllEdges(), savedPositions);
       if (savedViewport) {
         this.canvas.setViewport(savedViewport.pan, savedViewport.zoom);
@@ -391,7 +391,10 @@ export class App {
     byId('fit-btn')?.addEventListener('click', () => this.canvas.fitView());
 
     byId('types-btn')?.addEventListener('click', () => {
-      showTypeManagerDialog(this.registry);
+      showNodeTypeStyleDialog(this.registry).then(() => {
+        this.canvas.updateNodeStyles(this.registry);
+        this.canvas.refreshGraph(this.db.getAllNodes(), this.db.getAllEdges());
+      });
     });
 
     byId('edge-types-btn')?.addEventListener('click', () => {

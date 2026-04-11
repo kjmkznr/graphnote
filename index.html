@@ -81,14 +81,14 @@
             <div class="section-label">Properties</div>
             <div id="properties-list"></div>
             <div class="add-prop-row">
-              <input class="add-prop-key" id="new-prop-key" placeholder="key" />
-              <input class="add-prop-val" id="new-prop-val" placeholder="value" />
+              <input class="add-prop-key" id="new-prop-key" placeholder="key" aria-label="プロパティキー" />
+              <input class="add-prop-val" id="new-prop-val" placeholder="value" aria-label="プロパティ値" />
               <button class="add-prop-btn" id="add-prop-btn">Add</button>
             </div>
           </div>
           <div id="note-section">
             <div class="section-label">Note</div>
-            <textarea id="note-textarea" placeholder="Markdown で自由にメモできます…"></textarea>
+            <textarea id="note-textarea" placeholder="Markdown で自由にメモできます…" aria-label="ノート"></textarea>
           </div>
         </div>
       </div>
@@ -105,7 +105,7 @@
         </button>
       </div>
       <div id="query-body">
-        <textarea id="query-input" spellcheck="false" placeholder="MATCH (n) RETURN n LIMIT 10"></textarea>
+        <textarea id="query-input" spellcheck="false" placeholder="MATCH (n) RETURN n LIMIT 10" aria-label="Cypherクエリ"></textarea>
         <div id="query-results">
           <span style="color: var(--text-muted); font-size: 12px;">クエリを実行すると結果が表示されます</span>
         </div>
@@ -127,7 +127,7 @@
   <div id="dialog-overlay">
 
     <!-- Create Node Dialog -->
-    <div id="create-node-dialog" class="dialog-box">
+    <div id="create-node-dialog" class="dialog-box" style="display:none">
       <div class="dialog-title">ノードを作成</div>
       <div class="dialog-field">
         <label class="dialog-label" for="cnd-type">Type (種類)</label>
@@ -151,7 +151,7 @@
         <select id="ced-type" class="dialog-input"></select>
       </div>
       <div class="tm-add-row">
-        <input id="ced-new-type" class="dialog-input" placeholder="新しいタイプ名" />
+        <input id="ced-new-type" class="dialog-input" placeholder="新しいタイプ名" aria-label="新しいエッジタイプ名" />
         <button id="ced-add-type-btn" class="dialog-btn dialog-btn-primary">Add</button>
       </div>
       <div class="dialog-actions">
@@ -167,11 +167,26 @@
         <div id="tm-list"></div>
       </div>
       <div class="tm-add-row">
-        <input id="tm-new-input" class="dialog-input" placeholder="新しいタイプ名" />
+        <input id="tm-new-input" class="dialog-input" placeholder="新しいタイプ名" aria-label="新しいノードタイプ名" />
         <button id="tm-add-btn" class="dialog-btn dialog-btn-primary">Add</button>
       </div>
       <div class="dialog-actions">
         <button id="tm-close-btn" class="dialog-btn dialog-btn-secondary">Close</button>
+      </div>
+    </div>
+
+    <!-- Node Type Style Dialog -->
+    <div id="node-type-style-dialog" class="dialog-box" style="display:none">
+      <div class="dialog-title">Node Types を管理</div>
+      <div class="tm-list-wrap">
+        <div id="nts-list"></div>
+      </div>
+      <div class="tm-add-row">
+        <input id="nts-new-input" class="dialog-input" placeholder="新しいタイプ名" aria-label="新しいノードタイプ名" />
+        <button id="nts-add-btn" class="dialog-btn dialog-btn-primary">Add</button>
+      </div>
+      <div class="dialog-actions">
+        <button id="nts-close-btn" class="dialog-btn dialog-btn-secondary">Close</button>
       </div>
     </div>
 
@@ -182,7 +197,7 @@
         <div id="ets-list"></div>
       </div>
       <div class="tm-add-row">
-        <input id="ets-new-input" class="dialog-input" placeholder="新しいタイプ名" />
+        <input id="ets-new-input" class="dialog-input" placeholder="新しいタイプ名" aria-label="新しいエッジタイプ名" />
         <button id="ets-add-btn" class="dialog-btn dialog-btn-primary">Add</button>
       </div>
       <div class="dialog-actions">

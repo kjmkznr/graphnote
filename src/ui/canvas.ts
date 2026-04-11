@@ -3,8 +3,9 @@ import { asGnId } from '../types.js';
 import type { GnId, RawNode, RawEdge, CanvasEvent, InteractionMode } from '../types.js';
 import { GraphRenderer } from './graphRenderer.js';
 import type { PositionMap } from './graphRenderer.js';
-import { CYTOSCAPE_STYLES, buildEdgeTypeStyles } from './cytoscapeStyles.js';
+import { CYTOSCAPE_STYLES, buildEdgeTypeStyles, buildNodeTypeStyles } from './cytoscapeStyles.js';
 import type { EdgeTypeRegistry } from '../graph/edgeTypeRegistry.js';
+import type { TypeRegistry } from '../graph/typeRegistry.js';
 import { Minimap } from './minimap.js';
 
 export type { PositionMap };
@@ -27,6 +28,9 @@ export class Canvas {
   // Timer for delayed edge-handle removal (prevents flicker on node→handle transitions)
   private edgeHandleTimer: ReturnType<typeof setTimeout> | null = null;
 
+  private nodeRegistry: TypeRegistry | null = null;
+  private edgeRegistryRef: EdgeTypeRegistry | null = null;
+
   constructor(container: HTMLElement, private onEvent: (e: CanvasEvent) => void) {
     this.cy = cytoscape({
       container,
@@ -38,7 +42,7 @@ export class Canvas {
       boxSelectionEnabled: false,
     });
 
-    this.renderer = new GraphRenderer(this.cy);
+    this.renderer = new GraphRenderer(this.cy, this.nodeRegistry!);
     this.minimap = new Minimap(container.parentElement!, this.cy);
     this.bindEvents();
   }
@@ -109,9 +113,28 @@ export class Canvas {
 
   deselectAll(): void { this.cy.elements().unselect(); }
 
+  initRegistries(nodeRegistry: TypeRegistry, edgeRegistry: EdgeTypeRegistry): void {
+    this.nodeRegistry = nodeRegistry;
+    this.edgeRegistryRef = edgeRegistry;
+    this.renderer = new GraphRenderer(this.cy, nodeRegistry);
+    this.applyStyles();
+  }
+
   updateEdgeStyles(edgeRegistry: EdgeTypeRegistry): void {
-    const edgeTypeStyles = buildEdgeTypeStyles(edgeRegistry);
-    this.cy.style([...CYTOSCAPE_STYLES, ...edgeTypeStyles]);
+    this.edgeRegistryRef = edgeRegistry;
+    this.applyStyles();
+  }
+
+  updateNodeStyles(nodeRegistry: TypeRegistry): void {
+    this.nodeRegistry = nodeRegistry;
+    this.renderer = new GraphRenderer(this.cy, nodeRegistry);
+    this.applyStyles();
+  }
+
+  private applyStyles(): void {
+    const edgeTypeStyles = this.edgeRegistryRef ? buildEdgeTypeStyles(this.edgeRegistryRef) : [];
+    const nodeTypeStyles = this.nodeRegistry ? buildNodeTypeStyles(this.nodeRegistry) : [];
+    this.cy.style([...CYTOSCAPE_STYLES, ...nodeTypeStyles, ...edgeTypeStyles]);
   }
 
   // ── Event binding ───────────────────────────────────────────────────────────

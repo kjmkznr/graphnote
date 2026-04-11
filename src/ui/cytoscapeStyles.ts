@@ -1,5 +1,6 @@
 import type cytoscape from 'cytoscape';
 import type { EdgeTypeRegistry } from '../graph/edgeTypeRegistry.js';
+import type { TypeRegistry } from '../graph/typeRegistry.js';
 
 export function buildEdgeTypeStyles(edgeRegistry: EdgeTypeRegistry): cytoscape.StylesheetStyle[] {
   return edgeRegistry.getAll().map((type) => {
@@ -11,6 +12,20 @@ export function buildEdgeTypeStyles(edgeRegistry: EdgeTypeRegistry): cytoscape.S
         'line-color': style.color,
         'target-arrow-color': style.color,
         'line-style': lineStyle,
+      },
+    } as cytoscape.StylesheetStyle;
+  });
+}
+
+export function buildNodeTypeStyles(registry: TypeRegistry): cytoscape.StylesheetStyle[] {
+  return registry.getAll().map((type) => {
+    const style = registry.getStyle(type);
+    return {
+      selector: `node[nodeLabel="${CSS.escape(type)}"]`,
+      style: {
+        'background-color': style.color,
+        'border-color': style.color,
+        'shape': style.shape,
       },
     } as cytoscape.StylesheetStyle;
   });

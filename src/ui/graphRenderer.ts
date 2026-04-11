@@ -1,6 +1,7 @@
 import cytoscape from 'cytoscape';
 import { asGnId } from '../types.js';
 import type { GnId, RawNode, RawEdge } from '../types.js';
+import type { TypeRegistry } from '../graph/typeRegistry.js';
 
 // ── Position utilities ────────────────────────────────────────────────────────
 
@@ -32,28 +33,13 @@ function findFreePosition(occupied: Array<{ x: number; y: number }>): { x: numbe
 
 // ── Node display helpers ──────────────────────────────────────────────────────
 
-const PALETTE = [
-  '#6c8ef7', '#a78bfa', '#34d399', '#f87171',
-  '#fbbf24', '#38bdf8', '#fb923c', '#e879f9',
-];
-
-const labelColors = new Map<string, string>();
-let paletteIdx = 0;
-
-function colorForLabel(label: string): string {
-  if (!labelColors.has(label)) {
-    labelColors.set(label, PALETTE[paletteIdx % PALETTE.length] ?? '#6c8ef7');
-    paletteIdx++;
-  }
-  return labelColors.get(label)!;
-}
-
-function nodeDisplayData(node: RawNode): { displayLabel: string; color: string } {
+function nodeDisplayData(node: RawNode, registry: TypeRegistry): { displayLabel: string; color: string } {
   const label = node._labels[0] ?? '';
   const name = (node._properties['name'] as string | undefined) ?? (label || (node._properties['gnId'] as string).slice(0, 8));
+  const style = registry.getStyle(label);
   return {
     displayLabel: `${name}\n:${label}`,
-    color: colorForLabel(label),
+    color: style.color,
   };
 }
 
@@ -83,7 +69,7 @@ export class GraphRenderer {
   // Positions pre-assigned for nodes about to be added (e.g. from a click location)
   private positionHints = new Map<GnId, { x: number; y: number }>();
 
-  constructor(private cy: cytoscape.Core) {}
+  constructor(private cy: cytoscape.Core, private registry: TypeRegistry) {}
 
   /** Pre-assign a canvas position for a node that will appear on the next refresh. */
   hintPosition(gnId: GnId, pos: { x: number; y: number }): void {
@@ -166,7 +152,7 @@ export class GraphRenderer {
     for (const node of nodes) {
       const gnId = node._properties['gnId'] as GnId | undefined;
       if (!gnId) continue;
-      const { displayLabel, color } = nodeDisplayData(node);
+      const { displayLabel, color } = nodeDisplayData(node, this.registry);
       const pos = savedPositions[gnId] ?? this.positionHints.get(gnId);
       if (!pos) newNodeGnIds.push(gnId);
       elements.push({
@@ -217,7 +203,7 @@ export class GraphRenderer {
         n.remove();
       } else {
         const rawNode = desiredNodes.get(gnId)!;
-        const { displayLabel, color } = nodeDisplayData(rawNode);
+        const { displayLabel, color } = nodeDisplayData(rawNode, this.registry);
         n.data({ displayLabel, nodeLabel: rawNode._labels[0] ?? '', color, borderColor: color });
       }
     });
@@ -226,7 +212,7 @@ export class GraphRenderer {
     const newNodeElements: cytoscape.ElementDefinition[] = [];
     for (const [gnId, rawNode] of desiredNodes) {
       if (existingNodeIds.has(gnId)) continue;
-      const { displayLabel, color } = nodeDisplayData(rawNode);
+      const { displayLabel, color } = nodeDisplayData(rawNode, this.registry);
       const pos = this.positionHints.get(gnId);
       if (!pos) newNodeGnIds.push(gnId);
       newNodeElements.push({

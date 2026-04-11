@@ -24,10 +24,12 @@ export function showCreateNodeDialog(registry: TypeRegistry): Promise<CreateNode
     nameInput.value = '';
 
     overlay.style.display = 'flex';
+    dialog.style.display = 'flex';
     nameInput.focus();
 
     function close(result: CreateNodeResult | null): void {
       overlay.style.display = 'none';
+      dialog.style.display = 'none';
       confirmBtn.removeEventListener('click', onConfirm);
       cancelBtn.removeEventListener('click', onCancel);
       overlay.removeEventListener('click', onOverlayClick);

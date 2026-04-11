@@ -25,7 +25,7 @@ export function showCreateEdgeDialog(registry: EdgeTypeRegistry): Promise<string
     populateSelect();
     newTypeInput.value = '';
     createNodeDialog.style.display = 'none';
-    dialog.style.display = '';
+    dialog.style.display = 'flex';
     overlay.style.display = 'flex';
     typeSelect.focus();
 

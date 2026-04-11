@@ -653,6 +653,7 @@ tr:hover td { background: rgba(108,142,247,0.05); }
 .dialog-btn-secondary { background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); }
 
 #type-manager-dialog { width: 360px; }
+#node-type-style-dialog { width: 520px; }
 #edge-type-style-dialog { width: 480px; }
 
 .ets-item {
