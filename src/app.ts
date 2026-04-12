@@ -153,6 +153,9 @@ export class App {
   private elSidebarOverlay = byId('sidebar-overlay');
   private elSidebar = byId('sidebar');
 
+  private activeNodeTypeFilter: string | null = null;
+  private elNodeTypeFilter = byId<HTMLSelectElement>('node-type-filter');
+
   async init(): Promise<void> {
     this.db = new GraphDB();
     await this.db.init();
@@ -201,6 +204,7 @@ export class App {
     this.setupTabButtons();
     this.setupUndoRedo();
     this.setupMobileSidebar();
+    this.setupNodeTypeFilter();
 
     initResizers(
         () => this.canvas.resize(),
@@ -212,7 +216,8 @@ export class App {
     afterNextPaint(() => {
       this.canvas.resize();
       this.canvas.initRegistries(this.registry, this.edgeRegistry);
-      this.canvas.refreshGraph(this.db.getAllNodes(), this.db.getAllEdges(), savedPositions);
+      this.updateNodeTypeFilterOptions();
+      this.canvas.refreshGraph(this.getFilteredNodes(), this.getFilteredEdges(), savedPositions);
       if (savedViewport) {
         this.canvas.setViewport(savedViewport.pan, savedViewport.zoom);
       } else if (this.db.getAllNodes().length > 0) {
@@ -659,7 +664,8 @@ export class App {
     if (!prev) return;
     const positions = UndoManager.restoreSnapshot(this.db, prev);
     this.sidebar.hide();
-    this.canvas.refreshGraph(this.db.getAllNodes(), this.db.getAllEdges(), positions);
+    this.updateNodeTypeFilterOptions();
+    this.canvas.refreshGraph(this.getFilteredNodes(), this.getFilteredEdges(), positions);
     this.scheduleSave();
   }
 
@@ -670,7 +676,8 @@ export class App {
     if (!next) return;
     const positions = UndoManager.restoreSnapshot(this.db, next);
     this.sidebar.hide();
-    this.canvas.refreshGraph(this.db.getAllNodes(), this.db.getAllEdges(), positions);
+    this.updateNodeTypeFilterOptions();
+    this.canvas.refreshGraph(this.getFilteredNodes(), this.getFilteredEdges(), positions);
     this.scheduleSave();
   }
 
@@ -750,10 +757,51 @@ export class App {
     if (ec) ec.textContent = String(this.db.edgeCount());
   }
 
+  private getFilteredNodes(): RawNode[] {
+    const nodes = this.db.getAllNodes();
+    if (!this.activeNodeTypeFilter) return nodes;
+    return nodes.filter((n) => n._labels.includes(this.activeNodeTypeFilter!));
+  }
+
+  private getFilteredEdges(): RawEdge[] {
+    if (!this.activeNodeTypeFilter) return this.db.getAllEdges();
+    const filteredNodes = this.getFilteredNodes();
+    const internalIds = new Set(filteredNodes.map((n) => n._id));
+    return this.db.getAllEdges().filter((e) => internalIds.has(e._src) && internalIds.has(e._dst));
+  }
+
+  private updateNodeTypeFilterOptions(): void {
+    const current = this.elNodeTypeFilter.value;
+    const types = this.registry.getAll().sort();
+    while (this.elNodeTypeFilter.options.length > 1) {
+      this.elNodeTypeFilter.remove(1);
+    }
+    for (const t of types) {
+      const opt = document.createElement('option');
+      opt.value = t;
+      opt.textContent = t;
+      this.elNodeTypeFilter.appendChild(opt);
+    }
+    if (types.includes(current)) {
+      this.elNodeTypeFilter.value = current;
+    } else {
+      this.elNodeTypeFilter.value = '';
+      this.activeNodeTypeFilter = null;
+    }
+  }
+
+  private setupNodeTypeFilter(): void {
+    this.elNodeTypeFilter.addEventListener('change', () => {
+      this.activeNodeTypeFilter = this.elNodeTypeFilter.value || null;
+      this.canvas.refreshGraph(this.getFilteredNodes(), this.getFilteredEdges());
+    });
+  }
+
   private refreshAndSave(): void {
     try {
       this.canvas.updateEdgeStyles(this.edgeRegistry);
-      this.canvas.refreshGraph(this.db.getAllNodes(), this.db.getAllEdges());
+      this.updateNodeTypeFilterOptions();
+      this.canvas.refreshGraph(this.getFilteredNodes(), this.getFilteredEdges());
       this.scheduleSave();
     } catch (err) {
       showToast(`グラフの更新に失敗しました: ${String(err)}`);
