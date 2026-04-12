@@ -61,6 +61,7 @@ export class Canvas {
     this.renderer = new GraphRenderer(this.cy, this.nodeRegistry);
     this.minimap = new Minimap(container.parentElement!, this.cy);
     this.bindEvents();
+    this.applyStyles();
   }
 
   // ── Public API ──────────────────────────────────────────────────────────────
@@ -128,13 +129,6 @@ export class Canvas {
   }
 
   deselectAll(): void { this.cy.elements().unselect(); }
-
-  initRegistries(nodeRegistry: TypeRegistry, edgeRegistry: EdgeTypeRegistry): void {
-    this.nodeRegistry = nodeRegistry;
-    this.edgeRegistryRef = edgeRegistry;
-    this.renderer.setRegistry(nodeRegistry);
-    this.applyStyles();
-  }
 
   updateEdgeStyles(edgeRegistry: EdgeTypeRegistry): void {
     this.edgeRegistryRef = edgeRegistry;

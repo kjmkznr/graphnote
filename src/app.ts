@@ -113,7 +113,6 @@ export class App implements AppContext {
 
     afterNextPaint(() => {
       this.canvas.resize();
-      this.canvas.initRegistries(this.registry, this.edgeRegistry);
       this.nodeTypeFilter.updateOptions();
       this.canvas.refreshGraph(this.getFilteredNodes(), this.getFilteredEdges(), savedPositions);
       if (savedViewport) {
