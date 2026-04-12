@@ -156,6 +156,13 @@ export class Canvas {
   // ── Event binding ───────────────────────────────────────────────────────────
 
   private bindEvents(): void {
+    this.bindTapEvents();
+    this.bindHoverEvents();
+    this.bindEdgeDragEvents();
+    this.bindDeleteKeyEvent();
+  }
+
+  private bindTapEvents(): void {
     const cy = this.cy;
 
     cy.on('tap', 'node:not([ghost])', (e) => {
@@ -196,8 +203,12 @@ export class Canvas {
       const { x, y } = getEventClientPos(e.originalEvent as MouseEvent | TouchEvent);
       this.onEvent({ kind: 'bg-context', x, y });
     });
+  }
 
-    // ── Edge handle hover ────────────────────────────────────────────────────
+  // ── Edge handle hover ──────────────────────────────────────────────────────
+
+  private bindHoverEvents(): void {
+    const cy = this.cy;
 
     cy.on('grab', 'node', (e) => {
       const t = e.target as cytoscape.NodeSingular;
@@ -242,8 +253,12 @@ export class Canvas {
     cy.on('mouseout', 'edge:not([ghost])', () => {
       this.onEvent({ kind: 'element-unhovered' });
     });
+  }
 
-    // ── Edge-creation drag from handle ───────────────────────────────────────
+  // ── Edge-creation drag from handle ────────────────────────────────────────
+
+  private bindEdgeDragEvents(): void {
+    const cy = this.cy;
 
     cy.on('mousedown', 'node[?edgeHandle]', (e) => {
       e.preventDefault();
@@ -283,8 +298,12 @@ export class Canvas {
         this.onEvent({ kind: 'edge-drag-cancelled' });
       }
     });
+  }
 
-    // ── Delete key ───────────────────────────────────────────────────────────
+  // ── Delete key ────────────────────────────────────────────────────────────
+
+  private bindDeleteKeyEvent(): void {
+    const cy = this.cy;
 
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Delete' && e.key !== 'Backspace') return;
