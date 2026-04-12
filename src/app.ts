@@ -21,7 +21,7 @@ import { showCsvImportDialog } from './ui/csvImportDialog.js';
 import { importCsv } from './graph/csvImport.js';
 import { Marked } from 'marked';
 import type { GnId, CanvasEvent, InteractionMode, TabKind, QueryResultCell, SnapshotCell, RawNode, RawEdge } from './types.js';
-import { el, clearChildren, afterNextPaint, byId } from './ui/domUtils.js';
+import { el, clearChildren, afterNextPaint, byId, escHtml } from './ui/domUtils.js';
 import { extractMatchedGnIds, isEdgeValue } from './utils/graphUtils.js';
 
 const syncMarked = new Marked({ async: false });
@@ -35,15 +35,15 @@ function buildNodeTooltipContent(node: RawNode): string {
   const note = (props['note'] as string | undefined) ?? '';
 
   const lines: string[] = [];
-  if (name) lines.push(`<strong>${escapeHtml(name)}</strong>`);
-  if (label) lines.push(`<span class="tooltip-label">:${escapeHtml(label)}</span>`);
+  if (name) lines.push(`<strong>${escHtml(name)}</strong>`);
+  if (label) lines.push(`<span class="tooltip-label">:${escHtml(label)}</span>`);
 
   const skipKeys = new Set(['gnId', 'name', 'note']);
   const propEntries = Object.entries(props).filter(([k]) => !skipKeys.has(k));
   if (propEntries.length > 0) {
     lines.push('<div class="tooltip-props">');
     for (const [k, v] of propEntries) {
-      lines.push(`<div><span class="tooltip-key">${escapeHtml(k)}:</span> ${escapeHtml(String(v ?? ''))}</div>`);
+      lines.push(`<div><span class="tooltip-key">${escHtml(k)}:</span> ${escHtml(String(v ?? ''))}</div>`);
     }
     lines.push('</div>');
   }
@@ -58,14 +58,14 @@ function buildNodeTooltipContent(node: RawNode): string {
 
 function buildEdgeTooltipContent(edge: RawEdge): string {
   const lines: string[] = [];
-  lines.push(`<strong>${escapeHtml(edge._type)}</strong>`);
+  lines.push(`<strong>${escHtml(edge._type)}</strong>`);
 
   const skipKeys = new Set(['gnId']);
   const propEntries = Object.entries(edge._properties).filter(([k]) => !skipKeys.has(k));
   if (propEntries.length > 0) {
     lines.push('<div class="tooltip-props">');
     for (const [k, v] of propEntries) {
-      lines.push(`<div><span class="tooltip-key">${escapeHtml(k)}:</span> ${escapeHtml(String(v ?? ''))}</div>`);
+      lines.push(`<div><span class="tooltip-key">${escHtml(k)}:</span> ${escHtml(String(v ?? ''))}</div>`);
     }
     lines.push('</div>');
   }
@@ -73,9 +73,6 @@ function buildEdgeTooltipContent(edge: RawEdge): string {
   return lines.join('');
 }
 
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
 
 function showTooltip(tooltipEl: HTMLElement, html: string, x: number, y: number): void {
   tooltipEl.innerHTML = html;
