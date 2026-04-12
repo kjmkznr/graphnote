@@ -136,7 +136,7 @@ export class Canvas {
 
   updateNodeStyles(nodeRegistry: TypeRegistry): void {
     this.nodeRegistry = nodeRegistry;
-    this.renderer = new GraphRenderer(this.cy, nodeRegistry);
+    this.renderer.setRegistry(nodeRegistry);
     this.applyStyles();
   }
 

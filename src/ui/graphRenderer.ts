@@ -71,6 +71,11 @@ export class GraphRenderer {
 
   constructor(private cy: cytoscape.Core, private registry: TypeRegistry) {}
 
+  /** Update the node type registry without recreating the renderer (preserves positionHints). */
+  setRegistry(registry: TypeRegistry): void {
+    this.registry = registry;
+  }
+
   /** Pre-assign a canvas position for a node that will appear on the next refresh. */
   hintPosition(gnId: GnId, pos: { x: number; y: number }): void {
     this.positionHints.set(gnId, pos);
