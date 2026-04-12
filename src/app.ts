@@ -134,7 +134,6 @@ export class App implements AppContext {
 
   scheduleSave(): void {
     if (this.saveTimer) clearTimeout(this.saveTimer);
-    refreshCompletionContext(this);
     this.saveTimer = setTimeout(() => {
       saveGraph(this.db, this.canvas.getPositions(), this.canvas.getViewport());
       this.updateStats();
@@ -146,6 +145,7 @@ export class App implements AppContext {
       this.canvas.updateEdgeStyles(this.edgeRegistry);
       this.nodeTypeFilter.updateOptions();
       this.canvas.refreshGraph(this.getFilteredNodes(), this.getFilteredEdges());
+      refreshCompletionContext(this);
       this.scheduleSave();
     } catch (err) {
       showToast(`グラフの更新に失敗しました: ${String(err)}`);
