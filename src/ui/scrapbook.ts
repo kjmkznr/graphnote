@@ -189,76 +189,10 @@ export class Scrapbook {
 
     const header = this.makeCellHeader('Query Result', cell.id);
 
-    // メモボタンをバッジの右側に追加
-    const memoBtn = el('button', { class: 'nb-cell-memo-btn', title: 'メモ' }, '📝');
-    const badge = header.querySelector('.nb-cell-badge');
-    if (badge && badge.nextSibling) {
-      header.insertBefore(memoBtn, badge.nextSibling);
-    } else {
-      header.appendChild(memoBtn);
-    }
+    this.attachMemoButton(header);
     wrap.appendChild(header);
 
-    // メモ（Markdownサポート）
-    const memoWrap = el('div', { class: 'nb-query-memo-wrap nb-hidden' });
-    const memoPreview = el('div', { class: 'nb-query-memo-preview nb-markdown-preview' });
-    const memoTextarea = el('textarea', {
-      class: 'nb-query-memo',
-      placeholder: 'メモを入力… (Markdown)',
-    }) as HTMLTextAreaElement;
-    memoTextarea.value = cell.memo ?? '';
-
-    const updateMemoPreview = (): void => {
-      memoPreview.innerHTML = marked.parse(memoTextarea.value) as string;
-    };
-    updateMemoPreview();
-
-    const showMemoPreview = (): void => {
-      memoTextarea.classList.add('nb-hidden');
-      memoPreview.classList.remove('nb-hidden');
-    };
-    const showMemoEditor = (): void => {
-      memoPreview.classList.add('nb-hidden');
-      memoTextarea.classList.remove('nb-hidden');
-      memoTextarea.focus();
-    };
-
-    if (cell.memo) {
-      memoWrap.classList.remove('nb-hidden');
-      showMemoPreview();
-    } else {
-      memoPreview.classList.add('nb-hidden');
-    }
-
-    memoBtn.addEventListener('click', () => {
-      const hidden = memoWrap.classList.toggle('nb-hidden');
-      if (!hidden) {
-        if (!memoTextarea.value) {
-          showMemoEditor();
-        }
-      }
-    });
-
-    memoTextarea.addEventListener('input', () => {
-      this.store.updateCell(cell.id, { memo: memoTextarea.value }, true);
-      updateMemoPreview();
-    });
-    memoTextarea.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && e.metaKey) {
-        e.preventDefault();
-        if (memoTextarea.value) showMemoPreview();
-      }
-    });
-    memoTextarea.addEventListener('blur', () => {
-      this.store.updateCell(cell.id, { memo: memoTextarea.value });
-      if (memoTextarea.value) showMemoPreview();
-    });
-    memoPreview.addEventListener('click', () => {
-      showMemoEditor();
-    });
-
-    memoWrap.appendChild(memoTextarea);
-    memoWrap.appendChild(memoPreview);
+    const memoWrap = this.makeMemoSection(cell.id, cell.memo);
     wrap.appendChild(memoWrap);
 
     const queryEl = el('pre', { class: 'nb-query-text' }, cell.query);
@@ -697,76 +631,10 @@ export class Scrapbook {
 
     const header = this.makeCellHeader('Snapshot', cell.id);
 
-    // メモボタンをバッジの右側に追加
-    const memoBtn = el('button', { class: 'nb-cell-memo-btn', title: 'メモ' }, '📝');
-    const badge = header.querySelector('.nb-cell-badge');
-    if (badge && badge.nextSibling) {
-      header.insertBefore(memoBtn, badge.nextSibling);
-    } else {
-      header.appendChild(memoBtn);
-    }
+    this.attachMemoButton(header);
     wrap.appendChild(header);
 
-    // メモ（Markdownサポート）
-    const memoWrap = el('div', { class: 'nb-query-memo-wrap nb-hidden' });
-    const memoPreview = el('div', { class: 'nb-query-memo-preview nb-markdown-preview' });
-    const memoTextarea = el('textarea', {
-      class: 'nb-query-memo',
-      placeholder: 'メモを入力… (Markdown)',
-    }) as HTMLTextAreaElement;
-    memoTextarea.value = cell.memo ?? '';
-
-    const updateMemoPreview = (): void => {
-      memoPreview.innerHTML = marked.parse(memoTextarea.value) as string;
-    };
-    updateMemoPreview();
-
-    const showMemoPreview = (): void => {
-      memoTextarea.classList.add('nb-hidden');
-      memoPreview.classList.remove('nb-hidden');
-    };
-    const showMemoEditor = (): void => {
-      memoPreview.classList.add('nb-hidden');
-      memoTextarea.classList.remove('nb-hidden');
-      memoTextarea.focus();
-    };
-
-    if (cell.memo) {
-      memoWrap.classList.remove('nb-hidden');
-      showMemoPreview();
-    } else {
-      memoPreview.classList.add('nb-hidden');
-    }
-
-    memoBtn.addEventListener('click', () => {
-      const hidden = memoWrap.classList.toggle('nb-hidden');
-      if (!hidden) {
-        if (!memoTextarea.value) {
-          showMemoEditor();
-        }
-      }
-    });
-
-    memoTextarea.addEventListener('input', () => {
-      this.store.updateCell(cell.id, { memo: memoTextarea.value }, true);
-      updateMemoPreview();
-    });
-    memoTextarea.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && e.metaKey) {
-        e.preventDefault();
-        if (memoTextarea.value) showMemoPreview();
-      }
-    });
-    memoTextarea.addEventListener('blur', () => {
-      this.store.updateCell(cell.id, { memo: memoTextarea.value });
-      if (memoTextarea.value) showMemoPreview();
-    });
-    memoPreview.addEventListener('click', () => {
-      showMemoEditor();
-    });
-
-    memoWrap.appendChild(memoTextarea);
-    memoWrap.appendChild(memoPreview);
+    const memoWrap = this.makeMemoSection(cell.id, cell.memo);
     wrap.appendChild(memoWrap);
 
     const label = el('div', { class: 'nb-snapshot-label' }, cell.label);
@@ -792,6 +660,86 @@ export class Scrapbook {
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────────
+
+  private attachMemoButton(header: HTMLElement): void {
+    const memoBtn = el('button', { class: 'nb-cell-memo-btn', title: 'メモ' }, '📝');
+    const badge = header.querySelector('.nb-cell-badge');
+    if (badge && badge.nextSibling) {
+      header.insertBefore(memoBtn, badge.nextSibling);
+    } else {
+      header.appendChild(memoBtn);
+    }
+    // memoWrapはDOM挿入後にmakeMemoSectionで生成されるため、クリック時に親から取得する
+    memoBtn.addEventListener('click', () => {
+      const wrap = memoBtn.closest('.nb-cell');
+      const memoWrap = wrap?.querySelector<HTMLElement>('.nb-query-memo-wrap');
+      if (!memoWrap) return;
+      const hidden = memoWrap.classList.toggle('nb-hidden');
+      if (!hidden) {
+        const textarea = memoWrap.querySelector<HTMLTextAreaElement>('.nb-query-memo');
+        if (textarea && !textarea.value) {
+          const preview = memoWrap.querySelector<HTMLElement>('.nb-query-memo-preview');
+          preview?.classList.add('nb-hidden');
+          textarea.classList.remove('nb-hidden');
+          textarea.focus();
+        }
+      }
+    });
+  }
+
+  private makeMemoSection(cellId: string, initialMemo: string | undefined): HTMLElement {
+    const memoWrap = el('div', { class: 'nb-query-memo-wrap nb-hidden' });
+    const memoPreview = el('div', { class: 'nb-query-memo-preview nb-markdown-preview' });
+    const memoTextarea = el('textarea', {
+      class: 'nb-query-memo',
+      placeholder: 'メモを入力… (Markdown)',
+    }) as HTMLTextAreaElement;
+    memoTextarea.value = initialMemo ?? '';
+
+    const updateMemoPreview = (): void => {
+      memoPreview.innerHTML = marked.parse(memoTextarea.value) as string;
+    };
+    updateMemoPreview();
+
+    const showMemoPreview = (): void => {
+      memoTextarea.classList.add('nb-hidden');
+      memoPreview.classList.remove('nb-hidden');
+    };
+    const showMemoEditor = (): void => {
+      memoPreview.classList.add('nb-hidden');
+      memoTextarea.classList.remove('nb-hidden');
+      memoTextarea.focus();
+    };
+
+    if (initialMemo) {
+      memoWrap.classList.remove('nb-hidden');
+      showMemoPreview();
+    } else {
+      memoPreview.classList.add('nb-hidden');
+    }
+
+    memoTextarea.addEventListener('input', () => {
+      this.store.updateCell(cellId, { memo: memoTextarea.value }, true);
+      updateMemoPreview();
+    });
+    memoTextarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.metaKey) {
+        e.preventDefault();
+        if (memoTextarea.value) showMemoPreview();
+      }
+    });
+    memoTextarea.addEventListener('blur', () => {
+      this.store.updateCell(cellId, { memo: memoTextarea.value });
+      if (memoTextarea.value) showMemoPreview();
+    });
+    memoPreview.addEventListener('click', () => {
+      showMemoEditor();
+    });
+
+    memoWrap.appendChild(memoTextarea);
+    memoWrap.appendChild(memoPreview);
+    return memoWrap;
+  }
 
   private makeCellHeader(kindLabel: string, cellId: string): HTMLElement {
     const header = el('div', { class: 'nb-cell-header' });
