@@ -51,7 +51,7 @@ export type TabKind = 'graph' | 'scrapbook' | 'dashboard';
 
 // ── Scrapbook cell types ────────────────────────────────────────────────────────
 
-export type ScrapbookCellKind = 'markdown' | 'query-result' | 'snapshot';
+export type ScrapbookCellKind = 'markdown' | 'query-result' | 'snapshot' | 'section';
 
 interface ScrapbookCellBase {
   id: string;
@@ -78,7 +78,12 @@ export interface SnapshotCell extends ScrapbookCellBase {
   pngDataUrl: string;
 }
 
-export type ScrapbookCell = MarkdownCell | QueryResultCell | SnapshotCell;
+export interface SectionCell extends ScrapbookCellBase {
+  kind: 'section';
+  title: string;
+}
+
+export type ScrapbookCell = MarkdownCell | QueryResultCell | SnapshotCell | SectionCell;
 
 export type CanvasEvent =
   | { kind: 'node-clicked'; gnId: GnId }

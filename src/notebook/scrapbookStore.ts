@@ -1,4 +1,4 @@
-import type { ScrapbookCell, MarkdownCell, QueryResultCell, SnapshotCell } from '../types.js';
+import type { ScrapbookCell, MarkdownCell, QueryResultCell, SnapshotCell, SectionCell } from '../types.js';
 
 const STORAGE_KEY = 'graphnote:scrapbook';
 
@@ -30,7 +30,17 @@ export class ScrapbookStore {
     this.notify();
   }
 
-  updateCell(id: string, patch: Partial<MarkdownCell> | Partial<QueryResultCell> | Partial<SnapshotCell>, silent = false): void {
+  reorderCells(fromIndex: number, toIndex: number): void {
+    if (fromIndex === toIndex) return;
+    const cells = this.cells;
+    const [moved] = cells.splice(fromIndex, 1);
+    if (!moved) return;
+    cells.splice(toIndex, 0, moved);
+    this.save();
+    this.notify();
+  }
+
+  updateCell(id: string, patch: Partial<MarkdownCell> | Partial<QueryResultCell> | Partial<SnapshotCell> | Partial<SectionCell>, silent = false): void {
     const idx = this.cells.findIndex((c) => c.id === id);
     if (idx === -1) return;
     this.cells[idx] = { ...this.cells[idx], ...patch } as ScrapbookCell;

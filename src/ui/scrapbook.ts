@@ -1,5 +1,5 @@
 import cytoscape from 'cytoscape';
-import type { ScrapbookCell, MarkdownCell, QueryResultCell, SnapshotCell, RawNode, RawEdge } from '../types.js';
+import type { ScrapbookCell, MarkdownCell, QueryResultCell, SnapshotCell, SectionCell, RawNode, RawEdge } from '../types.js';
 import type { ScrapbookStore } from '../notebook/scrapbookStore.js';
 import { el } from './domUtils.js';
 import { isEdgeValue } from '../utils/graphUtils.js';
@@ -10,6 +10,7 @@ export class Scrapbook {
   private container: HTMLElement;
   private store: ScrapbookStore;
   private cellListEl!: HTMLElement;
+  private dragSrcIndex: number = -1;
   constructor(container: HTMLElement, store: ScrapbookStore) {
     this.container = container;
     this.store = store;
@@ -30,6 +31,10 @@ export class Scrapbook {
     const addNoteBtn = el('button', { class: 'scrapbook-add-btn' }, '+ Note');
     addNoteBtn.addEventListener('click', () => this.addMarkdownCell());
     footer.appendChild(addNoteBtn);
+
+    const addSectionBtn = el('button', { class: 'scrapbook-add-btn' }, '+ Section');
+    addSectionBtn.addEventListener('click', () => this.addSectionCell());
+    footer.appendChild(addSectionBtn);
     this.container.appendChild(footer);
 
     this.renderCells();
@@ -45,9 +50,66 @@ export class Scrapbook {
       this.cellListEl.appendChild(empty);
       return;
     }
-    for (const cell of cells) {
-      this.cellListEl.appendChild(this.renderCell(cell));
-    }
+    cells.forEach((cell, index) => {
+      const cellEl = this.renderCell(cell);
+      this.attachDragHandlers(cellEl, index);
+      this.cellListEl.appendChild(cellEl);
+    });
+  }
+
+  private clearInsertIndicators(): void {
+    this.cellListEl.querySelectorAll('.nb-cell-drag-insert-before, .nb-cell-drag-insert-after').forEach(el => {
+      el.classList.remove('nb-cell-drag-insert-before', 'nb-cell-drag-insert-after');
+    });
+  }
+
+  private getInsertPosition(cellEl: HTMLElement, e: DragEvent): 'before' | 'after' {
+    const rect = cellEl.getBoundingClientRect();
+    return e.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
+  }
+
+  private attachDragHandlers(cellEl: HTMLElement, index: number): void {
+    cellEl.setAttribute('draggable', 'true');
+    cellEl.dataset['dragIndex'] = String(index);
+
+    cellEl.addEventListener('dragstart', (e: DragEvent) => {
+      this.dragSrcIndex = index;
+      cellEl.classList.add('nb-cell-dragging');
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', String(index));
+      }
+    });
+
+    cellEl.addEventListener('dragend', () => {
+      cellEl.classList.remove('nb-cell-dragging');
+      this.clearInsertIndicators();
+    });
+
+    cellEl.addEventListener('dragover', (e: DragEvent) => {
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+      if (index === this.dragSrcIndex) return;
+      this.clearInsertIndicators();
+      const pos = this.getInsertPosition(cellEl, e);
+      cellEl.classList.add(pos === 'before' ? 'nb-cell-drag-insert-before' : 'nb-cell-drag-insert-after');
+    });
+
+    cellEl.addEventListener('dragleave', () => {
+      cellEl.classList.remove('nb-cell-drag-insert-before', 'nb-cell-drag-insert-after');
+    });
+
+    cellEl.addEventListener('drop', (e: DragEvent) => {
+      e.preventDefault();
+      const pos = this.getInsertPosition(cellEl, e);
+      cellEl.classList.remove('nb-cell-drag-insert-before', 'nb-cell-drag-insert-after');
+      if (this.dragSrcIndex !== -1 && this.dragSrcIndex !== index) {
+        const toIndex = pos === 'before' ? index : index + 1;
+        const adjustedTo = this.dragSrcIndex < toIndex ? toIndex - 1 : toIndex;
+        this.store.reorderCells(this.dragSrcIndex, adjustedTo);
+      }
+      this.dragSrcIndex = -1;
+    });
   }
 
   private renderCell(cell: ScrapbookCell): HTMLElement {
@@ -55,6 +117,7 @@ export class Scrapbook {
       case 'markdown':      return this.renderMarkdownCell(cell);
       case 'query-result':  return this.renderQueryResultCell(cell);
       case 'snapshot':      return this.renderSnapshotCell(cell);
+      case 'section':       return this.renderSectionCell(cell);
     }
   }
 
@@ -525,6 +588,37 @@ export class Scrapbook {
     return String(val);
   }
 
+  // ── Section cell ──────────────────────────────────────────────────────────────
+
+  private renderSectionCell(cell: SectionCell): HTMLElement {
+    const wrap = el('div', { class: 'nb-cell nb-cell-section', 'data-id': cell.id });
+
+    const deleteBtn = el('button', { class: 'nb-cell-delete-btn nb-section-delete-btn', title: 'セクションを削除' }, '✕');
+    deleteBtn.addEventListener('click', () => {
+      this.store.deleteCell(cell.id);
+    });
+
+    const titleEl = el('span', { class: 'nb-section-title' }, cell.title);
+    titleEl.setAttribute('contenteditable', 'true');
+    titleEl.setAttribute('spellcheck', 'false');
+    titleEl.addEventListener('blur', () => {
+      const newTitle = titleEl.textContent?.trim() ?? '';
+      if (newTitle !== cell.title) {
+        this.store.updateCell(cell.id, { title: newTitle } as Partial<SectionCell>);
+      }
+    });
+    titleEl.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        titleEl.blur();
+      }
+    });
+
+    wrap.appendChild(titleEl);
+    wrap.appendChild(deleteBtn);
+    return wrap;
+  }
+
   // ── Snapshot cell ─────────────────────────────────────────────────────────────
 
   private renderSnapshotCell(cell: SnapshotCell): HTMLElement {
@@ -568,6 +662,19 @@ export class Scrapbook {
     });
     header.appendChild(deleteBtn);
     return header;
+  }
+
+  private addSectionCell(): void {
+    const cell: SectionCell = {
+      id: crypto.randomUUID(),
+      kind: 'section',
+      createdAt: Date.now(),
+      title: 'セクション',
+    };
+    this.store.addCell(cell);
+    requestAnimationFrame(() => {
+      this.cellListEl.lastElementChild?.scrollIntoView({ behavior: 'smooth' });
+    });
   }
 
   private addMarkdownCell(): void {
