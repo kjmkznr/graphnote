@@ -15,7 +15,7 @@
   },
   "devDependencies": {
     "@types/cytoscape": "^3.21.9",
-    "@types/marked": "^5.0.2",
+    "@types/marked": "^6.0.0",
     "typescript": "^6.0.2",
     "vite": "8.0.5",
     "vite-plugin-top-level-await": "^1.4.4",
