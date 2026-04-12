@@ -130,52 +130,11 @@ export class Scrapbook {
     const header = this.makeCellHeader('Note', cell.id);
     wrap.appendChild(header);
 
-    const preview = el('div', { class: 'nb-markdown-preview' });
-    const textarea = el('textarea', { class: 'nb-markdown-input', placeholder: 'Markdown でメモを書く…' }) as HTMLTextAreaElement;
-    textarea.value = cell.content;
-
-    const updatePreview = (): void => {
-      preview.innerHTML = marked.parse(textarea.value) as string;
-    };
-    updatePreview();
-
-    const showPreview = (): void => {
-      textarea.classList.add('nb-hidden');
-      preview.classList.remove('nb-hidden');
-    };
-    const showEditor = (): void => {
-      preview.classList.add('nb-hidden');
-      textarea.classList.remove('nb-hidden');
-      textarea.focus();
-    };
-
-    // 初期状態: コンテンツがあればプレビュー、なければエディタ
-    if (cell.content) {
-      showPreview();
-    } else {
-      preview.classList.add('nb-hidden');
-    }
-
-    textarea.addEventListener('input', () => {
-      this.store.updateCell(cell.id, { content: textarea.value }, true);
-      updatePreview();
-    });
-    textarea.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && e.metaKey) {
-        e.preventDefault();
-        if (textarea.value) {
-          showPreview();
-        }
-      }
-    });
-    textarea.addEventListener('blur', () => {
-      if (textarea.value) {
-        showPreview();
-      }
-    });
-    preview.addEventListener('click', () => {
-      showEditor();
-    });
+    const { textarea, preview } = this.makeMarkdownEditor(
+      cell.content,
+      (value, immediate) => this.store.updateCell(cell.id, { content: value }, immediate),
+      { textareaClass: 'nb-markdown-input', placeholder: 'Markdown でメモを書く…' },
+    );
 
     wrap.appendChild(textarea);
     wrap.appendChild(preview);
@@ -538,56 +497,76 @@ export class Scrapbook {
 
   private makeMemoSection(cellId: string, initialMemo: string | undefined): HTMLElement {
     const memoWrap = el('div', { class: 'nb-query-memo-wrap nb-hidden' });
-    const memoPreview = el('div', { class: 'nb-query-memo-preview nb-markdown-preview' });
-    const memoTextarea = el('textarea', {
-      class: 'nb-query-memo',
-      placeholder: 'メモを入力… (Markdown)',
-    }) as HTMLTextAreaElement;
-    memoTextarea.value = initialMemo ?? '';
 
-    const updateMemoPreview = (): void => {
-      memoPreview.innerHTML = marked.parse(memoTextarea.value) as string;
-    };
-    updateMemoPreview();
-
-    const showMemoPreview = (): void => {
-      memoTextarea.classList.add('nb-hidden');
-      memoPreview.classList.remove('nb-hidden');
-    };
-    const showMemoEditor = (): void => {
-      memoPreview.classList.add('nb-hidden');
-      memoTextarea.classList.remove('nb-hidden');
-      memoTextarea.focus();
-    };
+    const { textarea: memoTextarea, preview: memoPreview } = this.makeMarkdownEditor(
+      initialMemo ?? '',
+      (value, immediate) => this.store.updateCell(cellId, { memo: value }, immediate),
+      { textareaClass: 'nb-query-memo', previewClass: 'nb-query-memo-preview nb-markdown-preview', placeholder: 'メモを入力… (Markdown)' },
+    );
 
     if (initialMemo) {
       memoWrap.classList.remove('nb-hidden');
-      showMemoPreview();
-    } else {
-      memoPreview.classList.add('nb-hidden');
     }
-
-    memoTextarea.addEventListener('input', () => {
-      this.store.updateCell(cellId, { memo: memoTextarea.value }, true);
-      updateMemoPreview();
-    });
-    memoTextarea.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && e.metaKey) {
-        e.preventDefault();
-        if (memoTextarea.value) showMemoPreview();
-      }
-    });
-    memoTextarea.addEventListener('blur', () => {
-      this.store.updateCell(cellId, { memo: memoTextarea.value });
-      if (memoTextarea.value) showMemoPreview();
-    });
-    memoPreview.addEventListener('click', () => {
-      showMemoEditor();
-    });
 
     memoWrap.appendChild(memoTextarea);
     memoWrap.appendChild(memoPreview);
     return memoWrap;
+  }
+
+  private makeMarkdownEditor(
+    initialContent: string,
+    onSave: (value: string, immediate?: boolean) => void,
+    options: { textareaClass?: string; previewClass?: string; placeholder?: string } = {},
+  ): { textarea: HTMLTextAreaElement; preview: HTMLElement } {
+    const previewClass = options.previewClass ?? 'nb-markdown-preview';
+    const preview = el('div', { class: previewClass });
+    const textarea = el('textarea', {
+      class: options.textareaClass ?? '',
+      placeholder: options.placeholder ?? '',
+    }) as HTMLTextAreaElement;
+    textarea.value = initialContent;
+
+    const updatePreview = (): void => {
+      preview.innerHTML = marked.parse(textarea.value) as string;
+    };
+    updatePreview();
+
+    const showPreview = (): void => {
+      textarea.classList.add('nb-hidden');
+      preview.classList.remove('nb-hidden');
+    };
+    const showEditor = (): void => {
+      preview.classList.add('nb-hidden');
+      textarea.classList.remove('nb-hidden');
+      textarea.focus();
+    };
+
+    // 初期状態: コンテンツがあればプレビュー、なければエディタ
+    if (initialContent) {
+      showPreview();
+    } else {
+      preview.classList.add('nb-hidden');
+    }
+
+    textarea.addEventListener('input', () => {
+      onSave(textarea.value, true);
+      updatePreview();
+    });
+    textarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.metaKey) {
+        e.preventDefault();
+        if (textarea.value) showPreview();
+      }
+    });
+    textarea.addEventListener('blur', () => {
+      onSave(textarea.value);
+      if (textarea.value) showPreview();
+    });
+    preview.addEventListener('click', () => {
+      showEditor();
+    });
+
+    return { textarea, preview };
   }
 
   private makeCellHeader(kindLabel: string, cellId: string): HTMLElement {
