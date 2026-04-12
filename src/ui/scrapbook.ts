@@ -341,16 +341,24 @@ export class Scrapbook {
     return section;
   }
 
-  private buildBarChart(rows: Record<string, unknown>[], key: string): SVGSVGElement {
+  private buildChartBase(rows: Record<string, unknown>[], key: string): {
+    W: number; H: number; padL: number; padR: number; padT: number; padB: number;
+    values: number[]; maxVal: number; minVal: number; range: number;
+    svg: SVGSVGElement; innerW: number; innerH: number;
+  } {
     const W = 600, H = 200, padL = 48, padR = 16, padT = 16, padB = 40;
     const values = rows.map(r => (typeof r[key] === 'number' ? (r[key] as number) : 0));
     const maxVal = Math.max(...values, 0);
     const minVal = Math.min(...values, 0);
     const range = maxVal - minVal || 1;
-
     const svg = this.makeSvg(W, H);
     const innerW = W - padL - padR;
     const innerH = H - padT - padB;
+    return { W, H, padL, padR, padT, padB, values, maxVal, minVal, range, svg, innerW, innerH };
+  }
+
+  private buildBarChart(rows: Record<string, unknown>[], key: string): SVGSVGElement {
+    const { W, H, padL, padR, padT, padB, values, maxVal, minVal, range, svg, innerW, innerH } = this.buildChartBase(rows, key);
     const barW = Math.max(2, innerW / rows.length - 2);
     const zeroY = padT + innerH * (1 - (0 - minVal) / range);
 
@@ -379,15 +387,7 @@ export class Scrapbook {
   }
 
   private buildLineChart(rows: Record<string, unknown>[], key: string): SVGSVGElement {
-    const W = 600, H = 200, padL = 48, padR = 16, padT = 16, padB = 40;
-    const values = rows.map(r => (typeof r[key] === 'number' ? (r[key] as number) : 0));
-    const maxVal = Math.max(...values, 0);
-    const minVal = Math.min(...values, 0);
-    const range = maxVal - minVal || 1;
-
-    const svg = this.makeSvg(W, H);
-    const innerW = W - padL - padR;
-    const innerH = H - padT - padB;
+    const { W, H, padL, padR, padT, padB, values, maxVal, minVal, range, svg, innerW, innerH } = this.buildChartBase(rows, key);
 
     this.drawGridLines(svg, W, H, padL, padR, padT, padB, minVal, maxVal);
 
