@@ -22,7 +22,7 @@ import { importCsv } from './graph/csvImport.js';
 import { Marked } from 'marked';
 import type { GnId, CanvasEvent, InteractionMode, TabKind, QueryResultCell, SnapshotCell, RawNode, RawEdge } from './types.js';
 import { el, clearChildren, afterNextPaint, byId, escHtml } from './ui/domUtils.js';
-import { extractMatchedGnIds, isEdgeValue } from './utils/graphUtils.js';
+import { extractMatchedGnIds, isEdgeValue, escStr } from './utils/graphUtils.js';
 
 const syncMarked = new Marked({ async: false });
 
@@ -665,7 +665,7 @@ export class App {
     if (gnIds.length === 0) return rows;
 
     try {
-      const list = gnIds.map(id => `"${id}"`).join(', ');
+      const list = gnIds.map(id => `"${escStr(id)}"`).join(', ');
       const edgeRows = this.db.execute<Record<string, unknown>>(
         `MATCH (a)-[r]->(b) WHERE a.gnId IN [${list}] AND b.gnId IN [${list}] RETURN r`
       );
