@@ -1,5 +1,5 @@
 import { GraphDB } from './graph/db.js';
-import { saveGraph, loadGraph, clearSaved, exportToFile, exportToCypher, importFromFile } from './graph/persistence.js';
+import { saveGraph, loadGraph, clearSaved, exportToFile, exportToCypher, loadFromJson } from './graph/persistence.js';
 import { buildShareUrl, parseShareUrl, restoreSharedGraph } from './graph/urlShare.js';
 import { TypeRegistry } from './graph/typeRegistry.js';
 import { EdgeTypeRegistry } from './graph/edgeTypeRegistry.js';
@@ -597,9 +597,14 @@ export class App {
 
     byId('import-json-btn')?.addEventListener('click', () => {
       const snapshotBeforeImport = UndoManager.captureSnapshot(this.db, this.canvas.getPositions());
-      importFromFile(this.db).then((result) => {
-        if (result === null) {
+      openFilePicker().then((json) => {
+        if (json === null) {
           showToast('インポートをキャンセルしました', 'warn');
+          return;
+        }
+        const result = loadFromJson(this.db, json);
+        if (result === null) {
+          showToast('インポートに失敗しました', 'warn');
           return;
         }
         this.undoManager.pushState(snapshotBeforeImport);
@@ -830,4 +835,25 @@ export class App {
       console.error('refreshAndSave failed:', err);
     }
   }
+}
+
+async function openFilePicker(): Promise<string | null> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,application/json';
+
+    input.addEventListener('change', () => {
+      const file = input.files?.[0];
+      if (!file) { resolve(null); return; }
+
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsText(file);
+    });
+
+    input.addEventListener('cancel', () => resolve(null));
+    input.click();
+  });
 }

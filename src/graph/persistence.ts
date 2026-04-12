@@ -189,67 +189,46 @@ export function exportToCypher(
   URL.revokeObjectURL(url);
 }
 
-export async function importFromFile(db: GraphDB): Promise<{ positions: Record<GnId, { x: number; y: number }> } | null> {
-  return new Promise((resolve) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json,application/json';
+export function loadFromJson(db: GraphDB, json: string): { positions: Record<GnId, { x: number; y: number }> } | null {
+  let saved: PersistedGraph;
+  try {
+    saved = JSON.parse(json) as PersistedGraph;
+  } catch {
+    return null;
+  }
 
-    input.addEventListener('change', () => {
-      const file = input.files?.[0];
-      if (!file) { resolve(null); return; }
+  if (saved.version !== 1 || !Array.isArray(saved.nodes) || !Array.isArray(saved.edges)) {
+    return null;
+  }
 
-      const reader = new FileReader();
-      reader.onload = () => {
-        let saved: PersistedGraph;
-        try {
-          saved = JSON.parse(reader.result as string) as PersistedGraph;
-        } catch {
-          resolve(null);
-          return;
-        }
+  db.reset();
 
-        if (saved.version !== 1 || !Array.isArray(saved.nodes) || !Array.isArray(saved.edges)) {
-          resolve(null);
-          return;
-        }
+  for (const pNode of saved.nodes) {
+    if (!pNode.id || !pNode.labels[0]) continue;
+    const label = pNode.labels[0];
+    const props: Record<string, string | number | boolean | null> = {};
+    for (const [k, v] of Object.entries(pNode.properties)) {
+      if (k !== 'gnId') props[k] = v;
+    }
+    try {
+      db.createNodeWithGnId(label, asGnId(pNode.id), props);
+    } catch (err) {
+      console.warn('Failed to restore node:', err);
+    }
+  }
 
-        db.reset();
+  for (const pEdge of saved.edges) {
+    if (!pEdge.srcId || !pEdge.dstId) continue;
+    const props: Record<string, string | number | boolean | null> = {};
+    for (const [k, v] of Object.entries(pEdge.properties)) {
+      if (k !== 'gnId') props[k] = v;
+    }
+    try {
+      db.createEdgeWithGnId(asGnId(pEdge.srcId), asGnId(pEdge.dstId), pEdge.type, asGnId(pEdge.id), props);
+    } catch (err) {
+      console.warn('Failed to restore edge:', err);
+    }
+  }
 
-        for (const pNode of saved.nodes) {
-          if (!pNode.id || !pNode.labels[0]) continue;
-          const label = pNode.labels[0];
-          const props: Record<string, string | number | boolean | null> = {};
-          for (const [k, v] of Object.entries(pNode.properties)) {
-            if (k !== 'gnId') props[k] = v;
-          }
-          try {
-            db.createNodeWithGnId(label, asGnId(pNode.id), props);
-          } catch (err) {
-            console.warn('Failed to restore node:', err);
-          }
-        }
-
-        for (const pEdge of saved.edges) {
-          if (!pEdge.srcId || !pEdge.dstId) continue;
-          const props: Record<string, string | number | boolean | null> = {};
-          for (const [k, v] of Object.entries(pEdge.properties)) {
-            if (k !== 'gnId') props[k] = v;
-          }
-          try {
-            db.createEdgeWithGnId(asGnId(pEdge.srcId), asGnId(pEdge.dstId), pEdge.type, asGnId(pEdge.id), props);
-          } catch (err) {
-            console.warn('Failed to restore edge:', err);
-          }
-        }
-
-        resolve({ positions: saved.positions ?? {} as Record<GnId, { x: number; y: number }> });
-      };
-      reader.onerror = () => resolve(null);
-      reader.readAsText(file);
-    });
-
-    input.addEventListener('cancel', () => resolve(null));
-    input.click();
-  });
+  return { positions: saved.positions ?? {} as Record<GnId, { x: number; y: number }> };
 }
