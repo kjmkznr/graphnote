@@ -109,7 +109,7 @@ export class App implements AppContext {
         () => this.canvas.clearHighlight(),
     );
 
-    byId('loading')?.remove();
+    document.getElementById('loading')?.remove();
 
     afterNextPaint(() => {
       this.canvas.resize();
