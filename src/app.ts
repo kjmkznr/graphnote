@@ -74,7 +74,7 @@ export class App implements AppContext {
 
     // Canvas (event handling delegated to CanvasEventController)
     const canvasCtrl = new CanvasEventController(this);
-    this.canvas = new Canvas(byId('cy'), (event) => canvasCtrl.handleCanvasEvent(event));
+    this.canvas = new Canvas(byId('cy'), (event) => canvasCtrl.handleCanvasEvent(event), this.registry, this.edgeRegistry);
 
     this.sidebar = new Sidebar();
     this.sidebar.setRegistry(this.registry);

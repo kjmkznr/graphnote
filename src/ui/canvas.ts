@@ -37,10 +37,17 @@ export class Canvas {
   // Timer for delayed edge-handle removal (prevents flicker on node→handle transitions)
   private edgeHandleTimer: ReturnType<typeof setTimeout> | null = null;
 
-  private nodeRegistry: TypeRegistry | null = null;
-  private edgeRegistryRef: EdgeTypeRegistry | null = null;
+  private nodeRegistry: TypeRegistry;
+  private edgeRegistryRef: EdgeTypeRegistry;
 
-  constructor(container: HTMLElement, private onEvent: (e: CanvasEvent) => void) {
+  constructor(
+    container: HTMLElement,
+    private onEvent: (e: CanvasEvent) => void,
+    nodeRegistry: TypeRegistry,
+    edgeRegistry: EdgeTypeRegistry,
+  ) {
+    this.nodeRegistry = nodeRegistry;
+    this.edgeRegistryRef = edgeRegistry;
     this.cy = cytoscape({
       container,
       style: CYTOSCAPE_STYLES,
@@ -51,7 +58,7 @@ export class Canvas {
       boxSelectionEnabled: false,
     });
 
-    this.renderer = new GraphRenderer(this.cy, this.nodeRegistry!);
+    this.renderer = new GraphRenderer(this.cy, this.nodeRegistry);
     this.minimap = new Minimap(container.parentElement!, this.cy);
     this.bindEvents();
   }
@@ -125,7 +132,7 @@ export class Canvas {
   initRegistries(nodeRegistry: TypeRegistry, edgeRegistry: EdgeTypeRegistry): void {
     this.nodeRegistry = nodeRegistry;
     this.edgeRegistryRef = edgeRegistry;
-    this.renderer = new GraphRenderer(this.cy, nodeRegistry);
+    this.renderer.setRegistry(nodeRegistry);
     this.applyStyles();
   }
 
