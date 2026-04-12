@@ -167,6 +167,8 @@ export class Canvas {
       if (this.mode === 'node') {
         const pos = e.position;
         this.onEvent({ kind: 'canvas-clicked', position: { x: pos.x, y: pos.y } });
+      } else {
+        this.onEvent({ kind: 'bg-tap' });
       }
     });
 

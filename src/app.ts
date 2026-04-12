@@ -193,6 +193,7 @@ export class App {
       case 'node-context':     return this.handleNodeContext(event.gnId, event.x, event.y);
       case 'edge-context':     return this.handleEdgeContext(event.gnId, event.x, event.y);
       case 'bg-context':       return this.handleBgContext(event.x, event.y);
+      case 'bg-tap':           return this.canvas.clearHighlight();
       case 'delete-selected':  return this.handleDeleteSelected(event.nodeGnIds, event.edgeGnIds);
     }
   }
@@ -218,6 +219,25 @@ export class App {
     if (node) {
       this.sidebar.showNode(node);
       if (this.isMobile()) this.openMobileSidebar();
+    }
+    this.highlightConnected(gnId);
+  }
+
+  private highlightConnected(gnId: GnId): void {
+    try {
+      const escaped = gnId.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      const nodeRows = this.db.execute<Record<string, unknown>>(
+        `MATCH (n)-[*0..]-(m) WHERE n.gnId = "${escaped}" RETURN m`
+      );
+      const edgeRows = this.db.execute<Record<string, unknown>>(
+        `MATCH (n)-[r]-(m) WHERE n.gnId = "${escaped}" RETURN r UNION MATCH (n)-[*1..]-()-[r]-() WHERE n.gnId = "${escaped}" RETURN r`
+      );
+      const { nodeGnIds } = extractMatchedGnIds(nodeRows);
+      const { edgeGnIds } = extractMatchedGnIds(edgeRows);
+      nodeGnIds.add(gnId);
+      this.canvas.highlightByGnId(nodeGnIds, edgeGnIds);
+    } catch {
+      // ハイライト失敗は無視
     }
   }
 
