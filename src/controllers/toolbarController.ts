@@ -1,4 +1,4 @@
-import type { AppContext } from '../appContext.js';
+import type { ToolbarContext } from '../appContext.js';
 import type { InteractionMode } from '../types.js';
 import { saveGraph, clearSaved, exportToFile, exportToCypher, loadFromJson } from '../graph/persistence.js';
 import { buildShareUrl } from '../graph/urlShare.js';
@@ -31,7 +31,7 @@ async function openFilePicker(): Promise<string | null> {
   });
 }
 
-export function setupModeControls(ctx: AppContext): void {
+export function setupModeControls(ctx: ToolbarContext): void {
   const elAddNodeBtn = byId('add-node-btn');
   const elActionBtns = byId('canvas-action-btns');
 
@@ -52,7 +52,7 @@ export function setupModeControls(ctx: AppContext): void {
   applyMode('edit');
 }
 
-export function setupToolbarButtons(ctx: AppContext): void {
+export function setupToolbarButtons(ctx: ToolbarContext): void {
   byId('fit-btn')?.addEventListener('click', () => ctx.canvas.fitView());
 
   byId('types-btn')?.addEventListener('click', () => {

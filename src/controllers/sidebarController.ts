@@ -1,7 +1,7 @@
-import type { AppContext } from '../appContext.js';
+import type { SidebarContext } from '../appContext.js';
 import { showToast } from '../ui/toast.js';
 
-export function setupSidebarCallbacks(ctx: AppContext): void {
+export function setupSidebarCallbacks(ctx: SidebarContext): void {
   ctx.sidebar.onLabelChange((gnId, oldLabel, newLabel) => {
     ctx.captureForUndo();
     ctx.db.relabelNode(gnId, oldLabel, newLabel);

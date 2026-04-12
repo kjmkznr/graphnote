@@ -1,8 +1,8 @@
-import type { AppContext } from '../appContext.js';
+import type { UndoContext } from '../appContext.js';
 import { UndoManager } from '../graph/undoManager.js';
 import { byId } from '../ui/domUtils.js';
 
-export function setupUndoRedo(ctx: AppContext): void {
+export function setupUndoRedo(ctx: UndoContext): void {
   const elUndoBtn = byId<HTMLButtonElement>('undo-btn');
   const elRedoBtn = byId<HTMLButtonElement>('redo-btn');
 

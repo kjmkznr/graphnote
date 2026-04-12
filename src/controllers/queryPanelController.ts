@@ -1,10 +1,10 @@
-import type { AppContext } from '../appContext.js';
+import type { QueryPanelContext } from '../appContext.js';
 import type { CompletionContext } from '../ui/cypherAutocomplete.js';
 import type { QueryResultCell } from '../types.js';
 import { showToast } from '../ui/toast.js';
 import { extractMatchedGnIds, isEdgeValue, escStr } from '../utils/graphUtils.js';
 
-function buildCompletionContext(ctx: AppContext): CompletionContext {
+function buildCompletionContext(ctx: QueryPanelContext): CompletionContext {
   const nodes = ctx.db.getAllNodes();
   const edges = ctx.db.getAllEdges();
   const propKeySet = new Set<string>();
@@ -21,11 +21,11 @@ function buildCompletionContext(ctx: AppContext): CompletionContext {
   };
 }
 
-export function refreshCompletionContext(ctx: AppContext): void {
+export function refreshCompletionContext(ctx: QueryPanelContext): void {
   ctx.queryPanel.setCompletionContext(buildCompletionContext(ctx));
 }
 
-function enrichRowsWithEdges(ctx: AppContext, rows: Record<string, unknown>[]): Record<string, unknown>[] {
+function enrichRowsWithEdges(ctx: QueryPanelContext, rows: Record<string, unknown>[]): Record<string, unknown>[] {
   const hasEdge = rows.some(row => Object.values(row).some(isEdgeValue));
   if (hasEdge) return rows;
 
@@ -54,7 +54,7 @@ function enrichRowsWithEdges(ctx: AppContext, rows: Record<string, unknown>[]): 
   }
 }
 
-export function setupQueryPanel(ctx: AppContext): void {
+export function setupQueryPanel(ctx: QueryPanelContext): void {
   refreshCompletionContext(ctx);
   ctx.queryPanel.onExecute((query) => {
     ctx.canvas.clearHighlight();

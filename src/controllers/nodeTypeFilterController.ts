@@ -1,13 +1,13 @@
-import type { AppContext } from '../appContext.js';
+import type { NodeTypeFilterContext } from '../appContext.js';
 import type { RawNode, RawEdge } from '../types.js';
 import { byId } from '../ui/domUtils.js';
 
 export class NodeTypeFilterController {
-  private readonly ctx: AppContext;
+  private readonly ctx: NodeTypeFilterContext;
   private readonly elNodeTypeFilter = byId<HTMLSelectElement>('node-type-filter');
   private activeNodeTypeFilter: string | null = null;
 
-  constructor(ctx: AppContext) {
+  constructor(ctx: NodeTypeFilterContext) {
     this.ctx = ctx;
   }
 

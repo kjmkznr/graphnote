@@ -1,4 +1,4 @@
-import type { AppContext } from '../appContext.js';
+import type { CanvasEventContext } from '../appContext.js';
 import type { CanvasEvent, GnId, SnapshotCell, RawNode, RawEdge } from '../types.js';
 import { showCreateNodeDialog } from '../ui/createNodeDialog.js';
 import { showCreateEdgeDialog } from '../ui/createEdgeDialog.js';
@@ -107,11 +107,11 @@ function hideContextMenu(ctxMenu: HTMLElement): void {
 // ── CanvasEventController ─────────────────────────────────────────────────────
 
 export class CanvasEventController {
-  private readonly ctx: AppContext;
+  private readonly ctx: CanvasEventContext;
   private readonly ctxMenu = byId('context-menu');
   private readonly tooltip = byId('hover-tooltip');
 
-  constructor(ctx: AppContext) {
+  constructor(ctx: CanvasEventContext) {
     this.ctx = ctx;
   }
 
