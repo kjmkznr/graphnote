@@ -4,7 +4,7 @@ import { showCreateNodeDialog } from '../ui/createNodeDialog.js';
 import { showCreateEdgeDialog } from '../ui/createEdgeDialog.js';
 import { showToast } from '../ui/toast.js';
 import { clearChildren, el, escHtml, byId } from '../ui/domUtils.js';
-import { extractMatchedGnIds } from '../utils/graphUtils.js';
+import { extractMatchedGnIds, escStr } from '../utils/graphUtils.js';
 import { Marked } from 'marked';
 
 const syncMarked = new Marked({ async: false });
@@ -172,7 +172,7 @@ export class CanvasEventController {
 
   private highlightConnected(gnId: GnId): void {
     try {
-      const escaped = gnId.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      const escaped = escStr(gnId);
       const nodeRows = this.ctx.db.execute<Record<string, unknown>>(
         `MATCH (n)-[*0..]-(m) WHERE n.gnId = "${escaped}" RETURN m`
       );
