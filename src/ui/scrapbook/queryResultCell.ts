@@ -1,6 +1,6 @@
 import type { QueryResultCell, RawNode, RawEdge } from '../../types.js';
 import type { ScrapbookStore } from '../../notebook/scrapbookStore.js';
-import { el } from '../domUtils.js';
+import { el, clearChildren } from '../domUtils.js';
 import { buildBarChart, buildLineChart } from '../charts.js';
 import { isEdgeValue } from '../../utils/graphUtils.js';
 import { buildMiniGraph } from '../scrapbookMiniGraph.js';
@@ -132,7 +132,7 @@ export function buildChartSection(rows: Record<string, unknown>[], numericKeys: 
   }
 
   const renderChart = (): void => {
-    chartArea.innerHTML = '';
+    clearChildren(chartArea);
     if (activeChart === 'bar' && activeKey) {
       chartArea.appendChild(buildBarChart(rows, activeKey));
     } else if (activeKey) {

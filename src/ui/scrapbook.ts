@@ -1,6 +1,6 @@
 import type { ScrapbookCell, MarkdownCell, SectionCell } from '../types.js';
 import type { ScrapbookStore } from '../notebook/scrapbookStore.js';
-import { el } from './domUtils.js';
+import { el, clearChildren } from './domUtils.js';
 import { DragDropHandler } from './scrapbook/dragDrop.js';
 import { renderMarkdownCell } from './scrapbook/markdownCell.js';
 import { renderQueryResultCell } from './scrapbook/queryResultCell.js';
@@ -44,7 +44,7 @@ export class Scrapbook {
   // ── Cell list rendering ───────────────────────────────────────────────────────
 
   private renderCells(): void {
-    this.cellListEl.innerHTML = '';
+    clearChildren(this.cellListEl);
     const cells = this.store.getCells();
     if (cells.length === 0) {
       const empty = el('div', { class: 'scrapbook-empty' }, 'まだセルがありません。グラフからスナップショットを送るか、「+ Note」でメモを追加してください。');
