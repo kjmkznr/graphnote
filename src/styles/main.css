@@ -441,6 +441,55 @@ html, body {
 }
 .add-prop-btn:hover { border-color: var(--accent); color: var(--accent); }
 
+/* ── Note preview ── */
+#note-preview {
+  width: 100%;
+  min-height: 120px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-y: auto;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+#note-preview h1, #note-preview h2, #note-preview h3 {
+  margin: 0.5em 0 0.3em;
+  font-weight: 600;
+  color: var(--text);
+}
+#note-preview h1 { font-size: 1.3em; }
+#note-preview h2 { font-size: 1.15em; }
+#note-preview h3 { font-size: 1.05em; }
+#note-preview p { margin: 0.4em 0; }
+#note-preview ul, #note-preview ol { padding-left: 1.4em; margin: 0.4em 0; }
+#note-preview code {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+}
+#note-preview pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 8px 12px;
+  overflow-x: auto;
+}
+#note-preview pre code { background: none; border: none; padding: 0; }
+#note-preview a { color: var(--accent); }
+#note-preview blockquote {
+  border-left: 3px solid var(--accent);
+  margin: 0.4em 0;
+  padding-left: 10px;
+  color: var(--text-muted);
+}
+
 #note-textarea {
   width: 100%;
   min-height: 120px;

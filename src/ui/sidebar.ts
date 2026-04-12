@@ -1,6 +1,7 @@
 import type { GnId, RawNode, RawEdge, PropertyValue } from '../types.js';
 import type { TypeRegistry } from '../graph/typeRegistry.js';
 import { el, clearChildren, byId } from './domUtils.js';
+import { marked } from 'marked';
 
 // Properties that are internal and should never be shown to the user
 const HIDDEN_PROPS = new Set(['gnId', 'note']);
@@ -12,6 +13,7 @@ export class Sidebar {
   private elContent = byId('sidebar-content');
   private elPropsList = byId('properties-list');
   private elNoteTextarea = byId<HTMLTextAreaElement>('note-textarea');
+  private elNotePreview = byId('note-preview');
   private elNewPropKey = byId<HTMLInputElement>('new-prop-key');
   private elNewPropVal = byId<HTMLInputElement>('new-prop-val');
   private elAddPropBtn = byId('add-prop-btn');
@@ -33,6 +35,22 @@ export class Sidebar {
     this.elNoteTextarea.addEventListener('input', () => {
       if (!this.currentGnId || !this.onNoteChangeCb) return;
       this.onNoteChangeCb(this.currentGnId, this.elNoteTextarea.value);
+      this.updatePreview();
+    });
+
+    this.elNoteTextarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.metaKey) {
+        e.preventDefault();
+        if (this.elNoteTextarea.value) this.showNotePreview();
+      }
+    });
+
+    this.elNoteTextarea.addEventListener('blur', () => {
+      if (this.elNoteTextarea.value) this.showNotePreview();
+    });
+
+    this.elNotePreview.addEventListener('click', () => {
+      this.showNoteEditor();
     });
 
     this.elAddPropBtn.addEventListener('click', () => {
@@ -60,6 +78,9 @@ export class Sidebar {
     this.renderNodeHeader(this.currentLabel);
     this.renderProps(node._properties);
     this.elNoteTextarea.value = (node._properties['note'] as string | undefined) ?? '';
+    this.elNoteTextarea.classList.remove('nb-hidden');
+    this.elNotePreview.classList.add('nb-hidden');
+    if (this.elNoteTextarea.value) this.showNotePreview();
     this.showContent();
   }
 
@@ -74,6 +95,9 @@ export class Sidebar {
 
     this.renderProps(edge._properties);
     this.elNoteTextarea.value = (edge._properties['note'] as string | undefined) ?? '';
+    this.elNoteTextarea.classList.remove('nb-hidden');
+    this.elNotePreview.classList.add('nb-hidden');
+    if (this.elNoteTextarea.value) this.showNotePreview();
     this.showContent();
   }
 
@@ -124,6 +148,22 @@ export class Sidebar {
         select,
       ),
     );
+  }
+
+  private updatePreview(): void {
+    this.elNotePreview.innerHTML = marked(this.elNoteTextarea.value) as string;
+  }
+
+  private showNotePreview(): void {
+    this.updatePreview();
+    this.elNoteTextarea.classList.add('nb-hidden');
+    this.elNotePreview.classList.remove('nb-hidden');
+  }
+
+  private showNoteEditor(): void {
+    this.elNotePreview.classList.add('nb-hidden');
+    this.elNoteTextarea.classList.remove('nb-hidden');
+    this.elNoteTextarea.focus();
   }
 
   private showContent(): void {
