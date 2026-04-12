@@ -76,7 +76,7 @@ export function getCompletions(
   const token = getTokenBeforeCursor(text, cursorPos).toLowerCase();
   const type = detectCompletionType(text, cursorPos);
 
-  let candidates: CompletionItem[] = [];
+  let candidates: CompletionItem[];
 
   if (type === 'nodeType') {
     candidates = context.nodeTypes.map((t) => ({ label: t, kind: 'nodeType' as const }));
