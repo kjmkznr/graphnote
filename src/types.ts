@@ -77,6 +77,7 @@ export interface SnapshotCell extends ScrapbookCellBase {
   label: string;
   positions: Record<GnId, { x: number; y: number }>;
   pngDataUrl: string;
+  memo?: string;
 }
 
 export interface SectionCell extends ScrapbookCellBase {
