@@ -179,21 +179,10 @@ export class GraphDB {
 
   /** Delete a node (and its connected edges) identified by gnId. */
   deleteNode(gnId: GnId): void {
-    // Delete incoming/outgoing edges first
-    try {
-      this.executor.execute(
-        `MATCH (n)-[r]-() WHERE n.gnId = "${escStr(gnId)}" DELETE r`,
-      );
-    } catch {
-      // no edges — fine
-    }
-    try {
-      this.executor.execute(
-        `MATCH (n) WHERE n.gnId = "${escStr(gnId)}" DELETE n`,
-      );
-    } catch {
-      // already gone
-    }
+    // DETACH DELETE removes the node and all its connected edges in one query.
+    this.executor.execute(
+      `MATCH (n) WHERE n.gnId = "${escStr(gnId)}" DETACH DELETE n`,
+    );
   }
 
   /** Delete an edge identified by gnId. */
