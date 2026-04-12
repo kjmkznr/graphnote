@@ -54,11 +54,17 @@ function enrichRowsWithEdges(ctx: QueryPanelContext, rows: Record<string, unknow
   }
 }
 
+const WRITE_KEYWORDS = /\b(CREATE|MERGE|SET|DELETE|DETACH|REMOVE|DROP)\b/i;
+
+function isWriteQuery(query: string): boolean {
+  return WRITE_KEYWORDS.test(query);
+}
+
 export function setupQueryPanel(ctx: QueryPanelContext): void {
   refreshCompletionContext(ctx);
   ctx.queryPanel.onExecute((query) => {
     ctx.canvas.clearHighlight();
-    ctx.captureForUndo();
+    if (isWriteQuery(query)) ctx.captureForUndo();
     const t0 = performance.now();
     try {
       const rows = ctx.db.execute(query);
