@@ -83,7 +83,7 @@ export function setupQueryPanel(ctx: QueryPanelContext): void {
         rows: enrichRowsWithEdges(ctx, rows as Record<string, unknown>[]),
         elapsedMs: elapsed,
       };
-      ctx.scrapbookStore.addCell(cell);
+      if (isWriteQuery(query)) ctx.scrapbookStore.addCell(cell);
     } catch (err) {
       ctx.queryPanel.showError(String(err));
       showToast(String(err), 'warn');
