@@ -72,7 +72,7 @@ export function setupToolbarButtons(ctx: ToolbarContext): void {
     if (!window.confirm('グラフをリセットしますか？')) return;
     ctx.captureForUndo();
     ctx.db.reset();
-    clearSaved();
+    clearSaved().catch((err) => console.warn('Failed to clear saved graph:', err));
     ctx.scrapbookStore.clear();
     ctx.sidebar.hide();
     ctx.canvas.refreshGraph([], []);
@@ -122,7 +122,7 @@ export function setupToolbarButtons(ctx: ToolbarContext): void {
         return;
       }
       ctx.undoManager.pushState(snapshotBeforeImport);
-      saveGraph(ctx.db, result.positions);
+      saveGraph(ctx.db, result.positions).catch((err) => console.warn('Failed to save graph:', err));
       ctx.sidebar.hide();
       ctx.canvas.refreshGraph(ctx.db.getAllNodes(), ctx.db.getAllEdges(), result.positions);
       ctx.updateStats();

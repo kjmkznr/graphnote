@@ -1,5 +1,5 @@
 import { GraphDB } from './graph/db.js';
-import { saveGraph, loadGraph } from './graph/persistence.js';
+import { saveGraph, loadGraph, migrateFromLocalStorage } from './graph/persistence.js';
 import { parseShareUrl, restoreSharedGraph } from './graph/urlShare.js';
 import { TypeRegistry } from './graph/typeRegistry.js';
 import { EdgeTypeRegistry } from './graph/edgeTypeRegistry.js';
@@ -73,7 +73,10 @@ export class App implements AppContext {
     this.registry = new TypeRegistry();
     this.edgeRegistry = new EdgeTypeRegistry();
 
-    // Check for shared graph in URL before falling back to localStorage
+    // Migrate existing localStorage data to IndexedDB
+    await migrateFromLocalStorage();
+
+    // Check for shared graph in URL before falling back to IndexedDB
     let savedPositions: Record<GnId, { x: number; y: number }>;
     let savedViewport: { pan: { x: number; y: number }; zoom: number } | undefined;
     const sharedGraph = await parseShareUrl();
@@ -83,8 +86,8 @@ export class App implements AppContext {
       savedViewport = result.viewport;
       // Clear the share hash so it doesn't reload on refresh
       history.replaceState(null, '', location.pathname);
-      // Persist the shared graph to localStorage
-      saveGraph(this.db, savedPositions, savedViewport);
+      // Persist the shared graph to IndexedDB
+      await saveGraph(this.db, savedPositions, savedViewport);
       showToast('共有されたグラフを読み込みました', 'success');
     } else {
       const result = await loadGraph(this.db);
@@ -148,7 +151,7 @@ export class App implements AppContext {
   scheduleSave(): void {
     if (this.saveTimer) clearTimeout(this.saveTimer);
     this.saveTimer = setTimeout(() => {
-      saveGraph(this.db, this.canvas.getPositions(), this.canvas.getViewport());
+      saveGraph(this.db, this.canvas.getPositions(), this.canvas.getViewport()).catch((err) => console.warn('Failed to save graph:', err));
       this.updateStats();
     }, 300);
   }
