@@ -69,6 +69,7 @@ export interface QueryResultCell extends ScrapbookCellBase {
   query: string;
   rows: Record<string, unknown>[];
   elapsedMs: number;
+  memo?: string;
 }
 
 export interface SnapshotCell extends ScrapbookCellBase {
