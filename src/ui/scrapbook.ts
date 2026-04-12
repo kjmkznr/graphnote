@@ -1,13 +1,10 @@
-import cytoscape from 'cytoscape';
 import type { ScrapbookCell, MarkdownCell, QueryResultCell, SnapshotCell, SectionCell, RawNode, RawEdge } from '../types.js';
 import type { ScrapbookStore } from '../notebook/scrapbookStore.js';
 import { el } from './domUtils.js';
-import { DEFAULT_NODE_COLORS } from '../utils/colors';
 import { buildBarChart, buildLineChart } from './charts.js';
 import { isEdgeValue } from '../utils/graphUtils.js';
-import { marked } from 'marked';
-import DOMPurify from 'dompurify';
-import { CYTOSCAPE_STYLES } from './cytoscapeStyles.js';
+import { makeMarkdownEditor } from './markdownEditor.js';
+import { buildMiniGraph } from './scrapbookMiniGraph.js';
 
 export class Scrapbook {
   private container: HTMLElement;
@@ -210,66 +207,7 @@ export class Scrapbook {
   }
 
   private buildGraphSection(nodes: RawNode[], edges: RawEdge[]): HTMLElement {
-    const section = el('div', { class: 'nb-graph-section' });
-    const container = el('div', { class: 'nb-graph-container' });
-    section.appendChild(container);
-
-    // Cytoscapeは要素がDOMに追加された後に初期化する必要があるためrequestAnimationFrameを使用
-    requestAnimationFrame(() => {
-      const PALETTE = DEFAULT_NODE_COLORS;
-      const labelColors = new Map<string, string>();
-      let paletteIdx = 0;
-      const colorForLabel = (label: string): string => {
-        if (!labelColors.has(label)) {
-          labelColors.set(label, PALETTE[paletteIdx % PALETTE.length] ?? '#6c8ef7');
-          paletteIdx++;
-        }
-        return labelColors.get(label)!;
-      };
-
-      const nodeElements: cytoscape.ElementDefinition[] = nodes.map(n => {
-        const label = n._labels[0] ?? '';
-        const name = (n._properties['name'] as string | undefined) ?? (label || String(n._properties['gnId'] ?? n._id).slice(0, 8));
-        const color = colorForLabel(label);
-        return {
-          group: 'nodes' as const,
-          data: {
-            id: n._id,
-            displayLabel: `${name}\n:${label}`,
-            color,
-            borderColor: color,
-          },
-        };
-      });
-
-      const nodeIds = new Set(nodes.map(n => n._id));
-      const edgeElements: cytoscape.ElementDefinition[] = edges
-        .filter(e => nodeIds.has(e._src) && nodeIds.has(e._dst))
-        .map(e => ({
-          group: 'edges' as const,
-          data: {
-            id: `e-${e._id}`,
-            source: e._src,
-            target: e._dst,
-            label: e._type,
-          },
-        }));
-
-      const cy = cytoscape({
-        container,
-        style: CYTOSCAPE_STYLES,
-        elements: [...nodeElements, ...edgeElements],
-        layout: { name: 'cose', animate: false } as cytoscape.LayoutOptions,
-        wheelSensitivity: 0.3,
-        userZoomingEnabled: true,
-        userPanningEnabled: true,
-        boxSelectionEnabled: false,
-      });
-
-      cy.fit(undefined, 30);
-    });
-
-    return section;
+    return buildMiniGraph(nodes, edges);
   }
 
   private isEdgeOnlyRow(row: Record<string, unknown>): boolean {
@@ -517,55 +455,7 @@ export class Scrapbook {
     onSave: (value: string, immediate?: boolean) => void,
     options: { textareaClass?: string; previewClass?: string; placeholder?: string } = {},
   ): { textarea: HTMLTextAreaElement; preview: HTMLElement } {
-    const previewClass = options.previewClass ?? 'nb-markdown-preview';
-    const preview = el('div', { class: previewClass });
-    const textarea = el('textarea', {
-      class: options.textareaClass ?? '',
-      placeholder: options.placeholder ?? '',
-    }) as HTMLTextAreaElement;
-    textarea.value = initialContent;
-
-    const updatePreview = (): void => {
-      preview.innerHTML = DOMPurify.sanitize(marked.parse(textarea.value) as string);
-    };
-    updatePreview();
-
-    const showPreview = (): void => {
-      textarea.classList.add('nb-hidden');
-      preview.classList.remove('nb-hidden');
-    };
-    const showEditor = (): void => {
-      preview.classList.add('nb-hidden');
-      textarea.classList.remove('nb-hidden');
-      textarea.focus();
-    };
-
-    // 初期状態: コンテンツがあればプレビュー、なければエディタ
-    if (initialContent) {
-      showPreview();
-    } else {
-      preview.classList.add('nb-hidden');
-    }
-
-    textarea.addEventListener('input', () => {
-      onSave(textarea.value, true);
-      updatePreview();
-    });
-    textarea.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && e.metaKey) {
-        e.preventDefault();
-        if (textarea.value) showPreview();
-      }
-    });
-    textarea.addEventListener('blur', () => {
-      onSave(textarea.value);
-      if (textarea.value) showPreview();
-    });
-    preview.addEventListener('click', () => {
-      showEditor();
-    });
-
-    return { textarea, preview };
+    return makeMarkdownEditor(initialContent, onSave, options);
   }
 
   private makeCellHeader(kindLabel: string, cellId: string): HTMLElement {
