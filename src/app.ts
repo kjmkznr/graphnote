@@ -7,6 +7,7 @@ import { UndoManager } from './graph/undoManager.js';
 import { Canvas } from './ui/canvas.js';
 import { Sidebar } from './ui/sidebar.js';
 import { QueryPanel } from './ui/queryPanel.js';
+import type { CompletionContext } from './ui/cypherAutocomplete.js';
 import { Scrapbook } from './ui/scrapbook.js';
 import { Dashboard } from './ui/dashboard.js';
 import { ScrapbookStore } from './notebook/scrapbookStore.js';
@@ -466,7 +467,29 @@ export class App {
 
   // ── Query panel ──────────────────────────────────────────────────────────────
 
+  private buildCompletionContext(): CompletionContext {
+    const nodes = this.db.getAllNodes();
+    const edges = this.db.getAllEdges();
+    const propKeySet = new Set<string>();
+    for (const node of nodes) {
+      for (const key of Object.keys(node._properties)) propKeySet.add(key);
+    }
+    for (const edge of edges) {
+      for (const key of Object.keys(edge._properties)) propKeySet.add(key);
+    }
+    return {
+      nodeTypes: this.registry.getAll(),
+      edgeTypes: this.edgeRegistry.getAll(),
+      propertyKeys: [...propKeySet].sort(),
+    };
+  }
+
+  private refreshCompletionContext(): void {
+    this.queryPanel.setCompletionContext(this.buildCompletionContext());
+  }
+
   private setupQueryPanel(): void {
+    this.refreshCompletionContext();
     this.queryPanel.onExecute((query) => {
       this.canvas.clearHighlight();
       this.captureForUndo();
@@ -745,6 +768,7 @@ export class App {
 
   private scheduleSave(): void {
     if (this.saveTimer) clearTimeout(this.saveTimer);
+    this.refreshCompletionContext();
     this.saveTimer = setTimeout(() => {
       saveGraph(this.db, this.canvas.getPositions(), this.canvas.getViewport());
       this.updateStats();
