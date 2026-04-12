@@ -5,6 +5,7 @@ import { el } from './domUtils.js';
 import { buildBarChart, buildLineChart } from './charts.js';
 import { isEdgeValue } from '../utils/graphUtils.js';
 import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 import { CYTOSCAPE_STYLES } from './cytoscapeStyles.js';
 
 export class Scrapbook {
@@ -527,7 +528,7 @@ export class Scrapbook {
     textarea.value = initialContent;
 
     const updatePreview = (): void => {
-      preview.innerHTML = marked.parse(textarea.value) as string;
+      preview.innerHTML = DOMPurify.sanitize(marked.parse(textarea.value) as string);
     };
     updatePreview();
 

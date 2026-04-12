@@ -2,6 +2,7 @@ import type { GnId, RawNode, RawEdge, PropertyValue } from '../types.js';
 import type { TypeRegistry } from '../graph/typeRegistry.js';
 import { el, clearChildren, byId } from './domUtils.js';
 import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 
 // Properties that are internal and should never be shown to the user
 const HIDDEN_PROPS = new Set(['gnId', 'note']);
@@ -151,7 +152,7 @@ export class Sidebar {
   }
 
   private updatePreview(): void {
-    this.elNotePreview.innerHTML = marked(this.elNoteTextarea.value) as string;
+    this.elNotePreview.innerHTML = DOMPurify.sanitize(marked(this.elNoteTextarea.value) as string);
   }
 
   private showNotePreview(): void {
