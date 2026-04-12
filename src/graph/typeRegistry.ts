@@ -1,7 +1,4 @@
-const STORAGE_KEY = 'graphnote:types';
-const STYLE_STORAGE_KEY = 'graphnote:node-type-styles';
-
-const DEFAULT_TYPES = ['Company', 'Person', 'System', 'Service', 'Concept', 'Note'];
+import { BaseTypeRegistry } from './baseTypeRegistry.js';
 
 export type NodeShape = 'ellipse' | 'rectangle' | 'round-rectangle' | 'diamond' | 'triangle' | 'hexagon' | 'star';
 
@@ -17,125 +14,31 @@ const DEFAULT_COLORS = [
 
 const DEFAULT_SHAPES: NodeShape[] = ['ellipse', 'rectangle', 'diamond', 'round-rectangle', 'hexagon', 'triangle'];
 
-function defaultStyleForIndex(index: number): NodeTypeStyle {
-  return {
-    color: DEFAULT_COLORS[index % DEFAULT_COLORS.length] ?? '#6c8ef7',
-    shape: DEFAULT_SHAPES[index % DEFAULT_SHAPES.length] ?? 'ellipse',
-  };
-}
+const DEFAULT_TYPES = ['Company', 'Person', 'System', 'Service', 'Concept', 'Note'];
 
-export class TypeRegistry {
-  private types: string[];
-  private styles: Map<string, NodeTypeStyle>;
-
+export class TypeRegistry extends BaseTypeRegistry<NodeTypeStyle> {
   constructor() {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw) as unknown;
-        if (Array.isArray(parsed) && parsed.every((v) => typeof v === 'string')) {
-          this.types = parsed as string[];
-        } else {
-          this.types = [...DEFAULT_TYPES];
-        }
-      } catch {
-        this.types = [...DEFAULT_TYPES];
-      }
-    } else {
-      this.types = [...DEFAULT_TYPES];
-    }
-
-    this.styles = new Map();
-    const rawStyles = localStorage.getItem(STYLE_STORAGE_KEY);
-    if (rawStyles) {
-      try {
-        const parsed = JSON.parse(rawStyles) as unknown;
-        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-          for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
-            if (
-              v && typeof v === 'object' && !Array.isArray(v) &&
-              typeof (v as Record<string, unknown>)['color'] === 'string' &&
-              typeof (v as Record<string, unknown>)['shape'] === 'string'
-            ) {
-              this.styles.set(k, {
-                color: (v as Record<string, unknown>)['color'] as string,
-                shape: (v as Record<string, unknown>)['shape'] as NodeShape,
-              });
-            }
-          }
-        }
-      } catch { /* fall through */ }
-    }
-
-    // Assign default styles for types that don't have one
-    this.types.forEach((t, i) => {
-      if (!this.styles.has(t)) {
-        this.styles.set(t, defaultStyleForIndex(i));
-      }
-    });
-
-    this.save();
+    super('graphnote:types', 'graphnote:node-type-styles', DEFAULT_TYPES);
   }
 
-  getAll(): string[] {
-    return [...this.types];
+  protected validateStyle(v: unknown): v is NodeTypeStyle {
+    return (
+      v !== null &&
+      typeof v === 'object' &&
+      !Array.isArray(v) &&
+      typeof (v as Record<string, unknown>)['color'] === 'string' &&
+      typeof (v as Record<string, unknown>)['shape'] === 'string'
+    );
   }
 
-  getStyle(type: string): NodeTypeStyle {
-    return this.styles.get(type) ?? { color: '#6c8ef7', shape: 'ellipse' };
+  protected defaultStyleForIndex(i: number): NodeTypeStyle {
+    return {
+      color: DEFAULT_COLORS[i % DEFAULT_COLORS.length] ?? '#6c8ef7',
+      shape: DEFAULT_SHAPES[i % DEFAULT_SHAPES.length] ?? 'ellipse',
+    };
   }
 
-  setStyle(type: string, style: NodeTypeStyle): void {
-    this.styles.set(type, style);
-    this.saveStyles();
-  }
-
-  add(type: string): void {
-    const t = type.trim();
-    if (!t || this.types.includes(t)) return;
-    const index = this.types.length;
-    this.types.push(t);
-    if (!this.styles.has(t)) {
-      this.styles.set(t, defaultStyleForIndex(index));
-    }
-    this.save();
-  }
-
-  remove(type: string): void {
-    this.types = this.types.filter((t) => t !== type);
-    this.styles.delete(type);
-    this.save();
-  }
-
-  rename(oldType: string, newType: string): void {
-    const t = newType.trim();
-    if (!t || this.types.includes(t)) return;
-    const idx = this.types.indexOf(oldType);
-    if (idx === -1) return;
-    this.types[idx] = t;
-    const oldStyle = this.styles.get(oldType);
-    if (oldStyle) {
-      this.styles.set(t, oldStyle);
-      this.styles.delete(oldType);
-    }
-    this.save();
-  }
-
-  /** Ensure a type (possibly created via Cypher) is in the list. */
-  ensure(type: string): void {
-    this.add(type);
-  }
-
-  private save(): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(this.types));
-    this.saveStyles();
-  }
-
-  private saveStyles(): void {
-    const obj: Record<string, NodeTypeStyle> = {};
-    for (const [k, v] of this.styles.entries()) {
-      obj[k] = v;
-    }
-    localStorage.setItem(STYLE_STORAGE_KEY, JSON.stringify(obj));
+  protected defaultStyle(): NodeTypeStyle {
+    return { color: '#6c8ef7', shape: 'ellipse' };
   }
 }
