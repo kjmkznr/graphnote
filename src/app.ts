@@ -18,7 +18,7 @@ import { showNodeTypeStyleDialog } from './ui/nodeTypeStyleDialog.js';
 import { showToast } from './ui/toast.js';
 import type { GnId, CanvasEvent, InteractionMode, TabKind, QueryResultCell, SnapshotCell } from './types.js';
 import { el, clearChildren, afterNextPaint, byId } from './ui/domUtils.js';
-import { extractMatchedGnIds } from './utils/graphUtils.js';
+import { extractMatchedGnIds, isEdgeValue } from './utils/graphUtils.js';
 
 // ── Context Menu ──────────────────────────────────────────────────────────────
 
@@ -485,13 +485,7 @@ export class App {
    * これにより保存後のScrapbookでもエッジが表示される。
    */
   private enrichRowsWithEdges(rows: Record<string, unknown>[]): Record<string, unknown>[] {
-    const hasEdge = rows.some(row =>
-      Object.values(row).some(val => {
-        if (val === null || typeof val !== 'object' || Array.isArray(val)) return false;
-        const obj = val as Record<string, unknown>;
-        return typeof obj['_type'] === 'string' && typeof obj['_src'] === 'string' && typeof obj['_dst'] === 'string';
-      })
-    );
+    const hasEdge = rows.some(row => Object.values(row).some(isEdgeValue));
     if (hasEdge) return rows;
 
     // ノードのgnIdを収集

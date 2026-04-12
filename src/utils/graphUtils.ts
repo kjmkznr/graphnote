@@ -22,6 +22,13 @@ export function assertIdentifier(s: string): void {
   }
 }
 
+/** Returns true if val is a query-result edge object (has _type, _src, _dst). */
+export function isEdgeValue(val: unknown): boolean {
+  if (val === null || typeof val !== 'object' || Array.isArray(val)) return false;
+  const obj = val as Record<string, unknown>;
+  return typeof obj['_type'] === 'string' && typeof obj['_src'] === 'string' && typeof obj['_dst'] === 'string';
+}
+
 export function extractMatchedGnIds(rows: unknown[]): { nodeGnIds: Set<GnId>; edgeGnIds: Set<GnId> } {
   const nodeGnIds = new Set<GnId>();
   const edgeGnIds = new Set<GnId>();

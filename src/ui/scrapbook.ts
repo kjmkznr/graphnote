@@ -2,6 +2,7 @@ import cytoscape from 'cytoscape';
 import type { ScrapbookCell, MarkdownCell, QueryResultCell, SnapshotCell, RawNode, RawEdge } from '../types.js';
 import type { ScrapbookStore } from '../notebook/scrapbookStore.js';
 import { el } from './domUtils.js';
+import { isEdgeValue } from '../utils/graphUtils.js';
 import { marked } from 'marked';
 import { CYTOSCAPE_STYLES } from './cytoscapeStyles.js';
 
@@ -247,11 +248,7 @@ export class Scrapbook {
   private isEdgeOnlyRow(row: Record<string, unknown>): boolean {
     const values = Object.values(row);
     if (values.length === 0) return false;
-    return values.every(val => {
-      if (val === null || typeof val !== 'object' || Array.isArray(val)) return false;
-      const obj = val as Record<string, unknown>;
-      return typeof obj['_type'] === 'string' && typeof obj['_src'] === 'string' && typeof obj['_dst'] === 'string';
-    });
+    return values.every(isEdgeValue);
   }
 
   private flattenRows(rows: Record<string, unknown>[]): Record<string, unknown>[] {
