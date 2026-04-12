@@ -9,34 +9,39 @@ import type { ScrapbookStore } from './notebook/scrapbookStore.js';
 import type { RawNode, RawEdge } from './types.js';
 
 /**
+ * 複数のコンテキストインターフェースで共通して使用される操作メソッド。
+ */
+export interface AppOperations {
+  captureForUndo(): void;
+  scheduleSave(): void;
+  refreshAndSave(): void;
+}
+
+/**
  * サイドバーコントローラーが必要とする依存のサブセット。
  */
-export interface SidebarContext {
+export interface SidebarContext extends Pick<AppOperations, 'captureForUndo' | 'scheduleSave'> {
   readonly db: GraphDB;
   readonly canvas: Canvas;
   readonly sidebar: Sidebar;
-  captureForUndo(): void;
-  scheduleSave(): void;
 }
 
 /**
  * クエリパネルコントローラーが必要とする依存のサブセット。
  */
-export interface QueryPanelContext {
+export interface QueryPanelContext extends Pick<AppOperations, 'captureForUndo' | 'scheduleSave'> {
   readonly db: GraphDB;
   readonly canvas: Canvas;
   readonly queryPanel: QueryPanel;
   readonly registry: TypeRegistry;
   readonly edgeRegistry: EdgeTypeRegistry;
   readonly scrapbookStore: ScrapbookStore;
-  captureForUndo(): void;
-  scheduleSave(): void;
 }
 
 /**
  * アンドゥ／リドゥコントローラーが必要とする依存のサブセット。
  */
-export interface UndoContext {
+export interface UndoContext extends Pick<AppOperations, 'scheduleSave'> {
   readonly db: GraphDB;
   readonly canvas: Canvas;
   readonly sidebar: Sidebar;
@@ -44,13 +49,12 @@ export interface UndoContext {
   getFilteredNodes(): RawNode[];
   getFilteredEdges(): RawEdge[];
   updateNodeTypeFilterOptions(): void;
-  scheduleSave(): void;
 }
 
 /**
  * ツールバーコントローラーが必要とする依存のサブセット。
  */
-export interface ToolbarContext {
+export interface ToolbarContext extends Pick<AppOperations, 'captureForUndo' | 'refreshAndSave'> {
   readonly db: GraphDB;
   readonly canvas: Canvas;
   readonly sidebar: Sidebar;
@@ -58,8 +62,6 @@ export interface ToolbarContext {
   readonly edgeRegistry: EdgeTypeRegistry;
   readonly undoManager: UndoManager;
   readonly scrapbookStore: ScrapbookStore;
-  captureForUndo(): void;
-  refreshAndSave(): void;
   updateStats(): void;
 }
 
@@ -75,15 +77,13 @@ export interface NodeTypeFilterContext {
 /**
  * キャンバスイベントコントローラーが必要とする依存のサブセット。
  */
-export interface CanvasEventContext {
+export interface CanvasEventContext extends Pick<AppOperations, 'captureForUndo' | 'refreshAndSave'> {
   readonly db: GraphDB;
   readonly canvas: Canvas;
   readonly sidebar: Sidebar;
   readonly registry: TypeRegistry;
   readonly edgeRegistry: EdgeTypeRegistry;
   readonly scrapbookStore: ScrapbookStore;
-  captureForUndo(): void;
-  refreshAndSave(): void;
   isMobile(): boolean;
   openMobileSidebar(): void;
 }
