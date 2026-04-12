@@ -1682,7 +1682,7 @@ tr:hover td { background: rgba(108,142,247,0.05); }
   text-overflow: ellipsis;
 }
 .csv-preview-table th {
-  background: var(--bg-secondary);
+  background: rgba(255,255,255,0.06);
   font-weight: 600;
 }
 .csv-preview-more {
@@ -1708,7 +1708,7 @@ tr:hover td { background: rgba(108,142,247,0.05); }
 .csv-sample-text {
   margin: 4px 0 0;
   padding: 6px 8px;
-  background: var(--bg-secondary);
+  background: rgba(255,255,255,0.06);
   border: 1px solid var(--border-color);
   border-radius: 4px;
   font-size: 11px;
