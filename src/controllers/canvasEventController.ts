@@ -6,6 +6,7 @@ import { showToast } from '../ui/toast.js';
 import { clearChildren, el, escHtml, byId } from '../ui/domUtils.js';
 import { extractMatchedGnIds, escStr } from '../utils/graphUtils.js';
 import { Marked } from 'marked';
+import DOMPurify from 'dompurify';
 
 const syncMarked = new Marked({ async: false });
 
@@ -33,7 +34,7 @@ function buildNodeTooltipContent(node: RawNode): string {
 
   if (note) {
     const preview = note.length > 200 ? note.slice(0, 200) + '…' : note;
-    lines.push(`<div class="tooltip-note tooltip-note-md">${syncMarked.parse(preview) as string}</div>`);
+    lines.push(`<div class="tooltip-note tooltip-note-md">${DOMPurify.sanitize(syncMarked.parse(preview) as string)}</div>`);
   }
 
   return lines.join('');
