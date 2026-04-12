@@ -97,4 +97,7 @@ export type CanvasEvent =
   | { kind: 'edge-context'; gnId: GnId; x: number; y: number }
   | { kind: 'bg-context'; x: number; y: number }
   | { kind: 'delete-selected'; nodeGnIds: GnId[]; edgeGnIds: GnId[] }
-  | { kind: 'bg-tap' };
+  | { kind: 'bg-tap' }
+  | { kind: 'node-hovered'; gnId: GnId; x: number; y: number }
+  | { kind: 'edge-hovered'; gnId: GnId; x: number; y: number }
+  | { kind: 'element-unhovered' };

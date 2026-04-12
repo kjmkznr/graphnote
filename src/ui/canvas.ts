@@ -210,12 +210,30 @@ export class Canvas {
       if (this.mode !== 'edit') return;
       if (this.edgeHandleTimer) { clearTimeout(this.edgeHandleTimer); this.edgeHandleTimer = null; }
       this.showEdgeHandles(t);
+      const gnId = asGnId(t.data('gnId') as string);
+      if (gnId) {
+        const { x, y } = getEventClientPos(e.originalEvent as MouseEvent | TouchEvent);
+        this.onEvent({ kind: 'node-hovered', gnId, x, y });
+      }
     });
 
     cy.on('mouseout', 'node', (e) => {
       const t = e.target as cytoscape.NodeSingular;
       if (t.data('ghost')) return;
       this.edgeHandleTimer = setTimeout(() => this.removeEdgeHandles(), 200);
+      if (!t.data('edgeHandle')) this.onEvent({ kind: 'element-unhovered' });
+    });
+
+    cy.on('mouseover', 'edge:not([ghost])', (e) => {
+      const gnId = asGnId(e.target.data('gnId') as string);
+      if (gnId) {
+        const { x, y } = getEventClientPos(e.originalEvent as MouseEvent | TouchEvent);
+        this.onEvent({ kind: 'edge-hovered', gnId, x, y });
+      }
+    });
+
+    cy.on('mouseout', 'edge:not([ghost])', () => {
+      this.onEvent({ kind: 'element-unhovered' });
     });
 
     // ── Edge-creation drag from handle ───────────────────────────────────────

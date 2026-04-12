@@ -16,9 +16,79 @@ import { showCreateEdgeDialog } from './ui/createEdgeDialog.js';
 import { showEdgeTypeStyleDialog } from './ui/edgeTypeStyleDialog.js';
 import { showNodeTypeStyleDialog } from './ui/nodeTypeStyleDialog.js';
 import { showToast } from './ui/toast.js';
-import type { GnId, CanvasEvent, InteractionMode, TabKind, QueryResultCell, SnapshotCell } from './types.js';
+import { Marked } from 'marked';
+import type { GnId, CanvasEvent, InteractionMode, TabKind, QueryResultCell, SnapshotCell, RawNode, RawEdge } from './types.js';
 import { el, clearChildren, afterNextPaint, byId } from './ui/domUtils.js';
 import { extractMatchedGnIds, isEdgeValue } from './utils/graphUtils.js';
+
+const syncMarked = new Marked({ async: false });
+
+// ── Tooltip ───────────────────────────────────────────────────────────────────
+
+function buildNodeTooltipContent(node: RawNode): string {
+  const label = node._labels[0] ?? '';
+  const props = node._properties;
+  const name = (props['name'] as string | undefined) ?? '';
+  const note = (props['note'] as string | undefined) ?? '';
+
+  const lines: string[] = [];
+  if (name) lines.push(`<strong>${escapeHtml(name)}</strong>`);
+  if (label) lines.push(`<span class="tooltip-label">:${escapeHtml(label)}</span>`);
+
+  const skipKeys = new Set(['gnId', 'name', 'note']);
+  const propEntries = Object.entries(props).filter(([k]) => !skipKeys.has(k));
+  if (propEntries.length > 0) {
+    lines.push('<div class="tooltip-props">');
+    for (const [k, v] of propEntries) {
+      lines.push(`<div><span class="tooltip-key">${escapeHtml(k)}:</span> ${escapeHtml(String(v ?? ''))}</div>`);
+    }
+    lines.push('</div>');
+  }
+
+  if (note) {
+    const preview = note.length > 200 ? note.slice(0, 200) + '…' : note;
+    lines.push(`<div class="tooltip-note tooltip-note-md">${syncMarked.parse(preview) as string}</div>`);
+  }
+
+  return lines.join('');
+}
+
+function buildEdgeTooltipContent(edge: RawEdge): string {
+  const lines: string[] = [];
+  lines.push(`<strong>${escapeHtml(edge._type)}</strong>`);
+
+  const skipKeys = new Set(['gnId']);
+  const propEntries = Object.entries(edge._properties).filter(([k]) => !skipKeys.has(k));
+  if (propEntries.length > 0) {
+    lines.push('<div class="tooltip-props">');
+    for (const [k, v] of propEntries) {
+      lines.push(`<div><span class="tooltip-key">${escapeHtml(k)}:</span> ${escapeHtml(String(v ?? ''))}</div>`);
+    }
+    lines.push('</div>');
+  }
+
+  return lines.join('');
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function showTooltip(tooltipEl: HTMLElement, html: string, x: number, y: number): void {
+  tooltipEl.innerHTML = html;
+  tooltipEl.style.display = 'block';
+  tooltipEl.style.left = `${x + 12}px`;
+  tooltipEl.style.top = `${y + 12}px`;
+  requestAnimationFrame(() => {
+    const rect = tooltipEl.getBoundingClientRect();
+    if (rect.right > window.innerWidth) tooltipEl.style.left = `${x - rect.width - 8}px`;
+    if (rect.bottom > window.innerHeight) tooltipEl.style.top = `${y - rect.height - 8}px`;
+  });
+}
+
+function hideTooltip(tooltipEl: HTMLElement): void {
+  tooltipEl.style.display = 'none';
+}
 
 // ── Context Menu ──────────────────────────────────────────────────────────────
 
@@ -67,6 +137,7 @@ export class App {
   private dashboard!: Dashboard;
 
   private ctxMenu = byId('context-menu');
+  private tooltip = byId('hover-tooltip');
   private elAddNodeBtn = byId('add-node-btn');
   private elActionBtns = byId('canvas-action-btns');
   private elTabGraph = byId('tab-graph');
@@ -195,7 +266,22 @@ export class App {
       case 'bg-context':       return this.handleBgContext(event.x, event.y);
       case 'bg-tap':           return this.canvas.clearHighlight();
       case 'delete-selected':  return this.handleDeleteSelected(event.nodeGnIds, event.edgeGnIds);
+      case 'node-hovered':     return this.handleNodeHovered(event.gnId, event.x, event.y);
+      case 'edge-hovered':     return this.handleEdgeHovered(event.gnId, event.x, event.y);
+      case 'element-unhovered': return hideTooltip(this.tooltip);
     }
+  }
+
+  private handleNodeHovered(gnId: GnId, x: number, y: number): void {
+    const node = this.db.getNodeByGnId(gnId);
+    if (!node) return;
+    showTooltip(this.tooltip, buildNodeTooltipContent(node), x, y);
+  }
+
+  private handleEdgeHovered(gnId: GnId, x: number, y: number): void {
+    const edge = this.db.getEdgeByGnId(gnId);
+    if (!edge) return;
+    showTooltip(this.tooltip, buildEdgeTooltipContent(edge), x, y);
   }
 
   private handleCanvasClicked(position: { x: number; y: number }): void {
