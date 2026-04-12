@@ -44,6 +44,29 @@ export class App implements AppContext {
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
 
   async init(): Promise<void> {
+    const { savedPositions, savedViewport } = await this.initData();
+    this.initUI();
+    this.setupControllers();
+
+    document.getElementById('loading')?.remove();
+
+    afterNextPaint(() => {
+      this.canvas.resize();
+      this.nodeTypeFilter.updateOptions();
+      this.canvas.refreshGraph(this.getFilteredNodes(), this.getFilteredEdges(), savedPositions);
+      if (savedViewport) {
+        this.canvas.setViewport(savedViewport.pan, savedViewport.zoom);
+      } else if (this.db.getAllNodes().length > 0) {
+        this.canvas.fitView();
+      }
+      this.updateStats();
+    });
+  }
+
+  async initData(): Promise<{
+    savedPositions: Record<GnId, { x: number; y: number }>;
+    savedViewport: { pan: { x: number; y: number }; zoom: number } | undefined;
+  }> {
     this.db = new GraphDB();
     await this.db.init();
 
@@ -72,6 +95,10 @@ export class App implements AppContext {
       this.edgeRegistry.ensure(edge._type);
     }
 
+    return { savedPositions, savedViewport };
+  }
+
+  initUI(): void {
     // Canvas (event handling delegated to CanvasEventController)
     const canvasCtrl = new CanvasEventController(this);
     this.canvas = new Canvas(byId('cy'), (event) => canvasCtrl.handleCanvasEvent(event), this.registry, this.edgeRegistry);
@@ -87,7 +114,9 @@ export class App implements AppContext {
     const elTabDashboard = byId('tab-dashboard');
     this.scrapbook = new Scrapbook(elTabScrapbook, this.scrapbookStore);
     this.dashboard = new Dashboard(elTabDashboard);
+  }
 
+  setupControllers(): void {
     // Mobile sidebar controller
     this.mobileSidebar = new MobileSidebarController();
     this.mobileSidebar.setup();
@@ -96,7 +125,6 @@ export class App implements AppContext {
     this.nodeTypeFilter = new NodeTypeFilterController(this);
     this.nodeTypeFilter.setup();
 
-    // Setup all controllers
     setupSidebarCallbacks(this);
     setupQueryPanel(this);
     setupModeControls(this);
@@ -108,20 +136,6 @@ export class App implements AppContext {
         () => this.canvas.resize(),
         () => this.canvas.clearHighlight(),
     );
-
-    document.getElementById('loading')?.remove();
-
-    afterNextPaint(() => {
-      this.canvas.resize();
-      this.nodeTypeFilter.updateOptions();
-      this.canvas.refreshGraph(this.getFilteredNodes(), this.getFilteredEdges(), savedPositions);
-      if (savedViewport) {
-        this.canvas.setViewport(savedViewport.pan, savedViewport.zoom);
-      } else if (this.db.getAllNodes().length > 0) {
-        this.canvas.fitView();
-      }
-      this.updateStats();
-    });
   }
 
   // ── AppContext implementation ────────────────────────────────────────────────
