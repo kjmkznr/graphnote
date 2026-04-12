@@ -7,7 +7,7 @@ import { marked } from 'marked';
 const HIDDEN_PROPS = new Set(['gnId', 'note']);
 
 export class Sidebar {
-  private registry!: TypeRegistry;
+  private registry: TypeRegistry | undefined;
   private elHeader = byId('element-header');
   private elEmpty = byId('sidebar-empty');
   private elContent = byId('sidebar-content');
