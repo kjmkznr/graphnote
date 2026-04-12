@@ -686,7 +686,7 @@ tr:hover td { background: rgba(108,142,247,0.05); }
 }
 .dialog-select:focus, .dialog-input:focus { border-color: var(--accent); }
 
-.dialog-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.dialog-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
 
 .dialog-btn {
   padding: 7px 18px;
@@ -704,6 +704,7 @@ tr:hover td { background: rgba(108,142,247,0.05); }
 #type-manager-dialog { width: 360px; }
 #node-type-style-dialog { width: 520px; }
 #edge-type-style-dialog { width: 480px; }
+#csv-import-dialog { width: 640px; }
 
 .ets-item {
   display: flex;
@@ -1490,9 +1491,10 @@ tr:hover td { background: rgba(108,142,247,0.05); }
   }
 
   #node-type-style-dialog,
-  #edge-type-style-dialog {
+  #edge-type-style-dialog,
+  #csv-import-dialog {
     width: calc(100vw - 32px);
-    max-width: 480px;
+    max-width: 640px;
   }
 
   /* Fit ボタンの位置調整（サイドバートグルと重ならないように） */
@@ -1614,5 +1616,63 @@ tr:hover td { background: rgba(108,142,247,0.05); }
   border-radius: 3px;
   padding: 4px 6px;
   font-size: 10px;
+  overflow-x: auto;
+}
+
+/* ── CSV Import Dialog ───────────────────────────────────────────────────── */
+.csv-preview {
+  max-height: 140px;
+  overflow: auto;
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+.csv-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.csv-preview-table th,
+.csv-preview-table td {
+  border: 1px solid var(--border);
+  padding: 2px 6px;
+  white-space: nowrap;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.csv-preview-table th {
+  background: var(--bg-secondary);
+  font-weight: 600;
+}
+.csv-preview-more {
+  padding: 2px 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.cid-edge-col-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.cid-edge-col-row .dialog-select,
+.cid-edge-col-row .dialog-input {
+  flex: 1;
+  min-width: 0;
+}
+.cid-edge-col-row .cid-remove-edge-col {
+  flex: 0 0 auto;
+  padding: 2px 6px;
+}
+.csv-sample-text {
+  margin: 4px 0 0;
+  padding: 6px 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: pre;
   overflow-x: auto;
 }

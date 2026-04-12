@@ -46,7 +46,13 @@
           <button id="export-cypher-btn">Cypher (.cypher)</button>
         </div>
       </div>
-      <button class="header-btn" id="import-btn">Import</button>
+      <div class="dropdown">
+        <button class="header-btn" id="import-btn">Import</button>
+        <div class="dropdown-content">
+          <button id="import-json-btn">JSON (.json)</button>
+          <button id="import-csv-btn">CSV (.csv)</button>
+        </div>
+      </div>
       <button class="header-btn" id="share-btn">Share URL</button>
       <button class="header-btn danger" id="reset-btn">Reset</button>
     </header>
@@ -217,6 +223,34 @@
       </div>
       <div class="dialog-actions">
         <button id="ets-close-btn" class="dialog-btn dialog-btn-secondary">Close</button>
+      </div>
+    </div>
+
+    <!-- CSV Import Dialog -->
+    <div id="csv-import-dialog" class="dialog-box" style="display:none">
+      <div class="dialog-title">CSV インポート</div>
+      <div class="dialog-field">
+        <label class="dialog-label" for="cid-file">CSVファイル</label>
+        <input id="cid-file" type="file" accept=".csv,text/csv" class="dialog-input" />
+        <pre class="csv-sample-text">例:
+name,age,city,friend
+Alice,30,Tokyo,Bob
+Bob,25,Osaka,Alice</pre>
+      </div>
+      <div id="cid-preview" class="csv-preview"></div>
+      <div class="dialog-field">
+        <label class="dialog-label" for="cid-node-label">ノードラベル</label>
+        <input id="cid-node-label" class="dialog-input" placeholder="例: Person" list="cid-node-label-list" autocomplete="off" />
+        <datalist id="cid-node-label-list"></datalist>
+      </div>
+      <div class="dialog-field">
+        <label class="dialog-label">関係列（エッジ自動生成）</label>
+        <div id="cid-edge-cols"></div>
+        <button id="cid-add-edge-col-btn" class="dialog-btn dialog-btn-secondary">+ 関係列を追加</button>
+      </div>
+      <div class="dialog-actions">
+        <button id="cid-cancel" class="dialog-btn dialog-btn-secondary">Cancel</button>
+        <button id="cid-confirm" class="dialog-btn dialog-btn-primary">Import</button>
       </div>
     </div>
 

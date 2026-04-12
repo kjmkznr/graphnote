@@ -16,6 +16,8 @@ import { showCreateEdgeDialog } from './ui/createEdgeDialog.js';
 import { showEdgeTypeStyleDialog } from './ui/edgeTypeStyleDialog.js';
 import { showNodeTypeStyleDialog } from './ui/nodeTypeStyleDialog.js';
 import { showToast } from './ui/toast.js';
+import { showCsvImportDialog } from './ui/csvImportDialog.js';
+import { importCsv } from './graph/csvImport.js';
 import { Marked } from 'marked';
 import type { GnId, CanvasEvent, InteractionMode, TabKind, QueryResultCell, SnapshotCell, RawNode, RawEdge } from './types.js';
 import { el, clearChildren, afterNextPaint, byId } from './ui/domUtils.js';
@@ -567,7 +569,7 @@ export class App {
         });
     });
 
-    byId('import-btn')?.addEventListener('click', () => {
+    byId('import-json-btn')?.addEventListener('click', () => {
       const snapshotBeforeImport = UndoManager.captureSnapshot(this.db, this.canvas.getPositions());
       importFromFile(this.db).then((result) => {
         if (result === null) {
@@ -580,6 +582,29 @@ export class App {
         this.canvas.refreshGraph(this.db.getAllNodes(), this.db.getAllEdges(), result.positions);
         this.updateStats();
         showToast('インポートしました', 'success');
+      });
+    });
+
+    byId('import-csv-btn')?.addEventListener('click', () => {
+      showCsvImportDialog(this.registry).then((result) => {
+        if (!result) {
+          showToast('CSVインポートをキャンセルしました', 'warn');
+          return;
+        }
+        try {
+          this.captureForUndo();
+          const { nodeCount, edgeCount, skippedEdges } = importCsv(this.db, result.csvText, result.options);
+          for (const edge of this.db.getAllEdges()) {
+            this.edgeRegistry.ensure(edge._type);
+          }
+          this.registry.ensure(result.options.nodeLabel);
+          this.refreshAndSave();
+          const msg = `CSVインポート完了: ノード ${nodeCount} 件、エッジ ${edgeCount} 件` +
+            (skippedEdges > 0 ? `（スキップ ${skippedEdges} 件）` : '');
+          showToast(msg, 'success');
+        } catch (err) {
+          showToast(`CSVインポートに失敗しました: ${String(err)}`, 'warn');
+        }
       });
     });
   }
