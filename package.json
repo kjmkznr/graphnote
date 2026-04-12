@@ -10,11 +10,11 @@
   },
   "dependencies": {
     "@kjmkznr/egrph-wasm": "^0.2.1",
-    "cytoscape": "^3.30.2",
+    "cytoscape": "^3.33.2",
     "marked": "^18.0.0"
   },
   "devDependencies": {
-    "@types/cytoscape": "^3.21.9",
+    "@types/cytoscape": "^3.31.0",
     "@types/marked": "^6.0.0",
     "typescript": "^6.0.2",
     "vite": "8.0.5",
