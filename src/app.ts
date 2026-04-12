@@ -98,7 +98,7 @@ export class App implements AppContext {
     return { savedPositions, savedViewport };
   }
 
-  initUI(): void {
+  private initUI(): void {
     // Canvas (event handling delegated to CanvasEventController)
     const canvasCtrl = new CanvasEventController(this);
     this.canvas = new Canvas(byId('cy'), (event) => canvasCtrl.handleCanvasEvent(event), this.registry, this.edgeRegistry);
@@ -116,7 +116,7 @@ export class App implements AppContext {
     this.dashboard = new Dashboard(elTabDashboard);
   }
 
-  setupControllers(): void {
+  private setupControllers(): void {
     // Mobile sidebar controller
     this.mobileSidebar = new MobileSidebarController();
     this.mobileSidebar.setup();
