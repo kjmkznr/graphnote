@@ -152,7 +152,7 @@ export class Sidebar {
   }
 
   private updatePreview(): void {
-    this.elNotePreview.innerHTML = DOMPurify.sanitize(marked(this.elNoteTextarea.value) as string);
+    this.elNotePreview.innerHTML = DOMPurify.sanitize(marked.parse(this.elNoteTextarea.value) as string);
   }
 
   private showNotePreview(): void {
