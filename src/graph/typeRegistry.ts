@@ -1,4 +1,5 @@
 import { BaseTypeRegistry } from './baseTypeRegistry.js';
+import { DEFAULT_NODE_COLORS } from '../utils/colors';
 
 export type NodeShape = 'ellipse' | 'rectangle' | 'round-rectangle' | 'diamond' | 'triangle' | 'hexagon' | 'star';
 
@@ -6,11 +7,6 @@ export interface NodeTypeStyle {
   color: string;
   shape: NodeShape;
 }
-
-const DEFAULT_COLORS = [
-  '#6c8ef7', '#a78bfa', '#34d399', '#f87171',
-  '#fbbf24', '#38bdf8', '#fb923c', '#e879f9',
-];
 
 const DEFAULT_SHAPES: NodeShape[] = ['ellipse', 'rectangle', 'diamond', 'round-rectangle', 'hexagon', 'triangle'];
 
@@ -33,7 +29,7 @@ export class TypeRegistry extends BaseTypeRegistry<NodeTypeStyle> {
 
   protected defaultStyleForIndex(i: number): NodeTypeStyle {
     return {
-      color: DEFAULT_COLORS[i % DEFAULT_COLORS.length] ?? '#6c8ef7',
+      color: DEFAULT_NODE_COLORS[i % DEFAULT_NODE_COLORS.length] ?? '#6c8ef7',
       shape: DEFAULT_SHAPES[i % DEFAULT_SHAPES.length] ?? 'ellipse',
     };
   }

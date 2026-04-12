@@ -2,6 +2,7 @@ import cytoscape from 'cytoscape';
 import type { ScrapbookCell, MarkdownCell, QueryResultCell, SnapshotCell, SectionCell, RawNode, RawEdge } from '../types.js';
 import type { ScrapbookStore } from '../notebook/scrapbookStore.js';
 import { el } from './domUtils.js';
+import { DEFAULT_NODE_COLORS } from '../utils/colors';
 import { buildBarChart, buildLineChart } from './charts.js';
 import { isEdgeValue } from '../utils/graphUtils.js';
 import { marked } from 'marked';
@@ -215,10 +216,7 @@ export class Scrapbook {
 
     // Cytoscapeは要素がDOMに追加された後に初期化する必要があるためrequestAnimationFrameを使用
     requestAnimationFrame(() => {
-      const PALETTE = [
-        '#6c8ef7', '#a78bfa', '#34d399', '#f87171',
-        '#fbbf24', '#38bdf8', '#fb923c', '#e879f9',
-      ];
+      const PALETTE = DEFAULT_NODE_COLORS;
       const labelColors = new Map<string, string>();
       let paletteIdx = 0;
       const colorForLabel = (label: string): string => {
