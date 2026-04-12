@@ -1,16 +1,17 @@
-import type { ScrapbookCell, MarkdownCell, QueryResultCell, SnapshotCell, SectionCell, RawNode, RawEdge } from '../types.js';
+import type { ScrapbookCell, MarkdownCell, SectionCell } from '../types.js';
 import type { ScrapbookStore } from '../notebook/scrapbookStore.js';
 import { el } from './domUtils.js';
-import { buildBarChart, buildLineChart } from './charts.js';
-import { isEdgeValue } from '../utils/graphUtils.js';
-import { makeMarkdownEditor } from './markdownEditor.js';
-import { buildMiniGraph } from './scrapbookMiniGraph.js';
+import { DragDropHandler } from './scrapbook/dragDrop.js';
+import { renderMarkdownCell } from './scrapbook/markdownCell.js';
+import { renderQueryResultCell } from './scrapbook/queryResultCell.js';
+import { renderSectionCell } from './scrapbook/sectionCell.js';
+import { renderSnapshotCell } from './scrapbook/snapshotCell.js';
 
 export class Scrapbook {
   private container: HTMLElement;
   private store: ScrapbookStore;
   private cellListEl!: HTMLElement;
-  private dragSrcIndex: number = -1;
+
   constructor(container: HTMLElement, store: ScrapbookStore) {
     this.container = container;
     this.store = store;
@@ -50,426 +51,24 @@ export class Scrapbook {
       this.cellListEl.appendChild(empty);
       return;
     }
+    const dragDrop = new DragDropHandler(this.cellListEl, this.store);
     cells.forEach((cell, index) => {
       const cellEl = this.renderCell(cell);
-      this.attachDragHandlers(cellEl, index);
+      dragDrop.attachDragHandlers(cellEl, index);
       this.cellListEl.appendChild(cellEl);
-    });
-  }
-
-  private clearInsertIndicators(): void {
-    this.cellListEl.querySelectorAll('.nb-cell-drag-insert-before, .nb-cell-drag-insert-after').forEach(el => {
-      el.classList.remove('nb-cell-drag-insert-before', 'nb-cell-drag-insert-after');
-    });
-  }
-
-  private getInsertPosition(cellEl: HTMLElement, e: DragEvent): 'before' | 'after' {
-    const rect = cellEl.getBoundingClientRect();
-    return e.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
-  }
-
-  private attachDragHandlers(cellEl: HTMLElement, index: number): void {
-    cellEl.setAttribute('draggable', 'true');
-    cellEl.dataset['dragIndex'] = String(index);
-
-    cellEl.addEventListener('dragstart', (e: DragEvent) => {
-      this.dragSrcIndex = index;
-      cellEl.classList.add('nb-cell-dragging');
-      if (e.dataTransfer) {
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', String(index));
-      }
-    });
-
-    cellEl.addEventListener('dragend', () => {
-      cellEl.classList.remove('nb-cell-dragging');
-      this.clearInsertIndicators();
-    });
-
-    cellEl.addEventListener('dragover', (e: DragEvent) => {
-      e.preventDefault();
-      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-      if (index === this.dragSrcIndex) return;
-      this.clearInsertIndicators();
-      const pos = this.getInsertPosition(cellEl, e);
-      cellEl.classList.add(pos === 'before' ? 'nb-cell-drag-insert-before' : 'nb-cell-drag-insert-after');
-    });
-
-    cellEl.addEventListener('dragleave', () => {
-      cellEl.classList.remove('nb-cell-drag-insert-before', 'nb-cell-drag-insert-after');
-    });
-
-    cellEl.addEventListener('drop', (e: DragEvent) => {
-      e.preventDefault();
-      const pos = this.getInsertPosition(cellEl, e);
-      cellEl.classList.remove('nb-cell-drag-insert-before', 'nb-cell-drag-insert-after');
-      if (this.dragSrcIndex !== -1 && this.dragSrcIndex !== index) {
-        const toIndex = pos === 'before' ? index : index + 1;
-        const adjustedTo = this.dragSrcIndex < toIndex ? toIndex - 1 : toIndex;
-        this.store.reorderCells(this.dragSrcIndex, adjustedTo);
-      }
-      this.dragSrcIndex = -1;
     });
   }
 
   private renderCell(cell: ScrapbookCell): HTMLElement {
     switch (cell.kind) {
-      case 'markdown':      return this.renderMarkdownCell(cell);
-      case 'query-result':  return this.renderQueryResultCell(cell);
-      case 'snapshot':      return this.renderSnapshotCell(cell);
-      case 'section':       return this.renderSectionCell(cell);
+      case 'markdown':      return renderMarkdownCell(cell, this.store);
+      case 'query-result':  return renderQueryResultCell(cell, this.store);
+      case 'snapshot':      return renderSnapshotCell(cell, this.store);
+      case 'section':       return renderSectionCell(cell, this.store);
     }
   }
 
-  // ── Markdown cell ─────────────────────────────────────────────────────────────
-
-  private renderMarkdownCell(cell: MarkdownCell): HTMLElement {
-    const wrap = el('div', { class: 'nb-cell nb-cell-markdown', 'data-id': cell.id });
-
-    const header = this.makeCellHeader('Note', cell.id);
-    wrap.appendChild(header);
-
-    const { textarea, preview } = this.makeMarkdownEditor(
-      cell.content,
-      (value, immediate) => this.store.updateCell(cell.id, { content: value }, immediate),
-      { textareaClass: 'nb-markdown-input', placeholder: 'Markdown でメモを書く…' },
-    );
-
-    wrap.appendChild(textarea);
-    wrap.appendChild(preview);
-
-    return wrap;
-  }
-
-  // ── Query result cell ─────────────────────────────────────────────────────────
-
-  private renderQueryResultCell(cell: QueryResultCell): HTMLElement {
-    const wrap = el('div', { class: 'nb-cell nb-cell-query', 'data-id': cell.id });
-
-    const header = this.makeCellHeader('Query Result', cell.id);
-
-    this.attachMemoButton(header);
-    wrap.appendChild(header);
-
-    const memoWrap = this.makeMemoSection(cell.id, cell.memo);
-    wrap.appendChild(memoWrap);
-
-    const queryEl = el('pre', { class: 'nb-query-text' }, cell.query);
-    wrap.appendChild(queryEl);
-
-    const meta = el('div', { class: 'nb-query-meta' }, `${cell.rows.length} rows · ${cell.elapsedMs.toFixed(1)} ms`);
-    wrap.appendChild(meta);
-
-    if (cell.rows.length > 0) {
-      const { nodes, edges } = this.extractGraphElements(cell.rows);
-      if (nodes.length > 0) {
-        wrap.appendChild(this.buildGraphSection(nodes, edges));
-      }
-      const flatRows = this.flattenRows(cell.rows);
-      const numericKeys = this.getNumericKeys(flatRows);
-      if (numericKeys.length > 0) {
-        wrap.appendChild(this.buildChartSection(flatRows, numericKeys));
-      }
-      wrap.appendChild(this.buildTable(flatRows));
-    }
-
-    return wrap;
-  }
-
-  private extractGraphElements(rows: Record<string, unknown>[]): { nodes: RawNode[]; edges: RawEdge[] } {
-    const nodeMap = new Map<string, RawNode>();
-    const edgeMap = new Map<string, RawEdge>();
-    for (const row of rows) {
-      for (const val of Object.values(row)) {
-        if (val === null || typeof val !== 'object' || Array.isArray(val)) continue;
-        const obj = val as Record<string, unknown>;
-        if (
-          typeof obj['_id'] === 'string' &&
-          Array.isArray(obj['_labels']) &&
-          typeof obj['_properties'] === 'object' && obj['_properties'] !== null
-        ) {
-          const node = obj as unknown as RawNode;
-          nodeMap.set(node._id, node);
-        } else if (
-          typeof obj['_id'] === 'string' &&
-          typeof obj['_type'] === 'string' &&
-          typeof obj['_src'] === 'string' &&
-          typeof obj['_dst'] === 'string'
-        ) {
-          const edge = obj as unknown as RawEdge;
-          edgeMap.set(edge._id, edge);
-        }
-      }
-    }
-    const nodes = Array.from(nodeMap.values());
-    const edges = Array.from(edgeMap.values());
-    return { nodes, edges };
-  }
-
-  private buildGraphSection(nodes: RawNode[], edges: RawEdge[]): HTMLElement {
-    return buildMiniGraph(nodes, edges);
-  }
-
-  private isEdgeOnlyRow(row: Record<string, unknown>): boolean {
-    const values = Object.values(row);
-    if (values.length === 0) return false;
-    return values.every(isEdgeValue);
-  }
-
-  private flattenRows(rows: Record<string, unknown>[]): Record<string, unknown>[] {
-    return rows
-      .filter(row => !this.isEdgeOnlyRow(row))
-      .map(row => {
-        const flat: Record<string, unknown> = {};
-        for (const [colKey, val] of Object.entries(row)) {
-          if (val !== null && typeof val === 'object' && !Array.isArray(val)) {
-            const obj = val as Record<string, unknown>;
-            // ノード/エッジオブジェクト（_propertiesを持つ）はプロパティを展開
-            if (typeof obj['_properties'] === 'object' && obj['_properties'] !== null) {
-              const props = obj['_properties'] as Record<string, unknown>;
-              for (const [pk, pv] of Object.entries(props)) {
-                flat[`${colKey}.${pk}`] = pv;
-              }
-            } else {
-              flat[colKey] = val;
-            }
-          } else {
-            flat[colKey] = val;
-          }
-        }
-        return flat;
-      });
-  }
-
-  private getNumericKeys(rows: Record<string, unknown>[]): string[] {
-    const first = rows[0] ?? {};
-    return Object.keys(first).filter(k => {
-      return rows.every(r => r[k] === null || typeof r[k] === 'number');
-    });
-  }
-
-  private buildChartSection(rows: Record<string, unknown>[], numericKeys: string[]): HTMLElement {
-    const section = el('div', { class: 'nb-chart-section' });
-
-    // チャートタイプ選択タブ
-    const tabs = el('div', { class: 'nb-chart-tabs' });
-    const chartArea = el('div', { class: 'nb-chart-area' });
-
-    const chartTypes: Array<{ id: string; label: string }> = [
-      { id: 'bar', label: 'Bar' },
-      { id: 'line', label: 'Line' },
-    ];
-
-    let activeChart = 'bar';
-    let activeKey = numericKeys[0] ?? '';
-
-    // 系列選択
-    const seriesWrap = el('div', { class: 'nb-chart-series' });
-    for (const k of numericKeys) {
-      const btn = el('button', { class: `nb-chart-series-btn${k === activeKey ? ' active' : ''}`, 'data-key': k }, k);
-      btn.addEventListener('click', () => {
-        activeKey = k;
-        seriesWrap.querySelectorAll('.nb-chart-series-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        renderChart();
-      });
-      seriesWrap.appendChild(btn);
-    }
-
-    const renderChart = (): void => {
-      chartArea.innerHTML = '';
-      if (activeChart === 'bar' && activeKey) {
-        chartArea.appendChild(buildBarChart(rows, activeKey));
-      } else if (activeKey) {
-        chartArea.appendChild(buildLineChart(rows, activeKey));
-      }
-    };
-
-    for (const ct of chartTypes) {
-      const btn = el('button', { class: `nb-chart-tab-btn${ct.id === activeChart ? ' active' : ''}` }, ct.label);
-      btn.addEventListener('click', () => {
-        activeChart = ct.id;
-        tabs.querySelectorAll('.nb-chart-tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        renderChart();
-      });
-      tabs.appendChild(btn);
-    }
-
-    const controls = el('div', { class: 'nb-chart-controls' });
-    controls.appendChild(tabs);
-    if (numericKeys.length > 1) controls.appendChild(seriesWrap);
-    section.appendChild(controls);
-    section.appendChild(chartArea);
-
-    renderChart();
-    return section;
-  }
-
-  private buildTable(rows: Record<string, unknown>[]): HTMLElement {
-    const first = rows[0] ?? {};
-    const keys = Object.keys(first);
-    const table = el('table', { class: 'result-table nb-result-table' });
-    const thead = el('thead');
-    const headerRow = el('tr');
-    for (const k of keys) {
-      headerRow.appendChild(el('th', {}, k));
-    }
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
-
-    const tbody = el('tbody');
-    for (const row of rows) {
-      const tr = el('tr');
-      for (const k of keys) {
-        const val = row[k];
-        const td = el('td', {}, this.formatValue(val));
-        tr.appendChild(td);
-      }
-      tbody.appendChild(tr);
-    }
-    table.appendChild(tbody);
-    return table;
-  }
-
-  private formatValue(val: unknown): string {
-    if (val === null || val === undefined) return 'null';
-    if (typeof val === 'object') return JSON.stringify(val);
-    return String(val);
-  }
-
-  // ── Section cell ──────────────────────────────────────────────────────────────
-
-  private renderSectionCell(cell: SectionCell): HTMLElement {
-    const wrap = el('div', { class: 'nb-cell nb-cell-section', 'data-id': cell.id });
-
-    const deleteBtn = el('button', { class: 'nb-cell-delete-btn nb-section-delete-btn', title: 'セクションを削除' }, '✕');
-    deleteBtn.addEventListener('click', () => {
-      this.store.deleteCell(cell.id);
-    });
-
-    const titleEl = el('span', { class: 'nb-section-title' }, cell.title);
-    titleEl.setAttribute('contenteditable', 'true');
-    titleEl.setAttribute('spellcheck', 'false');
-    titleEl.addEventListener('blur', () => {
-      const newTitle = titleEl.textContent?.trim() ?? '';
-      if (newTitle !== cell.title) {
-        this.store.updateCell(cell.id, { title: newTitle } as Partial<SectionCell>);
-      }
-    });
-    titleEl.addEventListener('keydown', (e: KeyboardEvent) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        titleEl.blur();
-      }
-    });
-
-    wrap.appendChild(titleEl);
-    wrap.appendChild(deleteBtn);
-    return wrap;
-  }
-
-  // ── Snapshot cell ─────────────────────────────────────────────────────────────
-
-  private renderSnapshotCell(cell: SnapshotCell): HTMLElement {
-    const wrap = el('div', { class: 'nb-cell nb-cell-snapshot', 'data-id': cell.id });
-
-    const header = this.makeCellHeader('Snapshot', cell.id);
-
-    this.attachMemoButton(header);
-    wrap.appendChild(header);
-
-    const memoWrap = this.makeMemoSection(cell.id, cell.memo);
-    wrap.appendChild(memoWrap);
-
-    const label = el('div', { class: 'nb-snapshot-label' }, cell.label);
-    wrap.appendChild(label);
-
-    const img = el('img', { class: 'nb-snapshot-thumbnail', src: cell.pngDataUrl, alt: cell.label }) as HTMLImageElement;
-    const imgWrap = el('div', { class: 'nb-snapshot-img-wrap' });
-    imgWrap.appendChild(img);
-    imgWrap.addEventListener('click', () => {
-      this.openSnapshotModal(cell);
-    });
-    wrap.appendChild(imgWrap);
-
-    return wrap;
-  }
-
-  private openSnapshotModal(cell: SnapshotCell): void {
-    const overlay = el('div', { class: 'nb-snapshot-modal-overlay' });
-    const modalImg = el('img', { class: 'nb-snapshot-modal-img', src: cell.pngDataUrl, alt: cell.label }) as HTMLImageElement;
-    overlay.appendChild(modalImg);
-    overlay.addEventListener('click', () => overlay.remove());
-    document.body.appendChild(overlay);
-  }
-
-  // ── Helpers ───────────────────────────────────────────────────────────────────
-
-  private attachMemoButton(header: HTMLElement): void {
-    const memoBtn = el('button', { class: 'nb-cell-memo-btn', title: 'メモ' }, '📝');
-    const badge = header.querySelector('.nb-cell-badge');
-    if (badge && badge.nextSibling) {
-      header.insertBefore(memoBtn, badge.nextSibling);
-    } else {
-      header.appendChild(memoBtn);
-    }
-    // memoWrapはDOM挿入後にmakeMemoSectionで生成されるため、クリック時に親から取得する
-    memoBtn.addEventListener('click', () => {
-      const wrap = memoBtn.closest('.nb-cell');
-      const memoWrap = wrap?.querySelector<HTMLElement>('.nb-query-memo-wrap');
-      if (!memoWrap) return;
-      const hidden = memoWrap.classList.toggle('nb-hidden');
-      if (!hidden) {
-        const textarea = memoWrap.querySelector<HTMLTextAreaElement>('.nb-query-memo');
-        if (textarea && !textarea.value) {
-          const preview = memoWrap.querySelector<HTMLElement>('.nb-query-memo-preview');
-          preview?.classList.add('nb-hidden');
-          textarea.classList.remove('nb-hidden');
-          textarea.focus();
-        }
-      }
-    });
-  }
-
-  private makeMemoSection(cellId: string, initialMemo: string | undefined): HTMLElement {
-    const memoWrap = el('div', { class: 'nb-query-memo-wrap nb-hidden' });
-
-    const { textarea: memoTextarea, preview: memoPreview } = this.makeMarkdownEditor(
-      initialMemo ?? '',
-      (value, immediate) => this.store.updateCell(cellId, { memo: value }, immediate),
-      { textareaClass: 'nb-query-memo', previewClass: 'nb-query-memo-preview nb-markdown-preview', placeholder: 'メモを入力… (Markdown)' },
-    );
-
-    if (initialMemo) {
-      memoWrap.classList.remove('nb-hidden');
-    }
-
-    memoWrap.appendChild(memoTextarea);
-    memoWrap.appendChild(memoPreview);
-    return memoWrap;
-  }
-
-  private makeMarkdownEditor(
-    initialContent: string,
-    onSave: (value: string, immediate?: boolean) => void,
-    options: { textareaClass?: string; previewClass?: string; placeholder?: string } = {},
-  ): { textarea: HTMLTextAreaElement; preview: HTMLElement } {
-    return makeMarkdownEditor(initialContent, onSave, options);
-  }
-
-  private makeCellHeader(kindLabel: string, cellId: string): HTMLElement {
-    const header = el('div', { class: 'nb-cell-header' });
-    const badge = el('span', { class: `nb-cell-badge nb-badge-${kindLabel.toLowerCase().replace(' ', '-')}` }, kindLabel);
-    header.appendChild(badge);
-
-    const deleteBtn = el('button', { class: 'nb-cell-delete-btn', title: 'セルを削除' }, '✕');
-    deleteBtn.addEventListener('click', () => {
-      this.store.deleteCell(cellId);
-    });
-    header.appendChild(deleteBtn);
-    return header;
-  }
+  // ── Cell addition ─────────────────────────────────────────────────────────────
 
   private addSectionCell(): void {
     const cell: SectionCell = {
@@ -492,7 +91,6 @@ export class Scrapbook {
       content: '',
     };
     this.store.addCell(cell);
-    // 追加後に末尾へスクロール
     requestAnimationFrame(() => {
       this.cellListEl.lastElementChild?.scrollIntoView({ behavior: 'smooth' });
     });
