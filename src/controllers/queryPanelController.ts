@@ -55,9 +55,11 @@ function enrichRowsWithEdges(ctx: QueryPanelContext, rows: Record<string, unknow
 }
 
 const WRITE_KEYWORDS = /\b(CREATE|MERGE|SET|DELETE|DETACH|REMOVE|DROP)\b/i;
+const STRING_LITERAL = /"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`/g;
 
 function isWriteQuery(query: string): boolean {
-  return WRITE_KEYWORDS.test(query);
+  const stripped = query.replace(STRING_LITERAL, '');
+  return WRITE_KEYWORDS.test(stripped);
 }
 
 export function setupQueryPanel(ctx: QueryPanelContext): void {
