@@ -10,6 +10,7 @@ import { QueryPanel } from './ui/queryPanel.js';
 import { Scrapbook } from './ui/scrapbook.js';
 import { Dashboard } from './ui/dashboard.js';
 import { ScrapbookStore } from './notebook/scrapbookStore.js';
+import { BookmarkStore } from './graph/bookmarkStore.js';
 import { initResizers } from './ui/resizer.js';
 import { showToast } from './ui/toast.js';
 import { byId, afterNextPaint } from './ui/domUtils.js';
@@ -36,6 +37,7 @@ export class App implements AppContext {
   edgeRegistry!: EdgeTypeRegistry;
   undoManager = new UndoManager();
   scrapbookStore!: ScrapbookStore;
+  bookmarkStore!: BookmarkStore;
 
   private scrapbook!: Scrapbook;
   private dashboard!: Dashboard;
@@ -113,6 +115,7 @@ export class App implements AppContext {
 
     this.scrapbookStore = new ScrapbookStore();
     this.scrapbookStore.load();
+    this.bookmarkStore = new BookmarkStore();
     const elTabScrapbook = byId('tab-scrapbook');
     const elTabDashboard = byId('tab-dashboard');
     this.scrapbook = new Scrapbook(elTabScrapbook, this.scrapbookStore);

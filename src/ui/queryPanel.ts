@@ -1,6 +1,7 @@
 import { escHtml, byId } from './domUtils.js';
 import { getCompletions, applyCompletion } from './cypherAutocomplete.js';
 import type { CompletionContext, CompletionItem } from './cypherAutocomplete.js';
+import type { Bookmark } from '../graph/bookmarkStore.js';
 
 function renderValue(v: unknown): string {
   if (v === null || v === undefined) return `<span class="val-null">null</span>`;
@@ -23,6 +24,13 @@ export class QueryPanel {
   private elRunBtn = byId<HTMLButtonElement>('run-btn');
   private elResults = byId('query-results');
   private onExecuteCb: ((query: string) => void) | null = null;
+  private onSaveBookmarkCb: ((name: string, query: string) => void) | null = null;
+  private onDeleteBookmarkCb: ((id: string) => void) | null = null;
+  private onSelectBookmarkCb: ((query: string) => void) | null = null;
+
+  private elBookmarkSelect: HTMLSelectElement;
+  private elBookmarkSaveBtn: HTMLButtonElement;
+  private elBookmarkDeleteBtn: HTMLButtonElement;
 
   private completionContext: CompletionContext = {
     nodeTypes: [],
@@ -43,6 +51,52 @@ export class QueryPanel {
       // 少し遅延してからdropdownを閉じる（クリック選択を先に処理するため）
       setTimeout(() => this.hideDropdown(), 150);
     });
+
+    const bookmarkBar = this.createBookmarkBar();
+    const header = byId('query-panel-header');
+    header.insertAdjacentElement('afterend', bookmarkBar);
+
+    this.elBookmarkSelect = byId<HTMLSelectElement>('bookmark-select');
+    this.elBookmarkSaveBtn = byId<HTMLButtonElement>('bookmark-save-btn');
+    this.elBookmarkDeleteBtn = byId<HTMLButtonElement>('bookmark-delete-btn');
+
+    this.elBookmarkSelect.addEventListener('change', () => {
+      const query = this.elBookmarkSelect.value;
+      if (query) {
+        this.setQuery(query);
+        if (this.onSelectBookmarkCb) this.onSelectBookmarkCb(query);
+      }
+      this.elBookmarkDeleteBtn.disabled = !this.elBookmarkSelect.value;
+    });
+
+    this.elBookmarkSaveBtn.addEventListener('click', () => {
+      const query = this.elInput.value.trim();
+      if (!query) return;
+      const name = prompt('ブックマーク名を入力してください:', query.slice(0, 40));
+      if (name === null || name.trim() === '') return;
+      if (this.onSaveBookmarkCb) this.onSaveBookmarkCb(name.trim(), query);
+    });
+
+    this.elBookmarkDeleteBtn.addEventListener('click', () => {
+      const selectedOpt = this.elBookmarkSelect.selectedOptions[0];
+      if (!selectedOpt || !selectedOpt.dataset['id']) return;
+      if (!confirm(`「${selectedOpt.text}」を削除しますか？`)) return;
+      if (this.onDeleteBookmarkCb) this.onDeleteBookmarkCb(selectedOpt.dataset['id']);
+    });
+  }
+
+  private createBookmarkBar(): HTMLElement {
+    const bar = document.createElement('div');
+    bar.id = 'bookmark-bar';
+    bar.className = 'bookmark-bar';
+    bar.innerHTML = `
+      <select id="bookmark-select" class="bookmark-select" aria-label="保存済みクエリ">
+        <option value="">── Bookmarks ──</option>
+      </select>
+      <button id="bookmark-save-btn" class="bookmark-btn" title="現在のクエリをブックマークに保存">★ 保存</button>
+      <button id="bookmark-delete-btn" class="bookmark-btn bookmark-btn-danger" title="選択中のブックマークを削除" disabled>✕ 削除</button>
+    `;
+    return bar;
   }
 
   private createDropdown(): HTMLElement {
@@ -212,6 +266,32 @@ export class QueryPanel {
 
   onExecute(cb: (query: string) => void): void {
     this.onExecuteCb = cb;
+  }
+
+  onSaveBookmark(cb: (name: string, query: string) => void): void {
+    this.onSaveBookmarkCb = cb;
+  }
+
+  onDeleteBookmark(cb: (id: string) => void): void {
+    this.onDeleteBookmarkCb = cb;
+  }
+
+  onSelectBookmark(cb: (query: string) => void): void {
+    this.onSelectBookmarkCb = cb;
+  }
+
+  setBookmarks(bookmarks: Bookmark[]): void {
+    const prev = this.elBookmarkSelect.dataset['selectedId'] ?? '';
+    this.elBookmarkSelect.innerHTML = '<option value="">── Bookmarks ──</option>';
+    for (const bm of bookmarks) {
+      const opt = document.createElement('option');
+      opt.value = bm.query;
+      opt.dataset['id'] = bm.id;
+      opt.textContent = bm.name;
+      if (bm.id === prev) opt.selected = true;
+      this.elBookmarkSelect.appendChild(opt);
+    }
+    this.elBookmarkDeleteBtn.disabled = !this.elBookmarkSelect.value;
   }
 
   setCompletionContext(context: CompletionContext): void {

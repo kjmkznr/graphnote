@@ -5,7 +5,7 @@ import type { GnId, PersistedGraph, RawNode, RawEdge } from '../types.js';
 const STORAGE_KEY = 'graphnote:v1';
 const IDB_DB_NAME = 'graphnote';
 const IDB_STORE_NAME = 'graphs';
-const IDB_VERSION = 1;
+const IDB_VERSION = 2;
 
 /**
  * Serialize nodes and edges into a PersistedGraph.
@@ -79,8 +79,14 @@ export class IndexedDBStorage implements IAsyncStorage {
     if (this.dbPromise) return this.dbPromise;
     this.dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
       const req = indexedDB.open(IDB_DB_NAME, IDB_VERSION);
-      req.onupgradeneeded = () => {
-        req.result.createObjectStore(IDB_STORE_NAME);
+      req.onupgradeneeded = (event) => {
+        const db = req.result;
+        if (event.oldVersion < 1) {
+          db.createObjectStore(IDB_STORE_NAME);
+        }
+        if (event.oldVersion < 2) {
+          db.createObjectStore('bookmarks', { keyPath: 'id' });
+        }
       };
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);

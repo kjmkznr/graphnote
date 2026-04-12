@@ -6,6 +6,7 @@ import type { Canvas } from './ui/canvas.js';
 import type { Sidebar } from './ui/sidebar.js';
 import type { QueryPanel } from './ui/queryPanel.js';
 import type { ScrapbookStore } from './notebook/scrapbookStore.js';
+import type { BookmarkStore } from './graph/bookmarkStore.js';
 import type { RawNode, RawEdge } from './types.js';
 
 /**
@@ -36,6 +37,7 @@ export interface QueryPanelContext extends Pick<AppOperations, 'captureForUndo' 
   readonly registry: TypeRegistry;
   readonly edgeRegistry: EdgeTypeRegistry;
   readonly scrapbookStore: ScrapbookStore;
+  readonly bookmarkStore: BookmarkStore;
 }
 
 /**

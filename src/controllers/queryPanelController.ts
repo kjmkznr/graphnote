@@ -62,8 +62,23 @@ function isWriteQuery(query: string): boolean {
   return WRITE_KEYWORDS.test(stripped);
 }
 
+async function refreshBookmarks(ctx: QueryPanelContext): Promise<void> {
+  const bookmarks = await ctx.bookmarkStore.getAll();
+  ctx.queryPanel.setBookmarks(bookmarks);
+}
+
 export function setupQueryPanel(ctx: QueryPanelContext): void {
   refreshCompletionContext(ctx);
+  void refreshBookmarks(ctx);
+
+  ctx.queryPanel.onSaveBookmark((name, query) => {
+    void ctx.bookmarkStore.add(name, query).then(() => refreshBookmarks(ctx));
+  });
+
+  ctx.queryPanel.onDeleteBookmark((id) => {
+    void ctx.bookmarkStore.remove(id).then(() => refreshBookmarks(ctx));
+  });
+
   ctx.queryPanel.onExecute((query) => {
     ctx.canvas.clearHighlight();
     if (isWriteQuery(query)) ctx.captureForUndo();

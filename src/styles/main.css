@@ -604,6 +604,45 @@ kbd {
 .run-btn:hover { opacity: 0.85; }
 .run-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+.bookmark-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--surface);
+}
+
+.bookmark-select {
+  flex: 1;
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 12px;
+  padding: 3px 6px;
+  cursor: pointer;
+  outline: none;
+}
+.bookmark-select:focus { border-color: var(--accent); }
+
+.bookmark-btn {
+  padding: 3px 10px;
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.bookmark-btn:hover { opacity: 0.8; }
+.bookmark-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.bookmark-btn-danger { color: var(--red); border-color: rgba(248,113,113,0.4); }
+.bookmark-btn-danger:hover { background: rgba(248,113,113,0.1); opacity: 1; }
+
 #save-to-scrapbook-btn {
   padding: 5px 14px;
   background: var(--surface2);
