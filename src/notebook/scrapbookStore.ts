@@ -48,6 +48,12 @@ export class ScrapbookStore {
     if (!silent) this.notify();
   }
 
+  clear(): void {
+    this.cells = [];
+    this.save();
+    this.notify();
+  }
+
   deleteCell(id: string): void {
     this.cells = this.cells.filter((c) => c.id !== id);
     this.save();

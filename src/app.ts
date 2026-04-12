@@ -539,6 +539,7 @@ export class App {
       this.captureForUndo();
       this.db.reset();
       clearSaved();
+      this.scrapbookStore.clear();
       this.sidebar.hide();
       this.canvas.refreshGraph([], []);
       this.updateStats();
