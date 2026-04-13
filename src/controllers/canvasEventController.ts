@@ -175,10 +175,10 @@ export class CanvasEventController {
     try {
       const escaped = escStr(gnId);
       const nodeRows = this.ctx.db.execute<Record<string, unknown>>(
-        `MATCH (n)-[*0..]-(m) WHERE n.gnId = "${escaped}" RETURN m`
+        `MATCH (n)--(m) WHERE n.gnId = "${escaped}" RETURN m`
       );
       const edgeRows = this.ctx.db.execute<Record<string, unknown>>(
-        `MATCH (n)-[r]-(m) WHERE n.gnId = "${escaped}" RETURN r UNION MATCH (n)-[*1..]-()-[r]-() WHERE n.gnId = "${escaped}" RETURN r`
+        `MATCH (n)-[r]-() WHERE n.gnId = "${escaped}" RETURN r`
       );
       const { nodeGnIds } = extractMatchedGnIds(nodeRows);
       const { edgeGnIds } = extractMatchedGnIds(edgeRows);

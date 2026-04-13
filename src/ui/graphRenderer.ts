@@ -128,11 +128,9 @@ export class GraphRenderer {
     }
     // Highlight edges where both endpoints are in the matched node set
     if (nodeGnIds.size > 0) {
-      cy.edges(':not([ghost])').forEach((edge) => {
-        if (nodeGnIds.has(asGnId(edge.source().id())) && nodeGnIds.has(asGnId(edge.target().id()))) {
-          edge.removeClass('query-dimmed').addClass('query-match');
-        }
-      });
+      cy.edges(':not([ghost])').filter((edge) =>
+        nodeGnIds.has(asGnId(edge.source().id())) && nodeGnIds.has(asGnId(edge.target().id()))
+      ).removeClass('query-dimmed').addClass('query-match');
     }
   }
 
