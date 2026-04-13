@@ -54,6 +54,12 @@ export function setupModeControls(ctx: ToolbarContext): void {
 
 export function setupToolbarButtons(ctx: ToolbarContext): void {
   byId('fit-btn')?.addEventListener('click', () => ctx.canvas.fitView());
+  const layoutNames = ['cose', 'circle', 'concentric', 'grid', 'breadthfirst'] as const;
+  for (const layoutName of layoutNames) {
+    byId(`layout-${layoutName}-btn`)?.addEventListener('click', () => {
+      ctx.canvas.applyLayout(layoutName);
+    });
+  }
 
   byId('types-btn')?.addEventListener('click', () => {
     showNodeTypeStyleDialog(ctx.registry).then(() => {

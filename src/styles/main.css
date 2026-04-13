@@ -288,7 +288,9 @@ html, body {
   position: absolute;
   top: 10px;
   right: 10px;
-  padding: 5px 12px;
+  width: 96px;
+  box-sizing: border-box;
+  padding: 5px 8px;
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text-muted);
@@ -315,6 +317,32 @@ html, body {
   z-index: 10;
 }
 #canvas-action-btns .canvas-overlay-btn {
+  position: static;
+}
+
+#layout-btns {
+  position: absolute;
+  top: 46px;
+  right: 10px;
+  z-index: 10;
+}
+
+#layout-btns #layout-toggle-btn {
+  position: static;
+}
+
+#layout-submenu {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+#layout-btns:hover #layout-submenu {
+  display: flex;
+}
+
+#layout-submenu .canvas-overlay-btn {
   position: static;
 }
 

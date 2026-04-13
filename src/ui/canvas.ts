@@ -107,6 +107,10 @@ export class Canvas {
 
   fitView(): void { this.cy.fit(undefined, 40); }
 
+  applyLayout(name: 'cose' | 'circle' | 'concentric' | 'grid' | 'breadthfirst'): void {
+    this.cy.layout({ name, animate: true, animationDuration: 400 } as cytoscape.LayoutOptions).run();
+  }
+
   resize(): void {
     const pan = this.cy.pan();
     const zoom = this.cy.zoom();
