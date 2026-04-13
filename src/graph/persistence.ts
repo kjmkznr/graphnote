@@ -2,10 +2,17 @@ import type { GraphDB } from './db.js';
 import { asGnId } from '../types.js';
 import type { GnId, PersistedGraph, RawNode, RawEdge } from '../types.js';
 
+import { openGraphnoteDB } from './idb.js';
+
 const STORAGE_KEY = 'graphnote:v1';
-const IDB_DB_NAME = 'graphnote';
 const IDB_STORE_NAME = 'graphs';
-const IDB_VERSION = 2;
+const IDB_META_STORE_NAME = 'graph-meta';
+
+export interface GraphMeta {
+  id: string;
+  name: string;
+  createdAt: number;
+}
 
 /**
  * Serialize nodes and edges into a PersistedGraph.
@@ -73,25 +80,8 @@ export class BrowserStorage implements IStorage {
 }
 
 export class IndexedDBStorage implements IAsyncStorage {
-  private dbPromise: Promise<IDBDatabase> | null = null;
-
   private openDB(): Promise<IDBDatabase> {
-    if (this.dbPromise) return this.dbPromise;
-    this.dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
-      const req = indexedDB.open(IDB_DB_NAME, IDB_VERSION);
-      req.onupgradeneeded = (event) => {
-        const db = req.result;
-        if (event.oldVersion < 1) {
-          db.createObjectStore(IDB_STORE_NAME);
-        }
-        if (event.oldVersion < 2) {
-          db.createObjectStore('bookmarks', { keyPath: 'id' });
-        }
-      };
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-    });
-    return this.dbPromise;
+    return openGraphnoteDB();
   }
 
   async getItem(key: string): Promise<string | null> {
@@ -123,6 +113,36 @@ export class IndexedDBStorage implements IAsyncStorage {
       req.onerror = () => reject(req.error);
     });
   }
+
+  async listGraphMeta(): Promise<GraphMeta[]> {
+    const db = await this.openDB();
+    return new Promise<GraphMeta[]>((resolve, reject) => {
+      const tx = db.transaction(IDB_META_STORE_NAME, 'readonly');
+      const req = tx.objectStore(IDB_META_STORE_NAME).getAll();
+      req.onsuccess = () => resolve((req.result as GraphMeta[]).sort((a, b) => a.createdAt - b.createdAt));
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async putGraphMeta(meta: GraphMeta): Promise<void> {
+    const db = await this.openDB();
+    return new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(IDB_META_STORE_NAME, 'readwrite');
+      const req = tx.objectStore(IDB_META_STORE_NAME).put(meta);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async deleteGraphMeta(id: string): Promise<void> {
+    const db = await this.openDB();
+    return new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(IDB_META_STORE_NAME, 'readwrite');
+      const req = tx.objectStore(IDB_META_STORE_NAME).delete(id);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  }
 }
 
 /**
@@ -148,14 +168,16 @@ export async function saveGraph(
   db: GraphDB,
   positions: Record<GnId, { x: number; y: number }>,
   viewport?: { pan: { x: number; y: number }; zoom: number },
-  storage: IAsyncStorage = new IndexedDBStorage()
+  storage: IAsyncStorage = new IndexedDBStorage(),
+  graphId?: string,
 ): Promise<void> {
   const nodes = db.getAllNodes();
   const edges = db.getAllEdges();
   const data = buildPersistedGraph(nodes, edges, positions, viewport);
+  const key = graphId ? `graph:${graphId}` : STORAGE_KEY;
 
   try {
-    await storage.setItem(STORAGE_KEY, JSON.stringify(data));
+    await storage.setItem(key, JSON.stringify(data));
   } catch (err) {
     console.warn('Failed to save to storage:', err);
   }
@@ -163,9 +185,11 @@ export async function saveGraph(
 
 export async function loadGraph(
   db: GraphDB,
-  storage: IAsyncStorage = new IndexedDBStorage()
+  storage: IAsyncStorage = new IndexedDBStorage(),
+  graphId?: string,
 ): Promise<{ positions: Record<GnId, { x: number; y: number }>; viewport?: { pan: { x: number; y: number }; zoom: number } }> {
-  const raw = await storage.getItem(STORAGE_KEY);
+  const key = graphId ? `graph:${graphId}` : STORAGE_KEY;
+  const raw = await storage.getItem(key);
   if (!raw) return { positions: {} };
 
   let saved: PersistedGraph;
@@ -209,8 +233,9 @@ export async function loadGraph(
   return { positions: saved.positions ?? {} as Record<GnId, { x: number; y: number }>, viewport: saved.viewport };
 }
 
-export async function clearSaved(storage: IAsyncStorage = new IndexedDBStorage()): Promise<void> {
-  await storage.removeItem(STORAGE_KEY);
+export async function clearSaved(storage: IAsyncStorage = new IndexedDBStorage(), graphId?: string): Promise<void> {
+  const key = graphId ? `graph:${graphId}` : STORAGE_KEY;
+  await storage.removeItem(key);
 }
 
 export function exportToFile(

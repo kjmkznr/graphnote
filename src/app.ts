@@ -1,5 +1,7 @@
 import { GraphDB } from './graph/db.js';
-import { saveGraph, loadGraph, migrateFromLocalStorage } from './graph/persistence.js';
+import { migrateFromLocalStorage } from './graph/persistence.js';
+import { GraphManager } from './graph/graphManager.js';
+import { GraphSwitcher } from './ui/graphSwitcher.js';
 import { parseShareUrl, restoreSharedGraph } from './graph/urlShare.js';
 import { TypeRegistry } from './graph/typeRegistry.js';
 import { EdgeTypeRegistry } from './graph/edgeTypeRegistry.js';
@@ -44,11 +46,14 @@ export class App implements AppContext {
   private mobileSidebar!: MobileSidebarController;
   private nodeTypeFilter!: NodeTypeFilterController;
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
+  private graphManager!: GraphManager;
+  private graphSwitcher!: GraphSwitcher;
 
   async init(): Promise<void> {
     const { savedPositions, savedViewport } = await this.initData();
     this.initUI();
     this.setupControllers();
+    this.initGraphSwitcher();
 
     document.getElementById('loading')?.remove();
 
@@ -78,6 +83,10 @@ export class App implements AppContext {
     // Migrate existing localStorage data to IndexedDB
     await migrateFromLocalStorage();
 
+    // Initialize graph manager (handles legacy data migration)
+    this.graphManager = new GraphManager();
+    await this.graphManager.init();
+
     // Check for shared graph in URL before falling back to IndexedDB
     let savedPositions: Record<GnId, { x: number; y: number }>;
     let savedViewport: { pan: { x: number; y: number }; zoom: number } | undefined;
@@ -89,10 +98,10 @@ export class App implements AppContext {
       // Clear the share hash so it doesn't reload on refresh
       history.replaceState(null, '', location.pathname);
       // Persist the shared graph to IndexedDB
-      await saveGraph(this.db, savedPositions, savedViewport);
+      await this.graphManager.saveCurrentGraph(this.db, savedPositions, savedViewport);
       showToast('共有されたグラフを読み込みました', 'success');
     } else {
-      const result = await loadGraph(this.db);
+      const result = await this.graphManager.switchGraph(this.graphManager.currentGraphId, this.db);
       savedPositions = result.positions;
       savedViewport = result.viewport;
     }
@@ -154,7 +163,7 @@ export class App implements AppContext {
   scheduleSave(): void {
     if (this.saveTimer) clearTimeout(this.saveTimer);
     this.saveTimer = setTimeout(() => {
-      saveGraph(this.db, this.canvas.getPositions(), this.canvas.getViewport()).catch((err) => console.warn('Failed to save graph:', err));
+      this.graphManager.saveCurrentGraph(this.db, this.canvas.getPositions(), this.canvas.getViewport()).catch((err) => console.warn('Failed to save graph:', err));
       this.updateStats();
     }, 300);
   }
@@ -189,6 +198,31 @@ export class App implements AppContext {
     const ec = byId('edge-count');
     if (nc) nc.textContent = String(this.db.nodeCount());
     if (ec) ec.textContent = String(this.db.edgeCount());
+  }
+
+  private initGraphSwitcher(): void {
+    this.graphSwitcher = new GraphSwitcher(this.graphManager, async (id: string) => {
+      // Save current graph before switching
+      await this.graphManager.saveCurrentGraph(this.db, this.canvas.getPositions(), this.canvas.getViewport());
+      // Reset state
+      this.undoManager.clear();
+      this.db.reset();
+      // Load new graph
+      const result = await this.graphManager.switchGraph(id, this.db);
+      for (const edge of this.db.getAllEdges()) {
+        this.edgeRegistry.ensure(edge._type);
+      }
+      this.canvas.updateEdgeStyles(this.edgeRegistry);
+      this.nodeTypeFilter.updateOptions();
+      this.canvas.refreshGraph(this.getFilteredNodes(), this.getFilteredEdges(), result.positions);
+      if (result.viewport) {
+        this.canvas.setViewport(result.viewport.pan, result.viewport.zoom);
+      } else {
+        this.canvas.fitView();
+      }
+      this.updateStats();
+      refreshCompletionContext(this);
+    });
   }
 
   isMobile(): boolean {

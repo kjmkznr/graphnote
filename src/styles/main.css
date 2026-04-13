@@ -99,6 +99,29 @@ html, body {
 
 .header-divider { width: 1px; height: 20px; background: var(--border); }
 
+/* ── Graph Switcher ── */
+#graph-switcher {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#graph-select {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 4px;
+  font-size: 12px;
+  padding: 3px 6px;
+  cursor: pointer;
+  max-width: 160px;
+  height: 28px;
+}
+#graph-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
 #undo-redo-buttons { display: flex; gap: 2px; }
 
 .icon-btn {

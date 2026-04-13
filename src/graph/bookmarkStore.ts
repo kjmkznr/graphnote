@@ -1,6 +1,6 @@
-const IDB_DB_NAME = 'graphnote';
+import { openGraphnoteDB } from './idb.js';
+
 const IDB_STORE_NAME = 'bookmarks';
-const IDB_VERSION = 2;
 
 export interface Bookmark {
   id: string;
@@ -10,27 +10,8 @@ export interface Bookmark {
 }
 
 export class BookmarkStore {
-  private dbPromise: Promise<IDBDatabase> | null = null;
-
   private openDB(): Promise<IDBDatabase> {
-    if (this.dbPromise) return this.dbPromise;
-    this.dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
-      const req = indexedDB.open(IDB_DB_NAME, IDB_VERSION);
-      req.onupgradeneeded = (event) => {
-        const db = req.result;
-        if (event.oldVersion < 1) {
-          db.createObjectStore('graphs');
-        }
-        if (event.oldVersion < 2) {
-          if (!db.objectStoreNames.contains(IDB_STORE_NAME)) {
-            db.createObjectStore(IDB_STORE_NAME, { keyPath: 'id' });
-          }
-        }
-      };
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-    });
-    return this.dbPromise;
+    return openGraphnoteDB();
   }
 
   async getAll(): Promise<Bookmark[]> {
