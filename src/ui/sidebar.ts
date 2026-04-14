@@ -2,6 +2,7 @@ import type { GnId, RawNode, RawEdge, PropertyValue } from '../types.js';
 import type { TypeRegistry } from '../graph/typeRegistry.js';
 import { el, clearChildren, byId } from './domUtils.js';
 import { renderMarkdownContent } from './markdownEditor.js';
+import { createPropertyInput, detectPropertyType, getPropertyTypeBadge } from './propertyInput.js';
 
 // Properties that are internal and should never be shown to the user
 const HIDDEN_PROPS = new Set(['gnId', 'note']);
@@ -176,18 +177,28 @@ export class Sidebar {
     clearChildren(this.elPropsList);
 
     for (const [k, v] of visible) {
-      const strVal = v === null ? '' : String(v);
-      const input = el('input', { class: 'prop-value-input', 'data-key': k, value: strVal });
-      input.addEventListener('change', () => {
-        if (!this.currentGnId) return;
-        this.onPropertyChangeCb?.(this.currentGnId, k, input.value);
-      });
+      const type = detectPropertyType(k, v);
+      const badge = getPropertyTypeBadge(type);
 
       const keyAttrs: Record<string, string> = { class: 'prop-key' };
       if (k === 'name') keyAttrs['title'] = 'グラフ上に表示される名前';
 
+      const keyEl = el('span', keyAttrs,
+        badge ? el('span', { class: 'prop-type-badge', title: type }, badge) : '',
+        k,
+      );
+
+      const inputWrapper = createPropertyInput({
+        key: k,
+        value: v,
+        onChange: (newVal) => {
+          if (!this.currentGnId) return;
+          this.onPropertyChangeCb?.(this.currentGnId, k, newVal);
+        },
+      });
+
       this.elPropsList.appendChild(
-        el('div', { class: 'prop-row' }, el('span', keyAttrs, k), input),
+        el('div', { class: 'prop-row' }, keyEl, inputWrapper),
       );
     }
   }
