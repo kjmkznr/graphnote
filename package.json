@@ -9,7 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@kjmkznr/egrph-wasm": "^0.2.1",
+    "@kjmkznr/egrph-wasm": "^0.3.0",
     "cytoscape": "^3.33.2",
     "dompurify": "^3.3.3",
     "marked": "^18.0.0"
