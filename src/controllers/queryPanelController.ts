@@ -67,6 +67,20 @@ async function refreshBookmarks(ctx: QueryPanelContext): Promise<void> {
   ctx.queryPanel.setBookmarks(bookmarks);
 }
 
+function logQueryExecutionMetrics(query: string, metrics: {
+  executeMs: number;
+  syncGraphDataMs: number;
+  refreshGraphMs: number;
+  highlightMs: number;
+  enrichRowsMs: number;
+  totalMs: number;
+}): void {
+  console.info('[perf] queryPanel.onExecute', {
+    query,
+    ...metrics,
+  });
+}
+
 export function setupQueryPanel(ctx: QueryPanelContext): void {
   refreshCompletionContext(ctx);
   void refreshBookmarks(ctx);
@@ -82,23 +96,50 @@ export function setupQueryPanel(ctx: QueryPanelContext): void {
   ctx.queryPanel.onExecute((query) => {
     ctx.canvas.clearHighlight();
     if (isWriteQuery(query)) ctx.captureForUndo();
-    const t0 = performance.now();
+    const totalStart = performance.now();
     try {
+      const executeStart = performance.now();
       const rows = ctx.db.execute(query);
-      const elapsed = performance.now() - t0;
-      ctx.queryPanel.showResult(rows, elapsed);
-      ctx.canvas.refreshGraph(ctx.db.getAllNodes(), ctx.db.getAllEdges());
+      const executeElapsed = performance.now() - executeStart;
+      ctx.queryPanel.showResult(rows, executeElapsed);
+
+      const syncGraphDataStart = performance.now();
+      const allNodes = ctx.db.getAllNodes();
+      const allEdges = ctx.db.getAllEdges();
+      const syncGraphDataElapsed = performance.now() - syncGraphDataStart;
+
+      const refreshGraphStart = performance.now();
+      ctx.canvas.refreshGraph(allNodes, allEdges);
+      const refreshGraphElapsed = performance.now() - refreshGraphStart;
+
       ctx.scheduleSave();
+
       const { nodeGnIds, edgeGnIds } = extractMatchedGnIds(rows);
+      const highlightStart = performance.now();
       ctx.canvas.highlightByGnId(nodeGnIds, edgeGnIds);
+      const highlightElapsed = performance.now() - highlightStart;
+
+      const enrichRowsStart = performance.now();
+      const enrichedRows = enrichRowsWithEdges(ctx, rows as Record<string, unknown>[]);
+      const enrichRowsElapsed = performance.now() - enrichRowsStart;
+      const totalElapsed = performance.now() - totalStart;
+
+      logQueryExecutionMetrics(query, {
+        executeMs: executeElapsed,
+        syncGraphDataMs: syncGraphDataElapsed,
+        refreshGraphMs: refreshGraphElapsed,
+        highlightMs: highlightElapsed,
+        enrichRowsMs: enrichRowsElapsed,
+        totalMs: totalElapsed,
+      });
 
       const cell: QueryResultCell = {
         id: crypto.randomUUID(),
         kind: 'query-result',
         createdAt: Date.now(),
         query,
-        rows: enrichRowsWithEdges(ctx, rows as Record<string, unknown>[]),
-        elapsedMs: elapsed,
+        rows: enrichedRows,
+        elapsedMs: executeElapsed,
       };
       if (isWriteQuery(query)) ctx.scrapbookStore.addCell(cell);
     } catch (err) {
