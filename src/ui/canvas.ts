@@ -71,7 +71,7 @@ export class Canvas {
   setMode(mode: InteractionMode): void {
     this.mode = mode;
     // All modes keep nodes draggable and panning enabled
-    this.cy.nodes(':not([ghost]):not([edgeHandle])').forEach((n) => { n.grabify(); });
+    this.cy.nodes('[!ghost][!edgeHandle]').forEach((n) => { n.grabify(); });
     this.cy.userPanningEnabled(true);
     const container = this.cy.container();
     if (container) container.style.cursor = mode === 'node' ? 'crosshair' : '';
@@ -163,13 +163,13 @@ export class Canvas {
   private bindTapEvents(): void {
     const cy = this.cy;
 
-    cy.on('tap', 'node:not([ghost])', (e) => {
+    cy.on('tap', 'node[!ghost]', (e) => {
       if (this.dragState.active) return;
       const gnId = asGnId(e.target.data('gnId') as string);
       if (gnId) this.onEvent({ kind: 'node-clicked', gnId });
     });
 
-    cy.on('tap', 'edge:not([ghost])', (e) => {
+    cy.on('tap', 'edge[!ghost]', (e) => {
       const gnId = asGnId(e.target.data('gnId') as string);
       if (gnId) this.onEvent({ kind: 'edge-clicked', gnId });
     });
@@ -184,13 +184,13 @@ export class Canvas {
       }
     });
 
-    cy.on('cxttap', 'node:not([ghost])', (e) => {
+    cy.on('cxttap', 'node[!ghost]', (e) => {
       const gnId = asGnId(e.target.data('gnId') as string);
       const { x, y } = getEventClientPos(e.originalEvent as MouseEvent | TouchEvent);
       if (gnId) this.onEvent({ kind: 'node-context', gnId, x, y });
     });
 
-    cy.on('cxttap', 'edge:not([ghost])', (e) => {
+    cy.on('cxttap', 'edge[!ghost]', (e) => {
       const gnId = asGnId(e.target.data('gnId') as string);
       const { x, y } = getEventClientPos(e.originalEvent as MouseEvent | TouchEvent);
       if (gnId) this.onEvent({ kind: 'edge-context', gnId, x, y });
@@ -240,7 +240,7 @@ export class Canvas {
       if (!t.data('edgeHandle')) this.onEvent({ kind: 'element-unhovered' });
     });
 
-    cy.on('mouseover', 'edge:not([ghost])', (e) => {
+    cy.on('mouseover', 'edge[!ghost]', (e) => {
       const gnId = asGnId(e.target.data('gnId') as string);
       if (gnId) {
         const { x, y } = getEventClientPos(e.originalEvent as MouseEvent | TouchEvent);
@@ -248,7 +248,7 @@ export class Canvas {
       }
     });
 
-    cy.on('mouseout', 'edge:not([ghost])', () => {
+    cy.on('mouseout', 'edge[!ghost]', () => {
       this.onEvent({ kind: 'element-unhovered' });
     });
   }
@@ -279,7 +279,7 @@ export class Canvas {
       if (ghost.length) ghost.position({ x: e.position.x, y: e.position.y });
     });
 
-    cy.on('mouseup', 'node:not([ghost]):not([edgeHandle])', (e) => {
+    cy.on('mouseup', 'node[!ghost][!edgeHandle]', (e) => {
       if (!this.dragState.active) return;
       const targetGnId = asGnId(e.target.data('gnId') as string);
       const { sourceGnId } = this.dragState;
@@ -308,8 +308,8 @@ export class Canvas {
       const active = document.activeElement;
       if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || (active as HTMLElement).isContentEditable)) return;
       const selected = cy.$(':selected');
-      const nodeGnIds = selected.nodes(':not([ghost]):not([edgeHandle])').map((n) => asGnId(n.data('gnId') as string)).filter(Boolean);
-      const edgeGnIds = selected.edges(':not([ghost])').map((ed) => asGnId(ed.data('gnId') as string)).filter(Boolean);
+      const nodeGnIds = selected.nodes('[!ghost][!edgeHandle]').map((n) => asGnId(n.data('gnId') as string)).filter(Boolean);
+      const edgeGnIds = selected.edges('[!ghost]').map((ed) => asGnId(ed.data('gnId') as string)).filter(Boolean);
       if (nodeGnIds.length === 0 && edgeGnIds.length === 0) return;
       this.onEvent({ kind: 'delete-selected', nodeGnIds, edgeGnIds });
     });
