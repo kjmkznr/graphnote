@@ -52,7 +52,6 @@ export class Canvas {
       container,
       style: CYTOSCAPE_STYLES,
       layout: { name: 'preset' },
-      wheelSensitivity: 0.3,
       userZoomingEnabled: true,
       userPanningEnabled: true,
       boxSelectionEnabled: false,
