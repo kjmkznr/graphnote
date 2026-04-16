@@ -122,6 +122,19 @@ html, body {
   border-color: var(--accent);
 }
 
+.graph-rename-input {
+  background: var(--surface2);
+  border: 1px solid var(--accent);
+  color: var(--text);
+  border-radius: 4px;
+  font-size: 12px;
+  padding: 3px 6px;
+  max-width: 160px;
+  height: 28px;
+  box-sizing: border-box;
+  outline: none;
+}
+
 #undo-redo-buttons { display: flex; gap: 2px; }
 
 .icon-btn {

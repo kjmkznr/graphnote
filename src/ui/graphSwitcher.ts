@@ -29,6 +29,8 @@ export class GraphSwitcher {
     this.setup();
   }
 
+  private renameInput: HTMLInputElement | null = null;
+
   private setup(): void {
     this.select.addEventListener('change', () => {
       void this.handleSwitch(this.select.value);
@@ -39,7 +41,11 @@ export class GraphSwitcher {
     });
 
     this.renameBtn.addEventListener('click', () => {
-      void this.handleRename();
+      this.startInlineRename();
+    });
+
+    this.select.addEventListener('dblclick', () => {
+      this.startInlineRename();
     });
 
     this.deleteBtn.addEventListener('click', () => {
@@ -89,15 +95,56 @@ export class GraphSwitcher {
     }
   }
 
-  private async handleRename(): Promise<void> {
+  private startInlineRename(): void {
+    if (this.renameInput) return; // already editing
     const current = this.manager.currentGraph;
     if (!current) return;
-    const name = window.prompt('グラフ名を変更してください', current.name);
-    if (name === null || name.trim() === '') return;
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = current.name;
+    input.className = 'graph-rename-input';
+    input.setAttribute('aria-label', 'グラフ名を編集');
+
+    this.select.style.display = 'none';
+    this.select.parentElement!.insertBefore(input, this.select);
+    this.renameInput = input;
+
+    input.focus();
+    input.select();
+
+    const finish = (save: boolean): void => {
+      if (!this.renameInput) return;
+      const newName = input.value.trim();
+      this.renameInput.remove();
+      this.renameInput = null;
+      this.select.style.display = '';
+
+      if (save && newName && newName !== current.name) {
+        void this.commitRename(current.id, newName);
+      }
+    };
+
+    input.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        finish(true);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        finish(false);
+      }
+    });
+
+    input.addEventListener('blur', () => {
+      finish(true);
+    });
+  }
+
+  private async commitRename(id: string, newName: string): Promise<void> {
     try {
-      await this.manager.renameGraph(current.id, name);
+      await this.manager.renameGraph(id, newName);
       this.render();
-      showToast(`グラフ名を「${name}」に変更しました`, 'success');
+      showToast(`グラフ名を「${newName}」に変更しました`, 'success');
     } catch (err) {
       showToast(`グラフ名の変更に失敗しました: ${String(err)}`);
     }
