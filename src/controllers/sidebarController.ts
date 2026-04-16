@@ -10,14 +10,22 @@ export function setupSidebarCallbacks(ctx: SidebarContext): void {
   });
 
   ctx.sidebar.onNoteChange((gnId, note) => {
-    ctx.db.updateNodeProperty(gnId, 'note', note);
+    if (ctx.sidebar.getCurrentType() === 'edge') {
+      ctx.db.updateEdgeProperty(gnId, 'note', note);
+    } else {
+      ctx.db.updateNodeProperty(gnId, 'note', note);
+    }
     ctx.scheduleSave();
   });
 
   ctx.sidebar.onPropertyChange((gnId, key, value) => {
     try {
       ctx.captureForUndo();
-      ctx.db.updateNodeProperty(gnId, key, value);
+      if (ctx.sidebar.getCurrentType() === 'edge') {
+        ctx.db.updateEdgeProperty(gnId, key, value);
+      } else {
+        ctx.db.updateNodeProperty(gnId, key, value);
+      }
       ctx.scheduleSave();
     } catch (err) {
       showToast(String(err), 'warn');
@@ -27,9 +35,15 @@ export function setupSidebarCallbacks(ctx: SidebarContext): void {
   ctx.sidebar.onAddProperty((gnId, key, value) => {
     try {
       ctx.captureForUndo();
-      ctx.db.updateNodeProperty(gnId, key, value);
-      const node = ctx.db.getNodeByGnId(gnId);
-      if (node) ctx.sidebar.showNode(node);
+      if (ctx.sidebar.getCurrentType() === 'edge') {
+        ctx.db.updateEdgeProperty(gnId, key, value);
+        const edge = ctx.db.getEdgeByGnId(gnId);
+        if (edge) ctx.sidebar.showEdge(edge);
+      } else {
+        ctx.db.updateNodeProperty(gnId, key, value);
+        const node = ctx.db.getNodeByGnId(gnId);
+        if (node) ctx.sidebar.showNode(node);
+      }
       ctx.scheduleSave();
     } catch (err) {
       showToast(String(err), 'warn');

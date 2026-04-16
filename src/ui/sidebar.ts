@@ -110,6 +110,8 @@ export class Sidebar {
     this.elContent.style.display = 'none';
   }
 
+  getCurrentType(): 'node' | 'edge' | null { return this.currentType; }
+
   onNoteChange(cb: (gnId: GnId, note: string) => void): void { this.onNoteChangeCb = cb; }
   onPropertyChange(cb: (gnId: GnId, key: string, value: PropertyValue) => void): void { this.onPropertyChangeCb = cb; }
   onAddProperty(cb: (gnId: GnId, key: string, value: string) => void): void { this.onAddPropertyCb = cb; }
