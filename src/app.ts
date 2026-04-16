@@ -92,6 +92,9 @@ export class App implements AppContext {
     let savedViewport: { pan: { x: number; y: number }; zoom: number } | undefined;
     const sharedGraph = await parseShareUrl();
     if (sharedGraph) {
+      // 新しいグラフとしてインポートする（既存グラフを上書きしない）
+      const importedMeta = await this.graphManager.createGraph('共有グラフ');
+      await this.graphManager.switchGraph(importedMeta.id, this.db);
       const result = restoreSharedGraph(this.db, sharedGraph);
       savedPositions = result.positions;
       savedViewport = result.viewport;
@@ -99,7 +102,7 @@ export class App implements AppContext {
       history.replaceState(null, '', location.pathname);
       // Persist the shared graph to IndexedDB
       await this.graphManager.saveCurrentGraph(this.db, savedPositions, savedViewport);
-      showToast('共有されたグラフを読み込みました', 'success');
+      showToast('共有されたグラフをインポートしました', 'success');
     } else {
       const result = await this.graphManager.switchGraph(this.graphManager.currentGraphId, this.db);
       savedPositions = result.positions;
