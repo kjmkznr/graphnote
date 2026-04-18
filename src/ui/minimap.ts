@@ -32,7 +32,9 @@ export class Minimap {
     this.canvas.style.display = 'block';
     this.el.appendChild(this.canvas);
 
-    this.ctx = this.canvas.getContext('2d')!;
+    const ctx = this.canvas.getContext('2d');
+    if (!ctx) throw new Error('Failed to get 2D context for minimap canvas');
+    this.ctx = ctx;
     this.ctx.scale(this.dpr, this.dpr);
 
     this.bindCyEvents();
@@ -107,7 +109,8 @@ export class Minimap {
     const graphY = (my - t.offsetY) / t.scale;
 
     // Pan so the clicked graph point is centred in the viewport
-    const container = this.cy.container()!;
+    const container = this.cy.container();
+    if (!container) return;
     const zoom = this.cy.zoom();
     this.cy.pan({
       x: container.clientWidth / 2 - graphX * zoom,
@@ -177,10 +180,10 @@ export class Minimap {
     });
 
     // Draw viewport rectangle
-    const container = this.cy.container()!;
+    const container = this.cy.container();
+    if (!container) return;
     const pan = this.cy.pan();
     const zoom = this.cy.zoom();
-
     const vx1 = -pan.x / zoom;
     const vy1 = -pan.y / zoom;
     const vx2 = (container.clientWidth - pan.x) / zoom;

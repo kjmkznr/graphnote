@@ -39,7 +39,7 @@ export function renderStyleList<TStyle extends { color: string }>(
     });
     nameInput.dataset.orig = type;
     nameInput.addEventListener('change', () => {
-      const orig = nameInput.dataset.orig!;
+      const orig = nameInput.dataset.orig ?? '';
       const next = nameInput.value.trim();
       if (!next || next === orig) return;
       if (!isValidIdentifier(next)) {
@@ -59,7 +59,7 @@ export function renderStyleList<TStyle extends { color: string }>(
       title: '色',
     });
     colorInput.addEventListener('change', () => {
-      const currentType = nameInput.dataset.orig!;
+      const currentType = nameInput.dataset.orig ?? '';
       const currentStyle = registry.getStyle(currentType);
       registry.setStyle(currentType, {
         ...currentStyle,
@@ -77,7 +77,7 @@ export function renderStyleList<TStyle extends { color: string }>(
       styleSelect.appendChild(option);
     }
     styleSelect.addEventListener('change', () => {
-      const currentType = nameInput.dataset.orig!;
+      const currentType = nameInput.dataset.orig ?? '';
       const currentStyle = registry.getStyle(currentType);
       registry.setStyle(currentType, {
         ...currentStyle,

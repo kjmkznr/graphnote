@@ -65,7 +65,9 @@ export class Canvas {
     });
 
     this.renderer = new GraphRenderer(this.cy, this.nodeRegistry);
-    new Minimap(container.parentElement!, this.cy);
+    const parent = container.parentElement;
+    if (!parent) throw new Error('Canvas container has no parent element');
+    new Minimap(parent, this.cy);
     this.bindEvents();
     this.applyStyles();
   }
@@ -151,7 +153,8 @@ export class Canvas {
 
   /** Convert a client (screen) coordinate to a Cytoscape canvas (model) coordinate. */
   clientToCanvasPosition(clientX: number, clientY: number): { x: number; y: number } {
-    const container = this.cy.container()!;
+    const container = this.cy.container();
+    if (!container) throw new Error('Cytoscape container is not available');
     const rect = container.getBoundingClientRect();
     const pan = this.cy.pan();
     const zoom = this.cy.zoom();

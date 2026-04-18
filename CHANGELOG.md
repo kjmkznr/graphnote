@@ -2,6 +2,13 @@
 
 ## [未リリース]
 
+### 2026-04-18
+
+#### コード品質改善
+- Biome lint の警告をすべて修正（noVoidTypeReturn、noNonNullAssertion）
+
+---
+
 ### 2026-04-17
 
 #### バグ修正

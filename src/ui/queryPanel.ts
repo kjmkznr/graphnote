@@ -166,7 +166,8 @@ export class QueryPanel {
     this.dropdown.innerHTML = '';
 
     for (let i = 0; i < candidates.length; i++) {
-      const item = candidates[i]!;
+      const item = candidates[i];
+      if (!item) continue;
       const row = document.createElement('div');
       row.className = 'autocomplete-item';
       row.dataset.index = String(i);

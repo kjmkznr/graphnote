@@ -132,31 +132,44 @@ export class CanvasEventController {
   handleCanvasEvent(event: CanvasEvent): void {
     switch (event.kind) {
       case 'canvas-clicked':
-        return this.handleCanvasClicked(event.position);
+        this.handleCanvasClicked(event.position);
+        break;
       case 'node-clicked':
-        return this.handleNodeClicked(event.gnId);
+        this.handleNodeClicked(event.gnId);
+        break;
       case 'edge-clicked':
-        return this.handleEdgeClicked(event.gnId);
+        this.handleEdgeClicked(event.gnId);
+        break;
       case 'edge-created':
-        return this.handleEdgeCreated(event.sourceGnId, event.targetGnId);
+        this.handleEdgeCreated(event.sourceGnId, event.targetGnId);
+        break;
       case 'edge-drag-cancelled':
-        return this.ctx.canvas.setMode('edit');
+        this.ctx.canvas.setMode('edit');
+        break;
       case 'node-context':
-        return this.handleNodeContext(event.gnId, event.x, event.y);
+        this.handleNodeContext(event.gnId, event.x, event.y);
+        break;
       case 'edge-context':
-        return this.handleEdgeContext(event.gnId, event.x, event.y);
+        this.handleEdgeContext(event.gnId, event.x, event.y);
+        break;
       case 'bg-context':
-        return this.handleBgContext(event.x, event.y);
+        this.handleBgContext(event.x, event.y);
+        break;
       case 'bg-tap':
-        return this.ctx.canvas.clearHighlight();
+        this.ctx.canvas.clearHighlight();
+        break;
       case 'delete-selected':
-        return this.handleDeleteSelected(event.nodeGnIds, event.edgeGnIds);
+        this.handleDeleteSelected(event.nodeGnIds, event.edgeGnIds);
+        break;
       case 'node-hovered':
-        return this.handleNodeHovered(event.gnId, event.x, event.y);
+        this.handleNodeHovered(event.gnId, event.x, event.y);
+        break;
       case 'edge-hovered':
-        return this.handleEdgeHovered(event.gnId, event.x, event.y);
+        this.handleEdgeHovered(event.gnId, event.x, event.y);
+        break;
       case 'element-unhovered':
-        return hideTooltip(this.tooltip);
+        hideTooltip(this.tooltip);
+        break;
     }
   }
 

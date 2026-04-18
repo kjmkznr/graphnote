@@ -229,7 +229,8 @@ export class GraphRenderer {
       if (!desiredNodes.has(gnId)) {
         n.remove();
       } else {
-        const rawNode = desiredNodes.get(gnId)!;
+        const rawNode = desiredNodes.get(gnId);
+        if (!rawNode) return;
         const { displayLabel, color } = nodeDisplayData(rawNode, this.registry);
         n.data({
           displayLabel,

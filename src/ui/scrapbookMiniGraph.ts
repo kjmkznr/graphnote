@@ -22,7 +22,7 @@ export function buildMiniGraph(nodes: RawNode[], edges: RawEdge[]): HTMLElement 
         labelColors.set(label, PALETTE[paletteIdx % PALETTE.length] ?? '#6c8ef7');
         paletteIdx++;
       }
-      return labelColors.get(label)!;
+      return labelColors.get(label) ?? '#6c8ef7';
     };
 
     const nodeElements: cytoscape.ElementDefinition[] = nodes.map((n) => {
