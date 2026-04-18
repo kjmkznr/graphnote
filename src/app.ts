@@ -28,6 +28,9 @@ import { MobileSidebarController } from './controllers/mobileSidebarController.j
 import { NodeTypeFilterController } from './controllers/nodeTypeFilterController.js';
 import { setupTabButtons } from './controllers/tabController.js';
 
+// デバウンス: キー入力が落ち着くまでの待機時間 (ms)
+const SAVE_DEBOUNCE_MS = 300;
+
 // ── App ───────────────────────────────────────────────────────────────────────
 
 export class App implements AppContext {
@@ -168,7 +171,7 @@ export class App implements AppContext {
     this.saveTimer = setTimeout(() => {
       this.graphManager.saveCurrentGraph(this.db, this.canvas.getPositions(), this.canvas.getViewport()).catch((err) => console.warn('Failed to save graph:', err));
       this.updateStats();
-    }, 300);
+    }, SAVE_DEBOUNCE_MS);
   }
 
   refreshAndSave(): void {
