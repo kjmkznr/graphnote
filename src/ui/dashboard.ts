@@ -50,6 +50,9 @@ export class Dashboard {
 
     grid.appendChild(cards);
 
+    const sections = document.createElement('div');
+    sections.className = 'db-sections';
+
     // ── Node type distribution ─────────────────────────────────────────────────
     const nodeTypeCounts = new Map<string, number>();
     for (const node of nodes) {
@@ -61,7 +64,7 @@ export class Dashboard {
       .sort((a, b) => b[1] - a[1])
       .map(([label, value], i) => ({ label, value, color: pickColor(i) }));
 
-    grid.appendChild(
+    sections.appendChild(
       buildSection(
         'ノードタイプ別分布',
         nodeTypeData.length > 0
@@ -79,7 +82,7 @@ export class Dashboard {
       .sort((a, b) => b[1] - a[1])
       .map(([label, value], i) => ({ label, value, color: pickColor(i) }));
 
-    grid.appendChild(
+    sections.appendChild(
       buildSection(
         'エッジタイプ別分布',
         edgeTypeData.length > 0
@@ -119,7 +122,7 @@ export class Dashboard {
         color: pickColor(i),
       }));
 
-    grid.appendChild(
+    sections.appendChild(
       buildSection(
         '接続数分布（ノード数）',
         degreeData.length > 0
@@ -139,7 +142,7 @@ export class Dashboard {
         return { label: name, value: deg, color: pickColor(i) };
       });
 
-    grid.appendChild(
+    sections.appendChild(
       buildSection(
         '接続数 Top 10 ノード',
         topNodes.length > 0
@@ -148,6 +151,7 @@ export class Dashboard {
       ),
     );
 
+    grid.appendChild(sections);
     this.root.appendChild(grid);
   }
 

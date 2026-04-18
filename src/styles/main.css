@@ -2364,38 +2364,44 @@ textarea {
 }
 
 .db-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 10px;
-  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .db-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
 }
 
 .db-card {
   background: var(--bg-1);
   border: 1px solid var(--line-soft);
+  border-top: 2px solid transparent;
   border-radius: var(--r-md);
-  padding: 12px 14px;
+  padding: 14px 16px;
 }
 
 .db-card-value {
   font-family: var(--ui-mono);
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 600;
-  color: var(--accent-text);
   font-variant-numeric: tabular-nums;
   margin-bottom: 4px;
+  line-height: 1;
 }
 
 .db-card-label {
   font-size: 11px;
   color: var(--text-dim);
   font-weight: 500;
+}
+
+.db-sections {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
 }
 
 /* ── Scrapbook (managed by scrapbook.ts) ────────────────────────── */
