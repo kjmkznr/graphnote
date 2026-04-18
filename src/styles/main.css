@@ -1028,6 +1028,27 @@ tr:hover td { background: rgba(108,142,247,0.05); }
 
 #loading p { color: var(--text-muted); font-size: 14px; }
 
+.init-error {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  color: #f87171;
+  font-size: 14px;
+  text-align: center;
+  padding: 24px;
+  max-width: 480px;
+  margin: auto;
+  white-space: pre-wrap;
+  font-family: var(--font-mono), monospace;
+  word-break: break-all;
+}
+.init-error.hidden { display: none; }
+
 /* ── Scrollbar ── */
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
