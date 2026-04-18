@@ -1,12 +1,12 @@
 import type {
-  ScrapbookCell,
   MarkdownCell,
   QueryResultCell,
-  SnapshotCell,
+  ScrapbookCell,
   SectionCell,
-} from "../types.js";
+  SnapshotCell,
+} from '../types.js';
 
-const STORAGE_KEY = "graphnote:scrapbook";
+const STORAGE_KEY = 'graphnote:scrapbook';
 
 export class ScrapbookStore {
   private cells: ScrapbookCell[] = [];
@@ -14,9 +14,7 @@ export class ScrapbookStore {
 
   load(): void {
     try {
-      const raw =
-        localStorage.getItem(STORAGE_KEY) ??
-        localStorage.getItem("graphnote:notebook");
+      const raw = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem('graphnote:notebook');
       if (raw) {
         const parsed: unknown = JSON.parse(raw);
         if (Array.isArray(parsed)) {

@@ -1,9 +1,7 @@
-import type { EdgeTypeRegistry } from "../graph/edgeTypeRegistry.js";
-import { el, clearChildren, byId } from "./domUtils.js";
-import { DOM_IDS } from "./domIds.js";
-export function showCreateEdgeDialog(
-  registry: EdgeTypeRegistry,
-): Promise<string | null> {
+import type { EdgeTypeRegistry } from '../graph/edgeTypeRegistry.js';
+import { DOM_IDS } from './domIds.js';
+import { byId, clearChildren, el } from './domUtils.js';
+export function showCreateEdgeDialog(registry: EdgeTypeRegistry): Promise<string | null> {
   return new Promise((resolve) => {
     const overlay = byId(DOM_IDS.dialogOverlay);
     const createNodeDialog = byId(DOM_IDS.createNodeDialog);
@@ -18,7 +16,7 @@ export function showCreateEdgeDialog(
       const current = typeSelect.value;
       clearChildren(typeSelect);
       for (const t of registry.getAll()) {
-        typeSelect.appendChild(el("option", { value: t }, t));
+        typeSelect.appendChild(el('option', { value: t }, t));
       }
       if (current && registry.getAll().includes(current)) {
         typeSelect.value = current;
@@ -26,21 +24,21 @@ export function showCreateEdgeDialog(
     }
 
     populateSelect();
-    newTypeInput.value = "";
-    createNodeDialog.style.display = "none";
-    dialog.style.display = "flex";
-    overlay.style.display = "flex";
+    newTypeInput.value = '';
+    createNodeDialog.style.display = 'none';
+    dialog.style.display = 'flex';
+    overlay.style.display = 'flex';
     typeSelect.focus();
 
     function close(result: string | null): void {
-      overlay.style.display = "none";
-      dialog.style.display = "none";
-      createNodeDialog.style.display = "";
-      confirmBtn.removeEventListener("click", onConfirm);
-      cancelBtn.removeEventListener("click", onCancel);
-      addTypeBtn.removeEventListener("click", onAddType);
-      overlay.removeEventListener("click", onOverlayClick);
-      dialog.removeEventListener("keydown", onKeydown);
+      overlay.style.display = 'none';
+      dialog.style.display = 'none';
+      createNodeDialog.style.display = '';
+      confirmBtn.removeEventListener('click', onConfirm);
+      cancelBtn.removeEventListener('click', onCancel);
+      addTypeBtn.removeEventListener('click', onAddType);
+      overlay.removeEventListener('click', onOverlayClick);
+      dialog.removeEventListener('keydown', onKeydown);
       resolve(result);
     }
 
@@ -50,7 +48,7 @@ export function showCreateEdgeDialog(
       registry.add(newType);
       populateSelect();
       typeSelect.value = newType;
-      newTypeInput.value = "";
+      newTypeInput.value = '';
       typeSelect.focus();
     }
 
@@ -66,7 +64,7 @@ export function showCreateEdgeDialog(
       if (e.target === overlay) close(null);
     }
     function onKeydown(e: KeyboardEvent): void {
-      if (e.key === "Enter") {
+      if (e.key === 'Enter') {
         e.preventDefault();
         if (document.activeElement === newTypeInput) {
           onAddType();
@@ -74,12 +72,12 @@ export function showCreateEdgeDialog(
           onConfirm();
         }
       }
-      if (e.key === "Escape") close(null);
+      if (e.key === 'Escape') close(null);
     }
-    confirmBtn.addEventListener("click", onConfirm);
-    cancelBtn.addEventListener("click", onCancel);
-    addTypeBtn.addEventListener("click", onAddType);
-    overlay.addEventListener("click", onOverlayClick);
-    dialog.addEventListener("keydown", onKeydown);
+    confirmBtn.addEventListener('click', onConfirm);
+    cancelBtn.addEventListener('click', onCancel);
+    addTypeBtn.addEventListener('click', onAddType);
+    overlay.addEventListener('click', onOverlayClick);
+    dialog.addEventListener('keydown', onKeydown);
   });
 }

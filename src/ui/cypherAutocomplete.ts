@@ -4,52 +4,52 @@
  */
 
 export const CYPHER_KEYWORDS = [
-  "MATCH",
-  "OPTIONAL MATCH",
-  "WHERE",
-  "RETURN",
-  "WITH",
-  "UNWIND",
-  "CREATE",
-  "MERGE",
-  "SET",
-  "REMOVE",
-  "DELETE",
-  "DETACH DELETE",
-  "ORDER BY",
-  "LIMIT",
-  "SKIP",
-  "AS",
-  "DISTINCT",
-  "AND",
-  "OR",
-  "NOT",
-  "IN",
-  "IS NULL",
-  "IS NOT NULL",
-  "CONTAINS",
-  "STARTS WITH",
-  "ENDS WITH",
-  "COUNT",
-  "SUM",
-  "AVG",
-  "MIN",
-  "MAX",
-  "COLLECT",
-  "EXISTS",
-  "CASE",
-  "WHEN",
-  "THEN",
-  "ELSE",
-  "END",
-  "true",
-  "false",
-  "null",
+  'MATCH',
+  'OPTIONAL MATCH',
+  'WHERE',
+  'RETURN',
+  'WITH',
+  'UNWIND',
+  'CREATE',
+  'MERGE',
+  'SET',
+  'REMOVE',
+  'DELETE',
+  'DETACH DELETE',
+  'ORDER BY',
+  'LIMIT',
+  'SKIP',
+  'AS',
+  'DISTINCT',
+  'AND',
+  'OR',
+  'NOT',
+  'IN',
+  'IS NULL',
+  'IS NOT NULL',
+  'CONTAINS',
+  'STARTS WITH',
+  'ENDS WITH',
+  'COUNT',
+  'SUM',
+  'AVG',
+  'MIN',
+  'MAX',
+  'COLLECT',
+  'EXISTS',
+  'CASE',
+  'WHEN',
+  'THEN',
+  'ELSE',
+  'END',
+  'true',
+  'false',
+  'null',
 ] as const;
 
 export type CypherKeyword = (typeof CYPHER_KEYWORDS)[number];
 
-export type CompletionKind = "keyword" | "nodeType" | "edgeType" | "property";
+export type CompletionKind = 'keyword' | 'nodeType' | 'edgeType' | 'property';
 
 export interface CompletionItem {
   label: string;
@@ -74,7 +74,7 @@ export function getTokenBeforeCursor(text: string, cursorPos: number): string {
   // 通常のキーワード・識別子
   const kwMatch = /[A-Za-z_]\w*$/.exec(before);
   if (kwMatch) return kwMatch[0];
-  return "";
+  return '';
 }
 
 /**
@@ -85,22 +85,19 @@ export function getTokenBeforeCursor(text: string, cursorPos: number): string {
  * - `.` 直後 → プロパティ
  * - それ以外 → キーワード
  */
-export type CompletionType = "nodeType" | "edgeType" | "property" | "keyword";
+export type CompletionType = 'nodeType' | 'edgeType' | 'property' | 'keyword';
 
-export function detectCompletionType(
-  text: string,
-  cursorPos: number,
-): CompletionType {
+export function detectCompletionType(text: string, cursorPos: number): CompletionType {
   const before = text.slice(0, cursorPos);
   // プロパティ: `n.` の直後
-  if (/\w\.\w*$/.test(before)) return "property";
+  if (/\w\.\w*$/.test(before)) return 'property';
   // エッジタイプ: `[r:` か `-[:` か `[:` の直後
-  if (/\[[\w]*:[\w]*$/.test(before)) return "edgeType";
+  if (/\[[\w]*:[\w]*$/.test(before)) return 'edgeType';
   // ノードタイプ: `(:` か `(n:` の直後
-  if (/\([\w]*:[\w]*$/.test(before)) return "nodeType";
+  if (/\([\w]*:[\w]*$/.test(before)) return 'nodeType';
   // コロン直後（曖昧な場合はノードタイプとエッジタイプ両方）
-  if (/:[\w]*$/.test(before)) return "nodeType";
-  return "keyword";
+  if (/:[\w]*$/.test(before)) return 'nodeType';
+  return 'keyword';
 }
 
 /** 補完候補リストを生成する */
@@ -114,25 +111,25 @@ export function getCompletions(
 
   let candidates: CompletionItem[];
 
-  if (type === "nodeType") {
+  if (type === 'nodeType') {
     candidates = context.nodeTypes.map((t) => ({
       label: t,
-      kind: "nodeType" as const,
+      kind: 'nodeType' as const,
     }));
-  } else if (type === "edgeType") {
+  } else if (type === 'edgeType') {
     candidates = context.edgeTypes.map((t) => ({
       label: t,
-      kind: "edgeType" as const,
+      kind: 'edgeType' as const,
     }));
-  } else if (type === "property") {
+  } else if (type === 'property') {
     candidates = context.propertyKeys.map((k) => ({
       label: k,
-      kind: "property" as const,
+      kind: 'property' as const,
     }));
   } else {
     candidates = CYPHER_KEYWORDS.map((k) => ({
       label: k,
-      kind: "keyword" as const,
+      kind: 'keyword' as const,
     }));
   }
 

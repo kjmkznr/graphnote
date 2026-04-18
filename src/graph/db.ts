@@ -1,7 +1,7 @@
-import { WasmGraph } from "@kjmkznr/egrph-wasm";
-import { asGnId } from "../types.js";
-import type { GnId, RawNode, RawEdge, PropertyValue } from "../types.js";
-import { escStr, assertIdentifier } from "../utils/graphUtils.js";
+import { WasmGraph } from '@kjmkznr/egrph-wasm';
+import type { GnId, PropertyValue, RawEdge, RawNode } from '../types.js';
+import { asGnId } from '../types.js';
+import { assertIdentifier, escStr } from '../utils/graphUtils.js';
 
 export interface IGraphExecutor {
   execute(cypher: string): string;
@@ -31,9 +31,9 @@ class WasmGraphExecutor implements IGraphExecutor {
 }
 
 function propValueToCypher(v: PropertyValue): string {
-  if (v === null) return "null";
-  if (typeof v === "boolean") return v ? "true" : "false";
-  if (typeof v === "number") return String(v);
+  if (v === null) return 'null';
+  if (typeof v === 'boolean') return v ? 'true' : 'false';
+  if (typeof v === 'number') return String(v);
   return `"${escStr(v)}"`;
 }
 
@@ -43,7 +43,7 @@ function buildPropsString(props: Record<string, PropertyValue>): string {
       assertIdentifier(k);
       return `${k}: ${propValueToCypher(v)}`;
     })
-    .join(", ");
+    .join(', ');
 }
 
 export class GraphDB {
@@ -67,12 +67,12 @@ export class GraphDB {
   }
 
   getAllNodes(): RawNode[] {
-    const rows = this.execute<{ n: RawNode }>("MATCH (n) RETURN n");
+    const rows = this.execute<{ n: RawNode }>('MATCH (n) RETURN n');
     return rows.map((r) => r.n);
   }
 
   getAllEdges(): RawEdge[] {
-    const rows = this.execute<{ r: RawEdge }>("MATCH ()-[r]->() RETURN r");
+    const rows = this.execute<{ r: RawEdge }>('MATCH ()-[r]->() RETURN r');
     return rows.map((r) => r.r);
   }
 
@@ -81,10 +81,7 @@ export class GraphDB {
    * can be referenced even after the WasmGraph is recreated from localStorage.
    * Returns the gnId of the created node.
    */
-  createNode(
-    label: string,
-    extraProps: Record<string, PropertyValue> = {},
-  ): GnId {
+  createNode(label: string, extraProps: Record<string, PropertyValue> = {}): GnId {
     const gnId = asGnId(crypto.randomUUID());
     this.createNodeWithGnId(label, gnId, extraProps);
     return gnId;
@@ -159,9 +156,7 @@ export class GraphDB {
   updateNodeProperty(gnId: GnId, key: string, value: PropertyValue): void {
     assertIdentifier(key);
     const val = propValueToCypher(value);
-    this.executor.execute(
-      `MATCH (n) WHERE n.gnId = "${escStr(gnId)}" SET n.${key} = ${val}`,
-    );
+    this.executor.execute(`MATCH (n) WHERE n.gnId = "${escStr(gnId)}" SET n.${key} = ${val}`);
   }
 
   /** Update a single property on an edge identified by gnId. */
@@ -176,19 +171,15 @@ export class GraphDB {
   /** Delete a node (and its connected edges) identified by gnId. */
   deleteNode(gnId: GnId): void {
     // DETACH DELETE removes the node and all its connected edges in one query.
-    this.executor.execute(
-      `MATCH (n) WHERE n.gnId = "${escStr(gnId)}" DETACH DELETE n`,
-    );
+    this.executor.execute(`MATCH (n) WHERE n.gnId = "${escStr(gnId)}" DETACH DELETE n`);
   }
 
   /** Delete an edge identified by gnId. */
   deleteEdge(gnId: GnId): void {
     try {
-      this.executor.execute(
-        `MATCH ()-[r]->() WHERE r.gnId = "${escStr(gnId)}" DELETE r`,
-      );
+      this.executor.execute(`MATCH ()-[r]->() WHERE r.gnId = "${escStr(gnId)}" DELETE r`);
     } catch (err) {
-      console.warn("[db] deleteEdge failed", { gnId, err });
+      console.warn('[db] deleteEdge failed', { gnId, err });
     }
   }
 
@@ -199,7 +190,7 @@ export class GraphDB {
       );
       return rows[0]?.n ?? null;
     } catch (err) {
-      console.warn("[db] getNodeByGnId failed", { gnId, err });
+      console.warn('[db] getNodeByGnId failed', { gnId, err });
       return null;
     }
   }
@@ -211,7 +202,7 @@ export class GraphDB {
       );
       return rows[0]?.r ?? null;
     } catch (err) {
-      console.warn("[db] getEdgeByGnId failed", { gnId, err });
+      console.warn('[db] getEdgeByGnId failed', { gnId, err });
       return null;
     }
   }

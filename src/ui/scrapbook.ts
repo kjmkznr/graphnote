@@ -1,11 +1,11 @@
-import type { ScrapbookCell, MarkdownCell, SectionCell } from "../types.js";
-import type { ScrapbookStore } from "../notebook/scrapbookStore.js";
-import { el, clearChildren } from "./domUtils.js";
-import { DragDropHandler } from "./scrapbook/dragDrop.js";
-import { renderMarkdownCell } from "./scrapbook/markdownCell.js";
-import { renderQueryResultCell } from "./scrapbook/queryResultCell.js";
-import { renderSectionCell } from "./scrapbook/sectionCell.js";
-import { renderSnapshotCell } from "./scrapbook/snapshotCell.js";
+import type { ScrapbookStore } from '../notebook/scrapbookStore.js';
+import type { MarkdownCell, ScrapbookCell, SectionCell } from '../types.js';
+import { clearChildren, el } from './domUtils.js';
+import { DragDropHandler } from './scrapbook/dragDrop.js';
+import { renderMarkdownCell } from './scrapbook/markdownCell.js';
+import { renderQueryResultCell } from './scrapbook/queryResultCell.js';
+import { renderSectionCell } from './scrapbook/sectionCell.js';
+import { renderSnapshotCell } from './scrapbook/snapshotCell.js';
 
 export class Scrapbook {
   private container: HTMLElement;
@@ -22,23 +22,19 @@ export class Scrapbook {
   // ── Initial render ────────────────────────────────────────────────────────────
 
   private render(): void {
-    this.container.innerHTML = "";
-    this.container.className = "scrapbook-root";
+    this.container.innerHTML = '';
+    this.container.className = 'scrapbook-root';
 
-    this.cellListEl = el("div", { class: "scrapbook-cell-list" });
+    this.cellListEl = el('div', { class: 'scrapbook-cell-list' });
     this.container.appendChild(this.cellListEl);
 
-    const footer = el("div", { class: "scrapbook-footer" });
-    const addNoteBtn = el("button", { class: "scrapbook-add-btn" }, "+ Note");
-    addNoteBtn.addEventListener("click", () => this.addMarkdownCell());
+    const footer = el('div', { class: 'scrapbook-footer' });
+    const addNoteBtn = el('button', { class: 'scrapbook-add-btn' }, '+ Note');
+    addNoteBtn.addEventListener('click', () => this.addMarkdownCell());
     footer.appendChild(addNoteBtn);
 
-    const addSectionBtn = el(
-      "button",
-      { class: "scrapbook-add-btn" },
-      "+ Section",
-    );
-    addSectionBtn.addEventListener("click", () => this.addSectionCell());
+    const addSectionBtn = el('button', { class: 'scrapbook-add-btn' }, '+ Section');
+    addSectionBtn.addEventListener('click', () => this.addSectionCell());
     footer.appendChild(addSectionBtn);
     this.container.appendChild(footer);
 
@@ -52,9 +48,9 @@ export class Scrapbook {
     const cells = this.store.getCells();
     if (cells.length === 0) {
       const empty = el(
-        "div",
-        { class: "scrapbook-empty" },
-        "まだセルがありません。グラフからスナップショットを送るか、「+ Note」でメモを追加してください。",
+        'div',
+        { class: 'scrapbook-empty' },
+        'まだセルがありません。グラフからスナップショットを送るか、「+ Note」でメモを追加してください。',
       );
       this.cellListEl.appendChild(empty);
       return;
@@ -69,13 +65,13 @@ export class Scrapbook {
 
   private renderCell(cell: ScrapbookCell): HTMLElement {
     switch (cell.kind) {
-      case "markdown":
+      case 'markdown':
         return renderMarkdownCell(cell, this.store);
-      case "query-result":
+      case 'query-result':
         return renderQueryResultCell(cell, this.store);
-      case "snapshot":
+      case 'snapshot':
         return renderSnapshotCell(cell, this.store);
-      case "section":
+      case 'section':
         return renderSectionCell(cell, this.store);
     }
   }
@@ -85,26 +81,26 @@ export class Scrapbook {
   private addSectionCell(): void {
     const cell: SectionCell = {
       id: crypto.randomUUID(),
-      kind: "section",
+      kind: 'section',
       createdAt: Date.now(),
-      title: "セクション",
+      title: 'セクション',
     };
     this.store.addCell(cell);
     requestAnimationFrame(() => {
-      this.cellListEl.lastElementChild?.scrollIntoView({ behavior: "smooth" });
+      this.cellListEl.lastElementChild?.scrollIntoView({ behavior: 'smooth' });
     });
   }
 
   private addMarkdownCell(): void {
     const cell: MarkdownCell = {
       id: crypto.randomUUID(),
-      kind: "markdown",
+      kind: 'markdown',
       createdAt: Date.now(),
-      content: "",
+      content: '',
     };
     this.store.addCell(cell);
     requestAnimationFrame(() => {
-      this.cellListEl.lastElementChild?.scrollIntoView({ behavior: "smooth" });
+      this.cellListEl.lastElementChild?.scrollIntoView({ behavior: 'smooth' });
     });
   }
 }

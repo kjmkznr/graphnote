@@ -1,12 +1,12 @@
+import type { GnId } from '../types.js';
+import type { GraphDB } from './db.js';
 import {
-  IndexedDBStorage,
-  saveGraph,
-  loadGraph,
   clearSaved,
   type GraphMeta,
-} from "./persistence.js";
-import type { GraphDB } from "./db.js";
-import type { GnId } from "../types.js";
+  IndexedDBStorage,
+  loadGraph,
+  saveGraph,
+} from './persistence.js';
 
 export interface GraphSwitchResult {
   positions: Record<GnId, { x: number; y: number }>;
@@ -18,7 +18,7 @@ export interface GraphSwitchResult {
  */
 export class GraphManager {
   private storage: IndexedDBStorage;
-  private _currentGraphId: string = "";
+  private _currentGraphId: string = '';
   private _graphs: GraphMeta[] = [];
 
   constructor(storage: IndexedDBStorage = new IndexedDBStorage()) {
@@ -46,10 +46,10 @@ export class GraphManager {
 
     if (this._graphs.length === 0) {
       // 旧データの移行: graphnote:v1 が存在すればデフォルトグラフとして登録
-      const legacyData = await this.storage.getItem("graphnote:v1");
+      const legacyData = await this.storage.getItem('graphnote:v1');
       const defaultMeta: GraphMeta = {
         id: crypto.randomUUID(),
-        name: "デフォルト",
+        name: 'デフォルト',
         createdAt: Date.now(),
       };
       await this.storage.putGraphMeta(defaultMeta);
@@ -60,7 +60,7 @@ export class GraphManager {
       this._graphs = [defaultMeta];
     }
 
-    this._currentGraphId = this._graphs[0]?.id ?? "";
+    this._currentGraphId = this._graphs[0]?.id ?? '';
   }
 
   /**
@@ -69,7 +69,7 @@ export class GraphManager {
   async createGraph(name: string): Promise<GraphMeta> {
     const meta: GraphMeta = {
       id: crypto.randomUUID(),
-      name: name.trim() || "新しいグラフ",
+      name: name.trim() || '新しいグラフ',
       createdAt: Date.now(),
     };
     await this.storage.putGraphMeta(meta);
@@ -82,7 +82,7 @@ export class GraphManager {
    */
   async deleteGraph(id: string): Promise<void> {
     if (this._graphs.length <= 1) {
-      throw new Error("最後のグラフは削除できません");
+      throw new Error('最後のグラフは削除できません');
     }
     await this.storage.deleteGraphMeta(id);
     await clearSaved(this.storage, id);
@@ -94,7 +94,7 @@ export class GraphManager {
    */
   async renameGraph(id: string, newName: string): Promise<void> {
     const meta = this._graphs.find((g) => g.id === id);
-    if (!meta) throw new Error("グラフが見つかりません");
+    if (!meta) throw new Error('グラフが見つかりません');
     meta.name = newName.trim() || meta.name;
     await this.storage.putGraphMeta(meta);
   }
@@ -107,13 +107,7 @@ export class GraphManager {
     positions: Record<GnId, { x: number; y: number }>,
     viewport?: { pan: { x: number; y: number }; zoom: number },
   ): Promise<void> {
-    await saveGraph(
-      db,
-      positions,
-      viewport,
-      this.storage,
-      this._currentGraphId,
-    );
+    await saveGraph(db, positions, viewport, this.storage, this._currentGraphId);
   }
 
   /**

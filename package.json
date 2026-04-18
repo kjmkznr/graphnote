@@ -8,9 +8,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint \"src/**/*.{ts,tsx}\"",
-    "format": "prettier --write \"src/**/*.{ts,css,html,json}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,css,html,json}\""
+    "lint": "biome lint src/",
+    "format": "biome format --write src/",
+    "format:check": "biome format src/"
   },
   "dependencies": {
     "@kjmkznr/egrph-wasm": "^0.3.1",
@@ -19,13 +19,8 @@
     "marked": "^18.0.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.0.0",
-    "@typescript-eslint/eslint-plugin": "^8.0.0",
-    "@typescript-eslint/parser": "^8.0.0",
+    "@biomejs/biome": "^2.4.12",
     "@types/cytoscape": "^3.31.0",
-    "eslint": "^9.0.0",
-    "eslint-config-prettier": "^10.0.0",
-    "prettier": "^3.0.0",
     "@types/dompurify": "^3.0.5",
     "@types/marked": "^6.0.0",
     "fake-indexeddb": "^6.2.5",

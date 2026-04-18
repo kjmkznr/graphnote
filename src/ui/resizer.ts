@@ -1,5 +1,5 @@
-import { byId } from "./domUtils.js";
-import { DOM_IDS } from "./domIds.js";
+import { DOM_IDS } from './domIds.js';
+import { byId } from './domUtils.js';
 
 // サイドバー幅の下限: プロパティ名が折り返さずに表示できる最小幅
 const SIDEBAR_MIN = 160;
@@ -20,50 +20,45 @@ function setVar(name: string, value: number): void {
 }
 
 function getVar(name: string, fallback: number): number {
-  const v = parseInt(
-    getComputedStyle(document.documentElement).getPropertyValue(name),
-  );
-  return isNaN(v) ? fallback : v;
+  const v = parseInt(getComputedStyle(document.documentElement).getPropertyValue(name), 10);
+  return Number.isNaN(v) ? fallback : v;
 }
 
-export function initResizers(
-  onResize: () => void,
-  onQueryPanelCollapse?: () => void,
-): void {
+export function initResizers(onResize: () => void, onQueryPanelCollapse?: () => void): void {
   const app = byId(DOM_IDS.app);
 
   // ── Horizontal resizer (canvas | sidebar) ────────────────────────────────
 
   const resizeH = byId(DOM_IDS.resizeH);
 
-  resizeH.addEventListener("mousedown", (startEvent) => {
+  resizeH.addEventListener('mousedown', (startEvent) => {
     startEvent.preventDefault();
     const startX = startEvent.clientX;
-    const startWidth = getVar("--sidebar-w", 300);
+    const startWidth = getVar('--sidebar-w', 300);
 
     function onMove(e: MouseEvent): void {
       const newWidth = Math.max(
         SIDEBAR_MIN,
         Math.min(SIDEBAR_MAX, startWidth + startX - e.clientX),
       );
-      setVar("--sidebar-w", newWidth);
+      setVar('--sidebar-w', newWidth);
       onResize();
     }
 
     function onUp(): void {
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onUp);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-      app.style.pointerEvents = "";
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      app.style.pointerEvents = '';
     }
 
-    document.body.style.cursor = "ew-resize";
-    document.body.style.userSelect = "none";
-    app.style.pointerEvents = "none";
-    resizeH.style.pointerEvents = "auto";
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onUp);
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
+    app.style.pointerEvents = 'none';
+    resizeH.style.pointerEvents = 'auto';
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
   });
 
   // ── Query toggle bar (click to open/close, drag to resize) ───────────────
@@ -74,8 +69,8 @@ export function initResizers(
   let lastOpenHeight = QUERY_DEFAULT;
 
   function applyState(): void {
-    setVar("--query-h", collapsed ? 0 : lastOpenHeight);
-    toggleLabel.textContent = collapsed ? "Cypher  ▲" : "Cypher  ▼";
+    setVar('--query-h', collapsed ? 0 : lastOpenHeight);
+    toggleLabel.textContent = collapsed ? 'Cypher  ▲' : 'Cypher  ▼';
     onResize();
   }
 
@@ -89,9 +84,7 @@ export function initResizers(
     addUpListener: (fn: () => void) => void,
   ): void {
     let dragged = false;
-    const startHeight = collapsed
-      ? lastOpenHeight
-      : getVar("--query-h", lastOpenHeight);
+    const startHeight = collapsed ? lastOpenHeight : getVar('--query-h', lastOpenHeight);
 
     addMoveListener((_x, y) => {
       const delta = startY - y;
@@ -101,20 +94,17 @@ export function initResizers(
         dragged = true;
         collapsed = false;
       }
-      const newHeight = Math.max(
-        QUERY_MIN,
-        Math.min(QUERY_MAX, startHeight + delta),
-      );
+      const newHeight = Math.max(QUERY_MIN, Math.min(QUERY_MAX, startHeight + delta));
       lastOpenHeight = newHeight;
-      setVar("--query-h", newHeight);
-      toggleLabel.textContent = "Cypher  ▼";
+      setVar('--query-h', newHeight);
+      toggleLabel.textContent = 'Cypher  ▼';
       onResize();
     });
 
     addUpListener(() => {
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-      app.style.pointerEvents = "";
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      app.style.pointerEvents = '';
 
       if (!dragged) {
         const wasCollapsed = collapsed;
@@ -125,21 +115,21 @@ export function initResizers(
       }
     });
 
-    document.body.style.cursor = "ns-resize";
-    document.body.style.userSelect = "none";
-    app.style.pointerEvents = "none";
-    toggle.style.pointerEvents = "auto";
+    document.body.style.cursor = 'ns-resize';
+    document.body.style.userSelect = 'none';
+    app.style.pointerEvents = 'none';
+    toggle.style.pointerEvents = 'auto';
   }
 
-  toggle.addEventListener("mousedown", (startEvent) => {
+  toggle.addEventListener('mousedown', (startEvent) => {
     startEvent.preventDefault();
 
     function onMove(e: MouseEvent): void {
       moveCallback(e.clientX, e.clientY);
     }
     function onUp(): void {
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onUp);
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
       upCallback();
     }
 
@@ -155,17 +145,17 @@ export function initResizers(
       startEvent.clientY,
       (fn) => {
         moveCallback = fn;
-        document.addEventListener("mousemove", onMove);
+        document.addEventListener('mousemove', onMove);
       },
       (fn) => {
         upCallback = fn;
-        document.addEventListener("mouseup", onUp);
+        document.addEventListener('mouseup', onUp);
       },
     );
   });
 
   toggle.addEventListener(
-    "touchstart",
+    'touchstart',
     (startEvent) => {
       if (startEvent.touches.length !== 1) return;
       const touch = startEvent.touches[0];
@@ -179,8 +169,8 @@ export function initResizers(
         moveCallback(t.clientX, t.clientY);
       }
       function onUp(): void {
-        toggle.removeEventListener("touchmove", onMove);
-        toggle.removeEventListener("touchend", onUp);
+        toggle.removeEventListener('touchmove', onMove);
+        toggle.removeEventListener('touchend', onUp);
         upCallback();
       }
 
@@ -196,11 +186,11 @@ export function initResizers(
         touch.clientY,
         (fn) => {
           moveCallback = fn;
-          toggle.addEventListener("touchmove", onMove, { passive: false });
+          toggle.addEventListener('touchmove', onMove, { passive: false });
         },
         (fn) => {
           upCallback = fn;
-          toggle.addEventListener("touchend", onUp);
+          toggle.addEventListener('touchend', onUp);
         },
       );
     },

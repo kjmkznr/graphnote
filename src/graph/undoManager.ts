@@ -1,6 +1,6 @@
-import type { GnId, PersistedGraph, PropertyValue } from "../types.js";
-import type { GraphDB } from "./db.js";
-import { asGnId } from "../types.js";
+import type { GnId, PersistedGraph, PropertyValue } from '../types.js';
+import { asGnId } from '../types.js';
+import type { GraphDB } from './db.js';
 
 export interface GraphSnapshot {
   graph: PersistedGraph;
@@ -83,25 +83,25 @@ export class UndoManager {
 
     const internalIdToGnId = new Map<string, GnId>(
       nodes
-        .map((n) => [n._id, n._properties["gnId"] as GnId | undefined] as const)
+        .map((n) => [n._id, n._properties.gnId as GnId | undefined] as const)
         .filter((entry): entry is [string, GnId] => entry[1] !== undefined),
     );
 
     const graph: PersistedGraph = {
       version: 1,
       nodes: nodes
-        .filter((n) => n._properties["gnId"] !== undefined)
+        .filter((n) => n._properties.gnId !== undefined)
         .map((n) => ({
-          id: n._properties["gnId"] as GnId,
+          id: n._properties.gnId as GnId,
           labels: n._labels,
           properties: n._properties,
         })),
       edges: edges
         .map((e) => ({
-          id: e._properties["gnId"] as GnId,
+          id: e._properties.gnId as GnId,
           type: e._type,
-          srcId: internalIdToGnId.get(e._src) ?? asGnId(""),
-          dstId: internalIdToGnId.get(e._dst) ?? asGnId(""),
+          srcId: internalIdToGnId.get(e._src) ?? asGnId(''),
+          dstId: internalIdToGnId.get(e._dst) ?? asGnId(''),
           properties: e._properties,
         }))
         .filter((e) => e.id && e.srcId && e.dstId),
@@ -123,12 +123,12 @@ export class UndoManager {
       const label = pNode.labels[0];
       const props: Record<string, PropertyValue> = {};
       for (const [k, v] of Object.entries(pNode.properties)) {
-        if (k !== "gnId") props[k] = v;
+        if (k !== 'gnId') props[k] = v;
       }
       try {
         db.createNodeWithGnId(label, asGnId(pNode.id), props);
       } catch (err) {
-        console.warn("Undo/redo: failed to restore node:", err);
+        console.warn('Undo/redo: failed to restore node:', err);
       }
     }
 
@@ -136,7 +136,7 @@ export class UndoManager {
       if (!pEdge.srcId || !pEdge.dstId) continue;
       const props: Record<string, PropertyValue> = {};
       for (const [k, v] of Object.entries(pEdge.properties)) {
-        if (k !== "gnId") props[k] = v;
+        if (k !== 'gnId') props[k] = v;
       }
       try {
         db.createEdgeWithGnId(
@@ -147,7 +147,7 @@ export class UndoManager {
           props,
         );
       } catch (err) {
-        console.warn("Undo/redo: failed to restore edge:", err);
+        console.warn('Undo/redo: failed to restore edge:', err);
       }
     }
 

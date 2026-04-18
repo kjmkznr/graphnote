@@ -1,10 +1,7 @@
-import type { TypeRegistry } from "../graph/typeRegistry.js";
-import { byId } from "./domUtils.js";
-import { DOM_IDS } from "./domIds.js";
-import {
-  createTypeStyleDialogBase,
-  renderStyleList,
-} from "./typeStyleDialogBase.js";
+import type { TypeRegistry } from '../graph/typeRegistry.js';
+import { DOM_IDS } from './domIds.js';
+import { byId } from './domUtils.js';
+import { createTypeStyleDialogBase, renderStyleList } from './typeStyleDialogBase.js';
 
 export function showNodeTypeStyleDialog(registry: TypeRegistry): Promise<void> {
   const list = byId(DOM_IDS.ntsList);
@@ -19,18 +16,18 @@ export function showNodeTypeStyleDialog(registry: TypeRegistry): Promise<void> {
         list,
         registry,
         {
-          title: "形",
+          title: '形',
           options: [
-            { value: "ellipse", label: "円形" },
-            { value: "rectangle", label: "四角形" },
-            { value: "round-rectangle", label: "角丸四角形" },
-            { value: "diamond", label: "ひし形" },
-            { value: "triangle", label: "三角形" },
-            { value: "hexagon", label: "六角形" },
-            { value: "star", label: "星形" },
+            { value: 'ellipse', label: '円形' },
+            { value: 'rectangle', label: '四角形' },
+            { value: 'round-rectangle', label: '角丸四角形' },
+            { value: 'diamond', label: 'ひし形' },
+            { value: 'triangle', label: '三角形' },
+            { value: 'hexagon', label: '六角形' },
+            { value: 'star', label: '星形' },
           ],
           getValue: (style) => style.shape,
-          styleKey: "shape",
+          styleKey: 'shape',
         },
         showError,
         clearError,

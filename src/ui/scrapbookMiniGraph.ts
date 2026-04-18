@@ -1,18 +1,15 @@
-import cytoscape from "cytoscape";
-import type { RawNode, RawEdge } from "../types.js";
-import { el } from "./domUtils.js";
-import { DEFAULT_NODE_COLORS } from "../utils/colors.js";
-import { CYTOSCAPE_STYLES } from "./cytoscapeStyles.js";
+import cytoscape from 'cytoscape';
+import type { RawEdge, RawNode } from '../types.js';
+import { DEFAULT_NODE_COLORS } from '../utils/colors.js';
+import { CYTOSCAPE_STYLES } from './cytoscapeStyles.js';
+import { el } from './domUtils.js';
 
 /**
  * ノードとエッジのリストからミニ Cytoscape グラフセクションを生成する。
  */
-export function buildMiniGraph(
-  nodes: RawNode[],
-  edges: RawEdge[],
-): HTMLElement {
-  const section = el("div", { class: "nb-graph-section" });
-  const container = el("div", { class: "nb-graph-container" });
+export function buildMiniGraph(nodes: RawNode[], edges: RawEdge[]): HTMLElement {
+  const section = el('div', { class: 'nb-graph-section' });
+  const container = el('div', { class: 'nb-graph-container' });
   section.appendChild(container);
 
   // Cytoscape は要素が DOM に追加された後に初期化する必要があるため requestAnimationFrame を使用
@@ -22,23 +19,20 @@ export function buildMiniGraph(
     let paletteIdx = 0;
     const colorForLabel = (label: string): string => {
       if (!labelColors.has(label)) {
-        labelColors.set(
-          label,
-          PALETTE[paletteIdx % PALETTE.length] ?? "#6c8ef7",
-        );
+        labelColors.set(label, PALETTE[paletteIdx % PALETTE.length] ?? '#6c8ef7');
         paletteIdx++;
       }
       return labelColors.get(label)!;
     };
 
     const nodeElements: cytoscape.ElementDefinition[] = nodes.map((n) => {
-      const label = n._labels[0] ?? "";
+      const label = n._labels[0] ?? '';
       const name =
-        (n._properties["name"] as string | undefined) ??
-        (label || String(n._properties["gnId"] ?? n._id).slice(0, 8));
+        (n._properties.name as string | undefined) ??
+        (label || String(n._properties.gnId ?? n._id).slice(0, 8));
       const color = colorForLabel(label);
       return {
-        group: "nodes" as const,
+        group: 'nodes' as const,
         data: {
           id: n._id,
           displayLabel: `${name}\n:${label}`,
@@ -52,7 +46,7 @@ export function buildMiniGraph(
     const edgeElements: cytoscape.ElementDefinition[] = edges
       .filter((e) => nodeIds.has(e._src) && nodeIds.has(e._dst))
       .map((e) => ({
-        group: "edges" as const,
+        group: 'edges' as const,
         data: {
           id: `e-${e._id}`,
           source: e._src,
@@ -65,7 +59,7 @@ export function buildMiniGraph(
       container,
       style: CYTOSCAPE_STYLES,
       elements: [...nodeElements, ...edgeElements],
-      layout: { name: "cose", animate: false } as cytoscape.LayoutOptions,
+      layout: { name: 'cose', animate: false } as cytoscape.LayoutOptions,
       userZoomingEnabled: true,
       userPanningEnabled: true,
       boxSelectionEnabled: false,

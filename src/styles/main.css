@@ -684,7 +684,7 @@ body {
 }
 
 .prop-value-input--invalid {
-  border-color: #f87171 !important;
+  border-color: #f87171;
 }
 
 .prop-validation-error {
@@ -1610,7 +1610,7 @@ tr:hover td {
 
 /* Markdown cell */
 .nb-hidden {
-  display: none !important;
+  display: none;
 }
 
 .nb-markdown-input {
@@ -2052,7 +2052,7 @@ tr:hover td {
     left: 0;
     right: 0;
     top: auto;
-    width: 100% !important;
+    width: 100%;
     max-height: 60vh;
     border-left: none;
     border-top: 2px solid var(--accent);

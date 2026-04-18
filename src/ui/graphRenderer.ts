@@ -1,7 +1,7 @@
-import cytoscape from "cytoscape";
-import { asGnId } from "../types.js";
-import type { GnId, RawNode, RawEdge } from "../types.js";
-import type { TypeRegistry } from "../graph/typeRegistry.js";
+import type cytoscape from 'cytoscape';
+import type { TypeRegistry } from '../graph/typeRegistry.js';
+import type { GnId, RawEdge, RawNode } from '../types.js';
+import { asGnId } from '../types.js';
 
 // ── Position utilities ────────────────────────────────────────────────────────
 
@@ -40,10 +40,10 @@ function nodeDisplayData(
   node: RawNode,
   registry: TypeRegistry,
 ): { displayLabel: string; color: string } {
-  const label = node._labels[0] ?? "";
+  const label = node._labels[0] ?? '';
   const name =
-    (node._properties["name"] as string | undefined) ??
-    (label || (node._properties["gnId"] as string).slice(0, 8));
+    (node._properties.name as string | undefined) ??
+    (label || (node._properties.gnId as string).slice(0, 8));
   const style = registry.getStyle(label);
   return {
     displayLabel: `${name}\n:${label}`,
@@ -55,13 +55,13 @@ function edgeElementDef(
   edge: RawEdge,
   internalIdToGnId: Map<string, GnId>,
 ): cytoscape.ElementDefinition | null {
-  const gnId = edge._properties["gnId"] as GnId | undefined;
+  const gnId = edge._properties.gnId as GnId | undefined;
   if (!gnId) return null;
   const srcGnId = internalIdToGnId.get(edge._src);
   const dstGnId = internalIdToGnId.get(edge._dst);
   if (!srcGnId || !dstGnId) return null;
   return {
-    group: "edges",
+    group: 'edges',
     data: {
       id: `e-${gnId}`,
       gnId,
@@ -103,11 +103,7 @@ export class GraphRenderer {
    * - With `savedPositions`: full clear + rebuild (used on initial load / import).
    * - Without: incremental diff (add/remove/update changed elements only).
    */
-  refreshGraph(
-    nodes: RawNode[],
-    edges: RawEdge[],
-    savedPositions?: PositionMap,
-  ): void {
+  refreshGraph(nodes: RawNode[], edges: RawEdge[], savedPositions?: PositionMap): void {
     if (savedPositions) {
       this.fullRefresh(nodes, edges, savedPositions);
     } else {
@@ -117,8 +113,8 @@ export class GraphRenderer {
 
   getPositions(): PositionMap {
     const positions: PositionMap = {} as PositionMap;
-    this.cy.nodes("[!ghost][!edgeHandle]").forEach((n) => {
-      const gnId = asGnId(n.data("gnId") as string);
+    this.cy.nodes('[!ghost][!edgeHandle]').forEach((n) => {
+      const gnId = asGnId(n.data('gnId') as string);
       if (gnId) positions[gnId] = { ...n.position() };
     });
     return positions;
@@ -130,69 +126,62 @@ export class GraphRenderer {
    */
   highlightByGnId(nodeGnIds: Set<GnId>, edgeGnIds: Set<GnId>): void {
     const cy = this.cy;
-    cy.elements().removeClass("query-match query-dimmed");
+    cy.elements().removeClass('query-match query-dimmed');
 
     if (nodeGnIds.size === 0 && edgeGnIds.size === 0) return;
 
-    cy.elements().addClass("query-dimmed");
+    cy.elements().addClass('query-dimmed');
     for (const gnId of nodeGnIds) {
-      cy.getElementById(gnId)
-        .removeClass("query-dimmed")
-        .addClass("query-match");
+      cy.getElementById(gnId).removeClass('query-dimmed').addClass('query-match');
     }
     for (const gnId of edgeGnIds) {
       const edge = cy.getElementById(`e-${gnId}`);
-      edge.removeClass("query-dimmed").addClass("query-match");
-      edge.connectedNodes().removeClass("query-dimmed").addClass("query-match");
+      edge.removeClass('query-dimmed').addClass('query-match');
+      edge.connectedNodes().removeClass('query-dimmed').addClass('query-match');
     }
     // Highlight edges where both endpoints are in the matched node set
     if (nodeGnIds.size > 0) {
-      cy.edges("[!ghost]")
+      cy.edges('[!ghost]')
         .filter(
           (edge) =>
-            nodeGnIds.has(asGnId(edge.source().id())) &&
-            nodeGnIds.has(asGnId(edge.target().id())),
+            nodeGnIds.has(asGnId(edge.source().id())) && nodeGnIds.has(asGnId(edge.target().id())),
         )
-        .removeClass("query-dimmed")
-        .addClass("query-match");
+        .removeClass('query-dimmed')
+        .addClass('query-match');
     }
   }
 
   clearHighlight(): void {
-    this.cy.elements().removeClass("query-match query-dimmed");
+    this.cy.elements().removeClass('query-match query-dimmed');
   }
 
   // ── Private refresh helpers ─────────────────────────────────────────────────
 
   /** Full clear + rebuild. Used only on initial load or after import. */
-  private fullRefresh(
-    nodes: RawNode[],
-    edges: RawEdge[],
-    savedPositions: PositionMap,
-  ): void {
+  private fullRefresh(nodes: RawNode[], edges: RawEdge[], savedPositions: PositionMap): void {
     const cy = this.cy;
     cy.elements().remove();
 
     const internalIdToGnId = new Map<string, GnId>(
-      nodes.map((n) => [n._id, n._properties["gnId"] as GnId]),
+      nodes.map((n) => [n._id, n._properties.gnId as GnId]),
     );
 
     const elements: cytoscape.ElementDefinition[] = [];
     const newNodeGnIds: GnId[] = [];
 
     for (const node of nodes) {
-      const gnId = node._properties["gnId"] as GnId | undefined;
+      const gnId = node._properties.gnId as GnId | undefined;
       if (!gnId) continue;
       const { displayLabel, color } = nodeDisplayData(node, this.registry);
       const pos = savedPositions[gnId] ?? this.positionHints.get(gnId);
       if (!pos) newNodeGnIds.push(gnId);
       elements.push({
-        group: "nodes",
+        group: 'nodes',
         data: {
           id: gnId,
           gnId,
           displayLabel,
-          nodeLabel: node._labels[0] ?? "",
+          nodeLabel: node._labels[0] ?? '',
           color,
           borderColor: color,
         },
@@ -217,25 +206,25 @@ export class GraphRenderer {
 
     const desiredNodes = new Map<GnId, RawNode>();
     for (const n of nodes) {
-      const gnId = n._properties["gnId"] as GnId | undefined;
+      const gnId = n._properties.gnId as GnId | undefined;
       if (gnId) desiredNodes.set(gnId, n);
     }
 
     const desiredEdges = new Map<GnId, RawEdge>();
     for (const e of edges) {
-      const gnId = e._properties["gnId"] as GnId | undefined;
+      const gnId = e._properties.gnId as GnId | undefined;
       if (gnId) desiredEdges.set(gnId, e);
     }
 
     // Map from WasmGraph internal _id (ephemeral) to stable gnId, for edge src/dst lookup
     const internalIdToGnId = new Map<string, GnId>(
-      nodes.map((n) => [n._id, n._properties["gnId"] as GnId]),
+      nodes.map((n) => [n._id, n._properties.gnId as GnId]),
     );
 
     // ── Nodes ──────────────────────────────────────────────────────────────────
     const existingNodeIds = new Set<GnId>();
-    cy.nodes("[!ghost][!edgeHandle]").forEach((n) => {
-      const gnId = asGnId(n.data("gnId") as string);
+    cy.nodes('[!ghost][!edgeHandle]').forEach((n) => {
+      const gnId = asGnId(n.data('gnId') as string);
       existingNodeIds.add(gnId);
       if (!desiredNodes.has(gnId)) {
         n.remove();
@@ -244,7 +233,7 @@ export class GraphRenderer {
         const { displayLabel, color } = nodeDisplayData(rawNode, this.registry);
         n.data({
           displayLabel,
-          nodeLabel: rawNode._labels[0] ?? "",
+          nodeLabel: rawNode._labels[0] ?? '',
           color,
           borderColor: color,
         });
@@ -259,12 +248,12 @@ export class GraphRenderer {
       const pos = this.positionHints.get(gnId);
       if (!pos) newNodeGnIds.push(gnId);
       newNodeElements.push({
-        group: "nodes",
+        group: 'nodes',
         data: {
           id: gnId,
           gnId,
           displayLabel,
-          nodeLabel: rawNode._labels[0] ?? "",
+          nodeLabel: rawNode._labels[0] ?? '',
           color,
           borderColor: color,
         },
@@ -278,12 +267,12 @@ export class GraphRenderer {
     this.placeNewNodes(newNodeGnIds);
 
     // ── Edges ──────────────────────────────────────────────────────────────────
-    cy.edges("[!ghost]").forEach((e) => {
-      if (!desiredEdges.has(asGnId(e.data("gnId") as string))) e.remove();
+    cy.edges('[!ghost]').forEach((e) => {
+      if (!desiredEdges.has(asGnId(e.data('gnId') as string))) e.remove();
     });
 
     const existingEdgeIds = new Set<GnId>(
-      cy.edges("[!ghost]").map((e) => asGnId(e.data("gnId") as string)),
+      cy.edges('[!ghost]').map((e) => asGnId(e.data('gnId') as string)),
     );
     const newEdgeElements: cytoscape.ElementDefinition[] = [];
     for (const [gnId, rawEdge] of desiredEdges) {
@@ -297,8 +286,8 @@ export class GraphRenderer {
   private placeNewNodes(gnIds: GnId[]): void {
     if (gnIds.length === 0) return;
     const cy = this.cy;
-    const occupied = cy.nodes("[!ghost][!edgeHandle]").map((n) => n.position());
-    const selector = gnIds.map((id) => `#${CSS.escape(id)}`).join(", ");
+    const occupied = cy.nodes('[!ghost][!edgeHandle]').map((n) => n.position());
+    const selector = gnIds.map((id) => `#${CSS.escape(id)}`).join(', ');
     cy.$(selector).forEach((n) => {
       const pos = findFreePosition(occupied);
       n.position(pos);

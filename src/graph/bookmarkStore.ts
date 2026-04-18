@@ -1,6 +1,6 @@
-import { openGraphnoteDB } from "./idb.js";
+import { openGraphnoteDB } from './idb.js';
 
-const IDB_STORE_NAME = "bookmarks";
+const IDB_STORE_NAME = 'bookmarks';
 
 export interface Bookmark {
   id: string;
@@ -17,12 +17,10 @@ export class BookmarkStore {
   async getAll(): Promise<Bookmark[]> {
     const db = await this.openDB();
     return new Promise<Bookmark[]>((resolve, reject) => {
-      const tx = db.transaction(IDB_STORE_NAME, "readonly");
+      const tx = db.transaction(IDB_STORE_NAME, 'readonly');
       const req = tx.objectStore(IDB_STORE_NAME).getAll();
       req.onsuccess = () =>
-        resolve(
-          (req.result as Bookmark[]).sort((a, b) => a.createdAt - b.createdAt),
-        );
+        resolve((req.result as Bookmark[]).sort((a, b) => a.createdAt - b.createdAt));
       req.onerror = () => reject(req.error);
     });
   }
@@ -36,7 +34,7 @@ export class BookmarkStore {
     };
     const db = await this.openDB();
     return new Promise<Bookmark>((resolve, reject) => {
-      const tx = db.transaction(IDB_STORE_NAME, "readwrite");
+      const tx = db.transaction(IDB_STORE_NAME, 'readwrite');
       const req = tx.objectStore(IDB_STORE_NAME).add(bookmark);
       req.onsuccess = () => resolve(bookmark);
       req.onerror = () => reject(req.error);
@@ -46,7 +44,7 @@ export class BookmarkStore {
   async remove(id: string): Promise<void> {
     const db = await this.openDB();
     return new Promise<void>((resolve, reject) => {
-      const tx = db.transaction(IDB_STORE_NAME, "readwrite");
+      const tx = db.transaction(IDB_STORE_NAME, 'readwrite');
       const req = tx.objectStore(IDB_STORE_NAME).delete(id);
       req.onsuccess = () => resolve();
       req.onerror = () => reject(req.error);

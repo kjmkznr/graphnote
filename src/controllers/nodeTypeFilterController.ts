@@ -1,13 +1,11 @@
-import type { NodeTypeFilterContext } from "../appContext.js";
-import type { RawNode, RawEdge } from "../types.js";
-import { byId } from "../ui/domUtils.js";
-import { DOM_IDS } from "../ui/domIds.js";
+import type { NodeTypeFilterContext } from '../appContext.js';
+import type { RawEdge, RawNode } from '../types.js';
+import { DOM_IDS } from '../ui/domIds.js';
+import { byId } from '../ui/domUtils.js';
 
 export class NodeTypeFilterController {
   private readonly ctx: NodeTypeFilterContext;
-  private readonly elNodeTypeFilter = byId<HTMLSelectElement>(
-    DOM_IDS.nodeTypeFilter,
-  );
+  private readonly elNodeTypeFilter = byId<HTMLSelectElement>(DOM_IDS.nodeTypeFilter);
   private activeNodeTypeFilter: string | null = null;
 
   constructor(ctx: NodeTypeFilterContext) {
@@ -15,12 +13,9 @@ export class NodeTypeFilterController {
   }
 
   setup(): void {
-    this.elNodeTypeFilter.addEventListener("change", () => {
+    this.elNodeTypeFilter.addEventListener('change', () => {
       this.activeNodeTypeFilter = this.elNodeTypeFilter.value || null;
-      this.ctx.canvas.refreshGraph(
-        this.getFilteredNodes(),
-        this.getFilteredEdges(),
-      );
+      this.ctx.canvas.refreshGraph(this.getFilteredNodes(), this.getFilteredEdges());
     });
   }
 
@@ -47,7 +42,7 @@ export class NodeTypeFilterController {
       this.elNodeTypeFilter.remove(1);
     }
     for (const t of types) {
-      const opt = document.createElement("option");
+      const opt = document.createElement('option');
       opt.value = t;
       opt.textContent = t;
       this.elNodeTypeFilter.appendChild(opt);
@@ -55,7 +50,7 @@ export class NodeTypeFilterController {
     if (types.includes(current)) {
       this.elNodeTypeFilter.value = current;
     } else {
-      this.elNodeTypeFilter.value = "";
+      this.elNodeTypeFilter.value = '';
       this.activeNodeTypeFilter = null;
     }
   }

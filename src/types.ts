@@ -4,7 +4,7 @@
  * Contrast with `_id` which is an ephemeral internal WasmGraph integer
  * that resets on every graph reload.
  */
-export type GnId = string & { readonly __brand: "GnId" };
+export type GnId = string & { readonly __brand: 'GnId' };
 export function asGnId(s: string): GnId {
   return s as GnId;
 }
@@ -47,17 +47,13 @@ export interface PersistedGraph {
   viewport?: { pan: { x: number; y: number }; zoom: number };
 }
 
-export type InteractionMode = "edit" | "node";
+export type InteractionMode = 'edit' | 'node';
 
-export type TabKind = "graph" | "scrapbook" | "dashboard";
+export type TabKind = 'graph' | 'scrapbook' | 'dashboard';
 
 // ── Scrapbook cell types ────────────────────────────────────────────────────────
 
-export type ScrapbookCellKind =
-  | "markdown"
-  | "query-result"
-  | "snapshot"
-  | "section";
+export type ScrapbookCellKind = 'markdown' | 'query-result' | 'snapshot' | 'section';
 
 interface ScrapbookCellBase {
   id: string;
@@ -66,12 +62,12 @@ interface ScrapbookCellBase {
 }
 
 export interface MarkdownCell extends ScrapbookCellBase {
-  kind: "markdown";
+  kind: 'markdown';
   content: string;
 }
 
 export interface QueryResultCell extends ScrapbookCellBase {
-  kind: "query-result";
+  kind: 'query-result';
   query: string;
   rows: Record<string, unknown>[];
   elapsedMs: number;
@@ -79,7 +75,7 @@ export interface QueryResultCell extends ScrapbookCellBase {
 }
 
 export interface SnapshotCell extends ScrapbookCellBase {
-  kind: "snapshot";
+  kind: 'snapshot';
   label: string;
   positions: Record<GnId, { x: number; y: number }>;
   pngDataUrl: string;
@@ -87,27 +83,23 @@ export interface SnapshotCell extends ScrapbookCellBase {
 }
 
 export interface SectionCell extends ScrapbookCellBase {
-  kind: "section";
+  kind: 'section';
   title: string;
 }
 
-export type ScrapbookCell =
-  | MarkdownCell
-  | QueryResultCell
-  | SnapshotCell
-  | SectionCell;
+export type ScrapbookCell = MarkdownCell | QueryResultCell | SnapshotCell | SectionCell;
 
 export type CanvasEvent =
-  | { kind: "node-clicked"; gnId: GnId }
-  | { kind: "edge-clicked"; gnId: GnId }
-  | { kind: "canvas-clicked"; position: { x: number; y: number } }
-  | { kind: "edge-created"; sourceGnId: GnId; targetGnId: GnId }
-  | { kind: "edge-drag-cancelled" }
-  | { kind: "node-context"; gnId: GnId; x: number; y: number }
-  | { kind: "edge-context"; gnId: GnId; x: number; y: number }
-  | { kind: "bg-context"; x: number; y: number }
-  | { kind: "delete-selected"; nodeGnIds: GnId[]; edgeGnIds: GnId[] }
-  | { kind: "bg-tap" }
-  | { kind: "node-hovered"; gnId: GnId; x: number; y: number }
-  | { kind: "edge-hovered"; gnId: GnId; x: number; y: number }
-  | { kind: "element-unhovered" };
+  | { kind: 'node-clicked'; gnId: GnId }
+  | { kind: 'edge-clicked'; gnId: GnId }
+  | { kind: 'canvas-clicked'; position: { x: number; y: number } }
+  | { kind: 'edge-created'; sourceGnId: GnId; targetGnId: GnId }
+  | { kind: 'edge-drag-cancelled' }
+  | { kind: 'node-context'; gnId: GnId; x: number; y: number }
+  | { kind: 'edge-context'; gnId: GnId; x: number; y: number }
+  | { kind: 'bg-context'; x: number; y: number }
+  | { kind: 'delete-selected'; nodeGnIds: GnId[]; edgeGnIds: GnId[] }
+  | { kind: 'bg-tap' }
+  | { kind: 'node-hovered'; gnId: GnId; x: number; y: number }
+  | { kind: 'edge-hovered'; gnId: GnId; x: number; y: number }
+  | { kind: 'element-unhovered' };

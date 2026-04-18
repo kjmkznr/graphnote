@@ -4,10 +4,10 @@
  */
 export function escHtml(s: string): string {
   return String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 type AttrValue = string | boolean | null | undefined;
@@ -32,14 +32,12 @@ export function el<K extends keyof HTMLElementTagNameMap>(
   if (attrs) {
     for (const [k, v] of Object.entries(attrs)) {
       if (v == null || v === false) continue;
-      node.setAttribute(k, v === true ? "" : v);
+      node.setAttribute(k, v === true ? '' : v);
     }
   }
   for (const child of children) {
     if (child == null) continue;
-    node.appendChild(
-      typeof child === "string" ? document.createTextNode(child) : child,
-    );
+    node.appendChild(typeof child === 'string' ? document.createTextNode(child) : child);
   }
   return node;
 }

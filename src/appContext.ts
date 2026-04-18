@@ -1,13 +1,13 @@
-import type { GraphDB } from "./graph/db.js";
-import type { TypeRegistry } from "./graph/typeRegistry.js";
-import type { EdgeTypeRegistry } from "./graph/edgeTypeRegistry.js";
-import type { UndoManager } from "./graph/undoManager.js";
-import type { Canvas } from "./ui/canvas.js";
-import type { Sidebar } from "./ui/sidebar.js";
-import type { QueryPanel } from "./ui/queryPanel.js";
-import type { ScrapbookStore } from "./notebook/scrapbookStore.js";
-import type { BookmarkStore } from "./graph/bookmarkStore.js";
-import type { RawNode, RawEdge } from "./types.js";
+import type { BookmarkStore } from './graph/bookmarkStore.js';
+import type { GraphDB } from './graph/db.js';
+import type { EdgeTypeRegistry } from './graph/edgeTypeRegistry.js';
+import type { TypeRegistry } from './graph/typeRegistry.js';
+import type { UndoManager } from './graph/undoManager.js';
+import type { ScrapbookStore } from './notebook/scrapbookStore.js';
+import type { RawEdge, RawNode } from './types.js';
+import type { Canvas } from './ui/canvas.js';
+import type { QueryPanel } from './ui/queryPanel.js';
+import type { Sidebar } from './ui/sidebar.js';
 
 /**
  * 複数のコンテキストインターフェースで共通して使用される操作メソッド。
@@ -21,10 +21,7 @@ export interface AppOperations {
 /**
  * サイドバーコントローラーが必要とする依存のサブセット。
  */
-export interface SidebarContext extends Pick<
-  AppOperations,
-  "captureForUndo" | "scheduleSave"
-> {
+export interface SidebarContext extends Pick<AppOperations, 'captureForUndo' | 'scheduleSave'> {
   readonly db: GraphDB;
   readonly canvas: Canvas;
   readonly sidebar: Sidebar;
@@ -33,10 +30,7 @@ export interface SidebarContext extends Pick<
 /**
  * クエリパネルコントローラーが必要とする依存のサブセット。
  */
-export interface QueryPanelContext extends Pick<
-  AppOperations,
-  "captureForUndo" | "scheduleSave"
-> {
+export interface QueryPanelContext extends Pick<AppOperations, 'captureForUndo' | 'scheduleSave'> {
   readonly db: GraphDB;
   readonly canvas: Canvas;
   readonly queryPanel: QueryPanel;
@@ -49,7 +43,7 @@ export interface QueryPanelContext extends Pick<
 /**
  * アンドゥ／リドゥコントローラーが必要とする依存のサブセット。
  */
-export interface UndoContext extends Pick<AppOperations, "scheduleSave"> {
+export interface UndoContext extends Pick<AppOperations, 'scheduleSave'> {
   readonly db: GraphDB;
   readonly canvas: Canvas;
   readonly sidebar: Sidebar;
@@ -62,10 +56,7 @@ export interface UndoContext extends Pick<AppOperations, "scheduleSave"> {
 /**
  * ツールバーコントローラーが必要とする依存のサブセット。
  */
-export interface ToolbarContext extends Pick<
-  AppOperations,
-  "captureForUndo" | "refreshAndSave"
-> {
+export interface ToolbarContext extends Pick<AppOperations, 'captureForUndo' | 'refreshAndSave'> {
   readonly db: GraphDB;
   readonly canvas: Canvas;
   readonly sidebar: Sidebar;
@@ -88,10 +79,8 @@ export interface NodeTypeFilterContext {
 /**
  * キャンバスイベントコントローラーが必要とする依存のサブセット。
  */
-export interface CanvasEventContext extends Pick<
-  AppOperations,
-  "captureForUndo" | "refreshAndSave"
-> {
+export interface CanvasEventContext
+  extends Pick<AppOperations, 'captureForUndo' | 'refreshAndSave'> {
   readonly db: GraphDB;
   readonly canvas: Canvas;
   readonly sidebar: Sidebar;
@@ -108,8 +97,7 @@ export interface CanvasEventContext extends Pick<
  * コントローラー毎のサブインターフェース（SidebarContext, QueryPanelContext 等）も参照のこと。
  */
 export interface AppContext
-  extends
-    SidebarContext,
+  extends SidebarContext,
     QueryPanelContext,
     UndoContext,
     ToolbarContext,

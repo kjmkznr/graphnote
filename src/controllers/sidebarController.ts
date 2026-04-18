@@ -1,5 +1,5 @@
-import type { SidebarContext } from "../appContext.js";
-import { showToast } from "../ui/toast.js";
+import type { SidebarContext } from '../appContext.js';
+import { showToast } from '../ui/toast.js';
 
 export function setupSidebarCallbacks(ctx: SidebarContext): void {
   ctx.sidebar.setCallbacks({
@@ -10,30 +10,30 @@ export function setupSidebarCallbacks(ctx: SidebarContext): void {
       ctx.scheduleSave();
     },
     onNoteChange(gnId, note) {
-      if (ctx.sidebar.getCurrentType() === "edge") {
-        ctx.db.updateEdgeProperty(gnId, "note", note);
+      if (ctx.sidebar.getCurrentType() === 'edge') {
+        ctx.db.updateEdgeProperty(gnId, 'note', note);
       } else {
-        ctx.db.updateNodeProperty(gnId, "note", note);
+        ctx.db.updateNodeProperty(gnId, 'note', note);
       }
       ctx.scheduleSave();
     },
     onPropertyChange(gnId, key, value) {
       try {
         ctx.captureForUndo();
-        if (ctx.sidebar.getCurrentType() === "edge") {
+        if (ctx.sidebar.getCurrentType() === 'edge') {
           ctx.db.updateEdgeProperty(gnId, key, value);
         } else {
           ctx.db.updateNodeProperty(gnId, key, value);
         }
         ctx.scheduleSave();
       } catch (err) {
-        showToast(String(err), "warn");
+        showToast(String(err), 'warn');
       }
     },
     onAddProperty(gnId, key, value) {
       try {
         ctx.captureForUndo();
-        if (ctx.sidebar.getCurrentType() === "edge") {
+        if (ctx.sidebar.getCurrentType() === 'edge') {
           ctx.db.updateEdgeProperty(gnId, key, value);
           const edge = ctx.db.getEdgeByGnId(gnId);
           if (edge) ctx.sidebar.showEdge(edge);
@@ -44,7 +44,7 @@ export function setupSidebarCallbacks(ctx: SidebarContext): void {
         }
         ctx.scheduleSave();
       } catch (err) {
-        showToast(String(err), "warn");
+        showToast(String(err), 'warn');
       }
     },
   });
