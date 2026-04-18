@@ -11,7 +11,6 @@ export type OnGraphSwitch = (id: string) => Promise<void>;
 export class GraphSwitcher {
   private manager: GraphManager;
   private onSwitch: OnGraphSwitch;
-  private container: HTMLElement;
   private select: HTMLSelectElement;
   private renameBtn: HTMLButtonElement;
   private newBtn: HTMLButtonElement;
@@ -21,7 +20,6 @@ export class GraphSwitcher {
     this.manager = manager;
     this.onSwitch = onSwitch;
 
-    this.container = document.getElementById(DOM_IDS.graphSwitcher) as HTMLElement;
     this.select = document.getElementById(DOM_IDS.graphSelect) as HTMLSelectElement;
     this.renameBtn = document.getElementById(DOM_IDS.graphRenameBtn) as HTMLButtonElement;
     this.newBtn = document.getElementById(DOM_IDS.graphNewBtn) as HTMLButtonElement;
