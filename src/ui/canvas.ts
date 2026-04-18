@@ -80,12 +80,22 @@ export class Canvas {
     return this.mode;
   }
 
-  setMode(mode: InteractionMode): void {
+  setMode(mode: InteractionMode, newNodeGnIds?: GnId[]): void {
     this.mode = mode;
-    // All modes keep nodes draggable and panning enabled
-    this.cy.nodes('[!ghost][!edgeHandle]').forEach((n) => {
-      n.grabify();
-    });
+    // Only grabify newly added nodes; existing nodes retain their state.
+    // On a full mode switch (no newNodeGnIds), grabify all real nodes.
+    if (newNodeGnIds) {
+      if (newNodeGnIds.length > 0) {
+        const selector = newNodeGnIds.map((id) => `#${CSS.escape(id)}`).join(', ');
+        this.cy.nodes(selector).forEach((n) => {
+          n.grabify();
+        });
+      }
+    } else {
+      this.cy.nodes('[!ghost][!edgeHandle]').forEach((n) => {
+        n.grabify();
+      });
+    }
     this.cy.userPanningEnabled(true);
     const container = this.cy.container();
     if (container) container.style.cursor = mode === 'node' ? 'crosshair' : '';
@@ -98,9 +108,9 @@ export class Canvas {
   }
 
   refreshGraph(nodes: RawNode[], edges: RawEdge[], savedPositions?: PositionMap): void {
-    this.renderer.refreshGraph(nodes, edges, savedPositions);
-    // Re-apply mode settings to any newly added nodes
-    this.setMode(this.mode);
+    const newNodeGnIds = this.renderer.refreshGraph(nodes, edges, savedPositions);
+    // Apply grabify only to newly added nodes (full rebuild passes all node gnIds)
+    this.setMode(this.mode, newNodeGnIds);
   }
 
   getPositions(): PositionMap {

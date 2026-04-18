@@ -281,39 +281,53 @@ export function exportToCypher(
 }
 
 function restoreNodes(db: GraphDB, nodes: PersistedGraph['nodes']): void {
-  for (const pNode of nodes) {
-    if (!pNode.id || !pNode.labels[0]) continue;
-    const label = pNode.labels[0];
-    const props: Record<string, string | number | boolean | null> = {};
-    for (const [k, v] of Object.entries(pNode.properties)) {
-      if (k !== 'gnId') props[k] = v;
+  const valid = nodes.filter((n) => n.id && n.labels[0]);
+  if (valid.length === 0) return;
+
+  db.beginBulkLoad();
+  try {
+    for (const pNode of valid) {
+      const label = pNode.labels[0] as string;
+      const props: Record<string, string | number | boolean | null> = {};
+      for (const [k, v] of Object.entries(pNode.properties)) {
+        if (k !== 'gnId') props[k] = v;
+      }
+      try {
+        db.createNodeWithGnId(label, asGnId(pNode.id), props);
+      } catch (err) {
+        console.warn('Failed to restore node:', err);
+      }
     }
-    try {
-      db.createNodeWithGnId(label, asGnId(pNode.id), props);
-    } catch (err) {
-      console.warn('Failed to restore node:', err);
-    }
+  } finally {
+    db.endBulkLoad();
   }
 }
 
 function restoreEdges(db: GraphDB, edges: PersistedGraph['edges']): void {
-  for (const pEdge of edges) {
-    if (!pEdge.srcId || !pEdge.dstId) continue;
-    const props: Record<string, string | number | boolean | null> = {};
-    for (const [k, v] of Object.entries(pEdge.properties)) {
-      if (k !== 'gnId') props[k] = v;
+  const valid = edges.filter((e) => e.srcId && e.dstId);
+  if (valid.length === 0) return;
+
+  db.beginBulkLoad();
+  try {
+    for (const pEdge of valid) {
+      const props: Record<string, string | number | boolean | null> = {};
+      for (const [k, v] of Object.entries(pEdge.properties)) {
+        if (k !== 'gnId') props[k] = v;
+      }
+      try {
+        db.createEdgeWithGnId(
+          asGnId(pEdge.srcId),
+          asGnId(pEdge.dstId),
+          pEdge.type,
+          asGnId(pEdge.id),
+          props,
+        );
+      } catch (err) {
+        console.warn('Failed to restore edge:', err);
+      }
     }
-    try {
-      db.createEdgeWithGnId(
-        asGnId(pEdge.srcId),
-        asGnId(pEdge.dstId),
-        pEdge.type,
-        asGnId(pEdge.id),
-        props,
-      );
-    } catch (err) {
-      console.warn('Failed to restore edge:', err);
-    }
+  } finally {
+    db.endBulkLoad();
   }
 }
 

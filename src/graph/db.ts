@@ -50,6 +50,7 @@ export class GraphDB {
   private executor!: IGraphExecutor;
   private _cachedNodes: RawNode[] | null = null;
   private _cachedEdges: RawEdge[] | null = null;
+  private _bulkLoading = false;
 
   async init(): Promise<void> {
     this.executor = new WasmGraphExecutor(new WasmGraph());
@@ -69,8 +70,31 @@ export class GraphDB {
   }
 
   private invalidateCache(): void {
+    if (this._bulkLoading) return;
     this._cachedNodes = null;
     this._cachedEdges = null;
+  }
+
+  /**
+   * Suppress per-operation cache invalidation for bulk load operations.
+   * Call endBulkLoad() when done to flush the cache once.
+   */
+  beginBulkLoad(): void {
+    this._bulkLoading = true;
+  }
+
+  endBulkLoad(): void {
+    this._bulkLoading = false;
+    this._cachedNodes = null;
+    this._cachedEdges = null;
+  }
+
+  /**
+   * Execute raw Cypher without cache invalidation (for internal bulk operations).
+   * The caller is responsible for calling endBulkLoad() or invalidateCache() afterwards.
+   */
+  executeRaw(cypher: string): void {
+    this.executor.execute(cypher);
   }
 
   getAllNodes(): RawNode[] {

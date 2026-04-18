@@ -118,37 +118,42 @@ export class UndoManager {
     const { graph } = snapshot;
     db.reset();
 
-    for (const pNode of graph.nodes) {
-      if (!pNode.id || !pNode.labels[0]) continue;
-      const label = pNode.labels[0];
-      const props: Record<string, PropertyValue> = {};
-      for (const [k, v] of Object.entries(pNode.properties)) {
-        if (k !== 'gnId') props[k] = v;
+    db.beginBulkLoad();
+    try {
+      for (const pNode of graph.nodes) {
+        if (!pNode.id || !pNode.labels[0]) continue;
+        const label = pNode.labels[0];
+        const props: Record<string, PropertyValue> = {};
+        for (const [k, v] of Object.entries(pNode.properties)) {
+          if (k !== 'gnId') props[k] = v;
+        }
+        try {
+          db.createNodeWithGnId(label, asGnId(pNode.id), props);
+        } catch (err) {
+          console.warn('Undo/redo: failed to restore node:', err);
+        }
       }
-      try {
-        db.createNodeWithGnId(label, asGnId(pNode.id), props);
-      } catch (err) {
-        console.warn('Undo/redo: failed to restore node:', err);
-      }
-    }
 
-    for (const pEdge of graph.edges) {
-      if (!pEdge.srcId || !pEdge.dstId) continue;
-      const props: Record<string, PropertyValue> = {};
-      for (const [k, v] of Object.entries(pEdge.properties)) {
-        if (k !== 'gnId') props[k] = v;
+      for (const pEdge of graph.edges) {
+        if (!pEdge.srcId || !pEdge.dstId) continue;
+        const props: Record<string, PropertyValue> = {};
+        for (const [k, v] of Object.entries(pEdge.properties)) {
+          if (k !== 'gnId') props[k] = v;
+        }
+        try {
+          db.createEdgeWithGnId(
+            asGnId(pEdge.srcId),
+            asGnId(pEdge.dstId),
+            pEdge.type,
+            asGnId(pEdge.id),
+            props,
+          );
+        } catch (err) {
+          console.warn('Undo/redo: failed to restore edge:', err);
+        }
       }
-      try {
-        db.createEdgeWithGnId(
-          asGnId(pEdge.srcId),
-          asGnId(pEdge.dstId),
-          pEdge.type,
-          asGnId(pEdge.id),
-          props,
-        );
-      } catch (err) {
-        console.warn('Undo/redo: failed to restore edge:', err);
-      }
+    } finally {
+      db.endBulkLoad();
     }
 
     return graph.positions ?? {};

@@ -185,7 +185,8 @@ export class App implements AppContext {
       this.canvas.updateEdgeStyles(this.edgeRegistry);
       this.nodeTypeFilter.updateOptions();
       this.canvas.refreshGraph(this.getFilteredNodes(), this.getFilteredEdges());
-      refreshCompletionContext(this);
+      // Defer autocomplete context rebuild — it only affects query typing, not visible graph state
+      setTimeout(() => refreshCompletionContext(this), 0);
       this.scheduleSave();
     } catch (err) {
       showToast(`グラフの更新に失敗しました: ${String(err)}`);

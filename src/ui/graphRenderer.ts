@@ -9,17 +9,55 @@ export type PositionMap = Record<GnId, { x: number; y: number }>;
 
 const NODE_SPACING = 110; // minimum distance between node centers
 
-function findFreePosition(occupied: Array<{ x: number; y: number }>): {
-  x: number;
-  y: number;
-} {
-  if (occupied.length === 0) return { x: 0, y: 0 };
+/**
+ * Spatial hash grid for O(1) collision checks when placing nodes.
+ * Divides space into cells of `cellSize` and checks only the 9 neighbouring cells.
+ */
+class SpatialGrid {
+  private cells = new Map<string, Array<{ x: number; y: number }>>();
+  private readonly cellSize: number;
 
-  const cx = occupied.reduce((s, p) => s + p.x, 0) / occupied.length;
-  const cy = occupied.reduce((s, p) => s + p.y, 0) / occupied.length;
+  constructor(cellSize: number) {
+    this.cellSize = cellSize;
+  }
 
-  const isFree = (x: number, y: number) =>
-    occupied.every((p) => Math.hypot(p.x - x, p.y - y) >= NODE_SPACING);
+  private key(cx: number, cy: number): string {
+    return `${cx},${cy}`;
+  }
+
+  add(pos: { x: number; y: number }): void {
+    const cx = Math.floor(pos.x / this.cellSize);
+    const cy = Math.floor(pos.y / this.cellSize);
+    const k = this.key(cx, cy);
+    let cell = this.cells.get(k);
+    if (!cell) {
+      cell = [];
+      this.cells.set(k, cell);
+    }
+    cell.push(pos);
+  }
+
+  isFree(x: number, y: number, minDist: number): boolean {
+    const cx = Math.floor(x / this.cellSize);
+    const cy = Math.floor(y / this.cellSize);
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        const neighbours = this.cells.get(this.key(cx + dx, cy + dy));
+        if (!neighbours) continue;
+        for (const p of neighbours) {
+          if (Math.hypot(p.x - x, p.y - y) < minDist) return false;
+        }
+      }
+    }
+    return true;
+  }
+}
+
+function findFreePosition(
+  grid: SpatialGrid,
+  centroid: { x: number; y: number },
+): { x: number; y: number } {
+  const { x: cx, y: cy } = centroid;
 
   for (let r = NODE_SPACING; r <= NODE_SPACING * 20; r += NODE_SPACING) {
     const steps = Math.max(6, Math.round((2 * Math.PI * r) / NODE_SPACING));
@@ -27,7 +65,7 @@ function findFreePosition(occupied: Array<{ x: number; y: number }>): {
       const angle = (2 * Math.PI * i) / steps;
       const x = cx + r * Math.cos(angle);
       const y = cy + r * Math.sin(angle);
-      if (isFree(x, y)) return { x, y };
+      if (grid.isFree(x, y, NODE_SPACING)) return { x, y };
     }
   }
 
@@ -102,12 +140,13 @@ export class GraphRenderer {
    * Sync the canvas with the current graph state.
    * - With `savedPositions`: full clear + rebuild (used on initial load / import).
    * - Without: incremental diff (add/remove/update changed elements only).
+   * Returns the gnIds of newly added nodes so callers can apply node-specific setup.
    */
-  refreshGraph(nodes: RawNode[], edges: RawEdge[], savedPositions?: PositionMap): void {
+  refreshGraph(nodes: RawNode[], edges: RawEdge[], savedPositions?: PositionMap): GnId[] {
     if (savedPositions) {
-      this.fullRefresh(nodes, edges, savedPositions);
+      return this.fullRefresh(nodes, edges, savedPositions);
     } else {
-      this.diffRefresh(nodes, edges);
+      return this.diffRefresh(nodes, edges);
     }
   }
 
@@ -158,9 +197,8 @@ export class GraphRenderer {
   // ── Private refresh helpers ─────────────────────────────────────────────────
 
   /** Full clear + rebuild. Used only on initial load or after import. */
-  private fullRefresh(nodes: RawNode[], edges: RawEdge[], savedPositions: PositionMap): void {
+  private fullRefresh(nodes: RawNode[], edges: RawEdge[], savedPositions: PositionMap): GnId[] {
     const cy = this.cy;
-    cy.elements().remove();
 
     const internalIdToGnId = new Map<string, GnId>(
       nodes.map((n) => [n._id, n._properties.gnId as GnId]),
@@ -168,10 +206,12 @@ export class GraphRenderer {
 
     const elements: cytoscape.ElementDefinition[] = [];
     const newNodeGnIds: GnId[] = [];
+    const allNodeGnIds: GnId[] = [];
 
     for (const node of nodes) {
       const gnId = node._properties.gnId as GnId | undefined;
       if (!gnId) continue;
+      allNodeGnIds.push(gnId);
       const { displayLabel, color } = nodeDisplayData(node, this.registry);
       const pos = savedPositions[gnId] ?? this.positionHints.get(gnId);
       if (!pos) newNodeGnIds.push(gnId);
@@ -196,12 +236,16 @@ export class GraphRenderer {
       if (def) elements.push(def);
     }
 
-    cy.add(elements);
+    cy.batch(() => {
+      cy.elements().remove();
+      cy.add(elements);
+    });
     this.placeNewNodes(newNodeGnIds);
+    return allNodeGnIds;
   }
 
   /** Incremental diff: add/remove/update only changed elements. Positions are preserved. */
-  private diffRefresh(nodes: RawNode[], edges: RawEdge[]): void {
+  private diffRefresh(nodes: RawNode[], edges: RawEdge[]): GnId[] {
     const cy = this.cy;
 
     const desiredNodes = new Map<GnId, RawNode>();
@@ -221,78 +265,102 @@ export class GraphRenderer {
       nodes.map((n) => [n._id, n._properties.gnId as GnId]),
     );
 
-    // ── Nodes ──────────────────────────────────────────────────────────────────
-    const existingNodeIds = new Set<GnId>();
-    cy.nodes('[!ghost][!edgeHandle]').forEach((n) => {
-      const gnId = asGnId(n.data('gnId') as string);
-      existingNodeIds.add(gnId);
-      if (!desiredNodes.has(gnId)) {
-        n.remove();
-      } else {
-        const rawNode = desiredNodes.get(gnId);
-        if (!rawNode) return;
-        const { displayLabel, color } = nodeDisplayData(rawNode, this.registry);
-        n.data({
-          displayLabel,
-          nodeLabel: rawNode._labels[0] ?? '',
-          color,
-          borderColor: color,
-        });
-      }
-    });
-
     const newNodeGnIds: GnId[] = [];
     const newNodeElements: cytoscape.ElementDefinition[] = [];
-    for (const [gnId, rawNode] of desiredNodes) {
-      if (existingNodeIds.has(gnId)) continue;
-      const { displayLabel, color } = nodeDisplayData(rawNode, this.registry);
-      const pos = this.positionHints.get(gnId);
-      if (!pos) newNodeGnIds.push(gnId);
-      newNodeElements.push({
-        group: 'nodes',
-        data: {
-          id: gnId,
-          gnId,
-          displayLabel,
-          nodeLabel: rawNode._labels[0] ?? '',
-          color,
-          borderColor: color,
-        },
-        ...(pos ? { position: pos } : {}),
+    const newEdgeElements: cytoscape.ElementDefinition[] = [];
+
+    cy.batch(() => {
+      // ── Nodes ────────────────────────────────────────────────────────────────
+      const existingNodeIds = new Set<GnId>();
+      cy.nodes('[!ghost][!edgeHandle]').forEach((n) => {
+        const gnId = asGnId(n.data('gnId') as string);
+        existingNodeIds.add(gnId);
+        if (!desiredNodes.has(gnId)) {
+          n.remove();
+        } else {
+          const rawNode = desiredNodes.get(gnId);
+          if (!rawNode) return;
+          const { displayLabel, color } = nodeDisplayData(rawNode, this.registry);
+          n.data({
+            displayLabel,
+            nodeLabel: rawNode._labels[0] ?? '',
+            color,
+            borderColor: color,
+          });
+        }
       });
-    }
 
-    this.positionHints.clear();
+      for (const [gnId, rawNode] of desiredNodes) {
+        if (existingNodeIds.has(gnId)) continue;
+        const { displayLabel, color } = nodeDisplayData(rawNode, this.registry);
+        const pos = this.positionHints.get(gnId);
+        if (!pos) newNodeGnIds.push(gnId);
+        newNodeElements.push({
+          group: 'nodes',
+          data: {
+            id: gnId,
+            gnId,
+            displayLabel,
+            nodeLabel: rawNode._labels[0] ?? '',
+            color,
+            borderColor: color,
+          },
+          ...(pos ? { position: pos } : {}),
+        });
+      }
 
-    if (newNodeElements.length > 0) cy.add(newNodeElements);
-    this.placeNewNodes(newNodeGnIds);
+      this.positionHints.clear();
 
-    // ── Edges ──────────────────────────────────────────────────────────────────
-    cy.edges('[!ghost]').forEach((e) => {
-      if (!desiredEdges.has(asGnId(e.data('gnId') as string))) e.remove();
+      if (newNodeElements.length > 0) cy.add(newNodeElements);
+
+      // ── Edges ────────────────────────────────────────────────────────────────
+      cy.edges('[!ghost]').forEach((e) => {
+        if (!desiredEdges.has(asGnId(e.data('gnId') as string))) e.remove();
+      });
+
+      const existingEdgeIds = new Set<GnId>(
+        cy.edges('[!ghost]').map((e) => asGnId(e.data('gnId') as string)),
+      );
+      for (const [gnId, rawEdge] of desiredEdges) {
+        if (existingEdgeIds.has(gnId)) continue;
+        const def = edgeElementDef(rawEdge, internalIdToGnId);
+        if (def) newEdgeElements.push(def);
+      }
+      if (newEdgeElements.length > 0) cy.add(newEdgeElements);
     });
 
-    const existingEdgeIds = new Set<GnId>(
-      cy.edges('[!ghost]').map((e) => asGnId(e.data('gnId') as string)),
-    );
-    const newEdgeElements: cytoscape.ElementDefinition[] = [];
-    for (const [gnId, rawEdge] of desiredEdges) {
-      if (existingEdgeIds.has(gnId)) continue;
-      const def = edgeElementDef(rawEdge, internalIdToGnId);
-      if (def) newEdgeElements.push(def);
-    }
-    if (newEdgeElements.length > 0) cy.add(newEdgeElements);
+    this.placeNewNodes(newNodeGnIds);
+    return newNodeGnIds;
   }
 
   private placeNewNodes(gnIds: GnId[]): void {
     if (gnIds.length === 0) return;
     const cy = this.cy;
-    const occupied = cy.nodes('[!ghost][!edgeHandle]').map((n) => n.position());
+
+    // Build spatial grid from all currently positioned nodes
+    const grid = new SpatialGrid(NODE_SPACING * 2);
+    let sumX = 0;
+    let sumY = 0;
+    let positionedCount = 0;
+    cy.nodes('[!ghost][!edgeHandle]').forEach((n) => {
+      if (gnIds.includes(asGnId(n.data('gnId') as string))) return; // skip the nodes we're about to place
+      const pos = n.position();
+      grid.add(pos);
+      sumX += pos.x;
+      sumY += pos.y;
+      positionedCount++;
+    });
+
+    const centroid =
+      positionedCount > 0
+        ? { x: sumX / positionedCount, y: sumY / positionedCount }
+        : { x: 0, y: 0 };
+
     const selector = gnIds.map((id) => `#${CSS.escape(id)}`).join(', ');
     cy.$(selector).forEach((n) => {
-      const pos = findFreePosition(occupied);
+      const pos = findFreePosition(grid, centroid);
       n.position(pos);
-      occupied.push(pos);
+      grid.add(pos);
     });
   }
 }
