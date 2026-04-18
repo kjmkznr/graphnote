@@ -1,6 +1,7 @@
 import type { GraphManager } from '../graph/graphManager.js';
 import type { GraphMeta } from '../graph/persistence.js';
 import { showToast } from './toast.js';
+import { DOM_IDS } from './domIds.js';
 
 export type OnGraphSwitch = (id: string) => Promise<void>;
 
@@ -10,7 +11,6 @@ export type OnGraphSwitch = (id: string) => Promise<void>;
 export class GraphSwitcher {
   private manager: GraphManager;
   private onSwitch: OnGraphSwitch;
-  private container: HTMLElement;
   private select: HTMLSelectElement;
   private renameBtn: HTMLButtonElement;
   private newBtn: HTMLButtonElement;
@@ -20,11 +20,10 @@ export class GraphSwitcher {
     this.manager = manager;
     this.onSwitch = onSwitch;
 
-    this.container = document.getElementById('graph-switcher') as HTMLElement;
-    this.select = document.getElementById('graph-select') as HTMLSelectElement;
-    this.renameBtn = document.getElementById('graph-rename-btn') as HTMLButtonElement;
-    this.newBtn = document.getElementById('graph-new-btn') as HTMLButtonElement;
-    this.deleteBtn = document.getElementById('graph-delete-btn') as HTMLButtonElement;
+    this.select = document.getElementById(DOM_IDS.graphSelect) as HTMLSelectElement;
+    this.renameBtn = document.getElementById(DOM_IDS.graphRenameBtn) as HTMLButtonElement;
+    this.newBtn = document.getElementById(DOM_IDS.graphNewBtn) as HTMLButtonElement;
+    this.deleteBtn = document.getElementById(DOM_IDS.graphDeleteBtn) as HTMLButtonElement;
 
     this.setup();
   }

@@ -3,6 +3,7 @@ import type { Canvas } from '../ui/canvas.js';
 import type { GraphDB } from '../graph/db.js';
 import type { Dashboard } from '../ui/dashboard.js';
 import { byId } from '../ui/domUtils.js';
+import { DOM_IDS } from '../ui/domIds.js';
 
 function isTabKind(value: string): value is TabKind {
   return value === 'graph' || value === 'scrapbook' || value === 'dashboard';
@@ -13,9 +14,9 @@ export function setupTabButtons(
   db: GraphDB,
   dashboard: Dashboard,
 ): void {
-  const elTabGraph = byId('tab-graph');
-  const elTabScrapbook = byId('tab-scrapbook');
-  const elTabDashboard = byId('tab-dashboard');
+  const elTabGraph = byId(DOM_IDS.tabGraph);
+  const elTabScrapbook = byId(DOM_IDS.tabScrapbook);
+  const elTabDashboard = byId(DOM_IDS.tabDashboard);
 
   function switchTab(tab: TabKind, updateHistory = true): void {
     if (updateHistory) {

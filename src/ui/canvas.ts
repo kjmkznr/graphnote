@@ -8,6 +8,9 @@ import type { EdgeTypeRegistry } from '../graph/edgeTypeRegistry.js';
 import type { TypeRegistry } from '../graph/typeRegistry.js';
 import { Minimap } from './minimap.js';
 
+// Edgehandles の grab 領域。Cytoscape のデフォルト node サイズ (40px) + マージン
+const EDGE_HANDLE_DISTANCE = 52;
+
 function getEventClientPos(e: MouseEvent | TouchEvent): { x: number; y: number } {
   if ('touches' in e) {
     const t = e.changedTouches[0] ?? e.touches[0];
@@ -28,7 +31,6 @@ export type { PositionMap };
 export class Canvas {
   private cy: cytoscape.Core;
   private renderer: GraphRenderer;
-  private minimap: Minimap;
   private mode: InteractionMode = 'edit';
 
   // Edge-creation drag state
@@ -52,14 +54,13 @@ export class Canvas {
       container,
       style: CYTOSCAPE_STYLES,
       layout: { name: 'preset' },
-      wheelSensitivity: 0.3,
       userZoomingEnabled: true,
       userPanningEnabled: true,
       boxSelectionEnabled: false,
     });
 
     this.renderer = new GraphRenderer(this.cy, this.nodeRegistry);
-    this.minimap = new Minimap(container.parentElement!, this.cy);
+    new Minimap(container.parentElement!, this.cy);
     this.bindEvents();
     this.applyStyles();
   }
@@ -71,7 +72,7 @@ export class Canvas {
   setMode(mode: InteractionMode): void {
     this.mode = mode;
     // All modes keep nodes draggable and panning enabled
-    this.cy.nodes(':not([ghost]):not([edgeHandle])').forEach((n) => { n.grabify(); });
+    this.cy.nodes('[!ghost][!edgeHandle]').forEach((n) => { n.grabify(); });
     this.cy.userPanningEnabled(true);
     const container = this.cy.container();
     if (container) container.style.cursor = mode === 'node' ? 'crosshair' : '';
@@ -163,13 +164,13 @@ export class Canvas {
   private bindTapEvents(): void {
     const cy = this.cy;
 
-    cy.on('tap', 'node:not([ghost])', (e) => {
+    cy.on('tap', 'node[!ghost]', (e) => {
       if (this.dragState.active) return;
       const gnId = asGnId(e.target.data('gnId') as string);
       if (gnId) this.onEvent({ kind: 'node-clicked', gnId });
     });
 
-    cy.on('tap', 'edge:not([ghost])', (e) => {
+    cy.on('tap', 'edge[!ghost]', (e) => {
       const gnId = asGnId(e.target.data('gnId') as string);
       if (gnId) this.onEvent({ kind: 'edge-clicked', gnId });
     });
@@ -184,13 +185,13 @@ export class Canvas {
       }
     });
 
-    cy.on('cxttap', 'node:not([ghost])', (e) => {
+    cy.on('cxttap', 'node[!ghost]', (e) => {
       const gnId = asGnId(e.target.data('gnId') as string);
       const { x, y } = getEventClientPos(e.originalEvent as MouseEvent | TouchEvent);
       if (gnId) this.onEvent({ kind: 'node-context', gnId, x, y });
     });
 
-    cy.on('cxttap', 'edge:not([ghost])', (e) => {
+    cy.on('cxttap', 'edge[!ghost]', (e) => {
       const gnId = asGnId(e.target.data('gnId') as string);
       const { x, y } = getEventClientPos(e.originalEvent as MouseEvent | TouchEvent);
       if (gnId) this.onEvent({ kind: 'edge-context', gnId, x, y });
@@ -240,7 +241,7 @@ export class Canvas {
       if (!t.data('edgeHandle')) this.onEvent({ kind: 'element-unhovered' });
     });
 
-    cy.on('mouseover', 'edge:not([ghost])', (e) => {
+    cy.on('mouseover', 'edge[!ghost]', (e) => {
       const gnId = asGnId(e.target.data('gnId') as string);
       if (gnId) {
         const { x, y } = getEventClientPos(e.originalEvent as MouseEvent | TouchEvent);
@@ -248,7 +249,7 @@ export class Canvas {
       }
     });
 
-    cy.on('mouseout', 'edge:not([ghost])', () => {
+    cy.on('mouseout', 'edge[!ghost]', () => {
       this.onEvent({ kind: 'element-unhovered' });
     });
   }
@@ -279,7 +280,7 @@ export class Canvas {
       if (ghost.length) ghost.position({ x: e.position.x, y: e.position.y });
     });
 
-    cy.on('mouseup', 'node:not([ghost]):not([edgeHandle])', (e) => {
+    cy.on('mouseup', 'node[!ghost][!edgeHandle]', (e) => {
       if (!this.dragState.active) return;
       const targetGnId = asGnId(e.target.data('gnId') as string);
       const { sourceGnId } = this.dragState;
@@ -308,8 +309,8 @@ export class Canvas {
       const active = document.activeElement;
       if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || (active as HTMLElement).isContentEditable)) return;
       const selected = cy.$(':selected');
-      const nodeGnIds = selected.nodes(':not([ghost]):not([edgeHandle])').map((n) => asGnId(n.data('gnId') as string)).filter(Boolean);
-      const edgeGnIds = selected.edges(':not([ghost])').map((ed) => asGnId(ed.data('gnId') as string)).filter(Boolean);
+      const nodeGnIds = selected.nodes('[!ghost][!edgeHandle]').map((n) => asGnId(n.data('gnId') as string)).filter(Boolean);
+      const edgeGnIds = selected.edges('[!ghost]').map((ed) => asGnId(ed.data('gnId') as string)).filter(Boolean);
       if (nodeGnIds.length === 0 && edgeGnIds.length === 0) return;
       this.onEvent({ kind: 'delete-selected', nodeGnIds, edgeGnIds });
     });
@@ -321,12 +322,11 @@ export class Canvas {
     this.removeEdgeHandles();
     const pos = sourceNode.position();
     const gnId = asGnId(sourceNode.data('gnId') as string);
-    const d = 52;
     const handles = [
-      { id: '__handle_e', x: pos.x + d, y: pos.y,     arrowLabel: '→' },
-      { id: '__handle_w', x: pos.x - d, y: pos.y,     arrowLabel: '←' },
-      { id: '__handle_s', x: pos.x,     y: pos.y + d, arrowLabel: '↓' },
-      { id: '__handle_n', x: pos.x,     y: pos.y - d, arrowLabel: '↑' },
+      { id: '__handle_e', x: pos.x + EDGE_HANDLE_DISTANCE, y: pos.y,                      arrowLabel: '→' },
+      { id: '__handle_w', x: pos.x - EDGE_HANDLE_DISTANCE, y: pos.y,                      arrowLabel: '←' },
+      { id: '__handle_s', x: pos.x,                        y: pos.y + EDGE_HANDLE_DISTANCE, arrowLabel: '↓' },
+      { id: '__handle_n', x: pos.x,                        y: pos.y - EDGE_HANDLE_DISTANCE, arrowLabel: '↑' },
     ];
     for (const h of handles) {
       this.cy.add({

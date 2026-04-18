@@ -1,15 +1,16 @@
 import type { EdgeTypeRegistry } from '../graph/edgeTypeRegistry.js';
 import { el, clearChildren, byId } from './domUtils.js';
+import { DOM_IDS } from './domIds.js';
 export function showCreateEdgeDialog(registry: EdgeTypeRegistry): Promise<string | null> {
   return new Promise((resolve) => {
-    const overlay = byId('dialog-overlay');
-    const createNodeDialog = byId('create-node-dialog');
-    const dialog = byId('create-edge-dialog');
-    const typeSelect = byId<HTMLSelectElement>('ced-type');
-    const newTypeInput = byId<HTMLInputElement>('ced-new-type');
-    const addTypeBtn = byId<HTMLButtonElement>('ced-add-type-btn');
-    const confirmBtn = byId<HTMLButtonElement>('ced-confirm');
-    const cancelBtn = byId<HTMLButtonElement>('ced-cancel');
+    const overlay = byId(DOM_IDS.dialogOverlay);
+    const createNodeDialog = byId(DOM_IDS.createNodeDialog);
+    const dialog = byId(DOM_IDS.createEdgeDialog);
+    const typeSelect = byId<HTMLSelectElement>(DOM_IDS.cedType);
+    const newTypeInput = byId<HTMLInputElement>(DOM_IDS.cedNewType);
+    const addTypeBtn = byId<HTMLButtonElement>(DOM_IDS.cedAddTypeBtn);
+    const confirmBtn = byId<HTMLButtonElement>(DOM_IDS.cedConfirm);
+    const cancelBtn = byId<HTMLButtonElement>(DOM_IDS.cedCancel);
 
     function populateSelect(): void {
       const current = typeSelect.value;

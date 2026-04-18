@@ -22,7 +22,9 @@ export abstract class BaseTypeRegistry<TStyle> {
             }
           }
         }
-      } catch { /* fall through */ }
+      } catch (err) {
+        console.warn('[typeRegistry] Failed to parse styles from localStorage', { key: styleStorageKey, err });
+      }
     }
 
     // Assign default styles for types that don't have one
@@ -46,7 +48,9 @@ export abstract class BaseTypeRegistry<TStyle> {
         if (Array.isArray(parsed) && parsed.every((v) => typeof v === 'string')) {
           return parsed as string[];
         }
-      } catch { /* fall through */ }
+      } catch (err) {
+        console.warn('[typeRegistry] Failed to parse types from localStorage', { key: this.storageKey, err });
+      }
     }
     return [...this.defaultTypes];
   }

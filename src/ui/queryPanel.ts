@@ -1,7 +1,15 @@
 import { escHtml, byId } from './domUtils.js';
+import { DOM_IDS } from './domIds.js';
 import { getCompletions, applyCompletion } from './cypherAutocomplete.js';
 import type { CompletionContext, CompletionItem } from './cypherAutocomplete.js';
 import type { Bookmark } from '../graph/bookmarkStore.js';
+
+export type QueryPanelCallbacks = {
+  onExecute: (query: string) => void;
+  onSaveBookmark: (name: string, query: string) => void;
+  onDeleteBookmark: (id: string) => void;
+  onSelectBookmark: (query: string) => void;
+};
 
 function renderValue(v: unknown): string {
   if (v === null || v === undefined) return `<span class="val-null">null</span>`;
@@ -20,13 +28,10 @@ const KIND_ICON: Record<CompletionItem['kind'], string> = {
 };
 
 export class QueryPanel {
-  private elInput = byId<HTMLTextAreaElement>('query-input');
-  private elRunBtn = byId<HTMLButtonElement>('run-btn');
-  private elResults = byId('query-results');
-  private onExecuteCb: ((query: string) => void) | null = null;
-  private onSaveBookmarkCb: ((name: string, query: string) => void) | null = null;
-  private onDeleteBookmarkCb: ((id: string) => void) | null = null;
-  private onSelectBookmarkCb: ((query: string) => void) | null = null;
+  private elInput = byId<HTMLTextAreaElement>(DOM_IDS.queryInput);
+  private elRunBtn = byId<HTMLButtonElement>(DOM_IDS.runBtn);
+  private elResults = byId(DOM_IDS.queryResults);
+  private callbacks: Partial<QueryPanelCallbacks> = {};
 
   private elBookmarkSelect: HTMLSelectElement;
   private elBookmarkSaveBtn: HTMLButtonElement;
@@ -53,18 +58,18 @@ export class QueryPanel {
     });
 
     const bookmarkBar = this.createBookmarkBar();
-    const header = byId('query-panel-header');
+    const header = byId(DOM_IDS.queryPanelHeader);
     header.insertAdjacentElement('afterend', bookmarkBar);
 
-    this.elBookmarkSelect = byId<HTMLSelectElement>('bookmark-select');
-    this.elBookmarkSaveBtn = byId<HTMLButtonElement>('bookmark-save-btn');
-    this.elBookmarkDeleteBtn = byId<HTMLButtonElement>('bookmark-delete-btn');
+    this.elBookmarkSelect = byId<HTMLSelectElement>(DOM_IDS.bookmarkSelect);
+    this.elBookmarkSaveBtn = byId<HTMLButtonElement>(DOM_IDS.bookmarkSaveBtn);
+    this.elBookmarkDeleteBtn = byId<HTMLButtonElement>(DOM_IDS.bookmarkDeleteBtn);
 
     this.elBookmarkSelect.addEventListener('change', () => {
       const query = this.elBookmarkSelect.value;
       if (query) {
         this.setQuery(query);
-        if (this.onSelectBookmarkCb) this.onSelectBookmarkCb(query);
+        this.callbacks.onSelectBookmark?.(query);
       }
       this.elBookmarkDeleteBtn.disabled = !this.elBookmarkSelect.value;
     });
@@ -74,27 +79,27 @@ export class QueryPanel {
       if (!query) return;
       const name = prompt('ブックマーク名を入力してください:', query.slice(0, 40));
       if (name === null || name.trim() === '') return;
-      if (this.onSaveBookmarkCb) this.onSaveBookmarkCb(name.trim(), query);
+      this.callbacks.onSaveBookmark?.(name.trim(), query);
     });
 
     this.elBookmarkDeleteBtn.addEventListener('click', () => {
       const selectedOpt = this.elBookmarkSelect.selectedOptions[0];
       if (!selectedOpt || !selectedOpt.dataset['id']) return;
       if (!confirm(`「${selectedOpt.text}」を削除しますか？`)) return;
-      if (this.onDeleteBookmarkCb) this.onDeleteBookmarkCb(selectedOpt.dataset['id']);
+      this.callbacks.onDeleteBookmark?.(selectedOpt.dataset['id']);
     });
   }
 
   private createBookmarkBar(): HTMLElement {
     const bar = document.createElement('div');
-    bar.id = 'bookmark-bar';
+    bar.id = DOM_IDS.bookmarkBar;
     bar.className = 'bookmark-bar';
     bar.innerHTML = `
-      <select id="bookmark-select" class="bookmark-select" aria-label="保存済みクエリ">
+      <select id="${DOM_IDS.bookmarkSelect}" class="bookmark-select" aria-label="保存済みクエリ">
         <option value="">── Bookmarks ──</option>
       </select>
-      <button id="bookmark-save-btn" class="bookmark-btn" title="現在のクエリをブックマークに保存">★ 保存</button>
-      <button id="bookmark-delete-btn" class="bookmark-btn bookmark-btn-danger" title="選択中のブックマークを削除" disabled>✕ 削除</button>
+      <button id="${DOM_IDS.bookmarkSaveBtn}" class="bookmark-btn" title="現在のクエリをブックマークに保存">★ 保存</button>
+      <button id="${DOM_IDS.bookmarkDeleteBtn}" class="bookmark-btn bookmark-btn-danger" title="選択中のブックマークを削除" disabled>✕ 削除</button>
     `;
     return bar;
   }
@@ -260,25 +265,11 @@ export class QueryPanel {
 
   private run(): void {
     const query = this.elInput.value.trim();
-    if (!query || !this.onExecuteCb) return;
-    this.onExecuteCb(query);
+    if (!query) return;
+    this.callbacks.onExecute?.(query);
   }
 
-  onExecute(cb: (query: string) => void): void {
-    this.onExecuteCb = cb;
-  }
-
-  onSaveBookmark(cb: (name: string, query: string) => void): void {
-    this.onSaveBookmarkCb = cb;
-  }
-
-  onDeleteBookmark(cb: (id: string) => void): void {
-    this.onDeleteBookmarkCb = cb;
-  }
-
-  onSelectBookmark(cb: (query: string) => void): void {
-    this.onSelectBookmarkCb = cb;
-  }
+  setCallbacks(cbs: QueryPanelCallbacks): void { this.callbacks = cbs; }
 
   setBookmarks(bookmarks: Bookmark[]): void {
     const prev = this.elBookmarkSelect.dataset['selectedId'] ?? '';

@@ -16,6 +16,7 @@ import { BookmarkStore } from './graph/bookmarkStore.js';
 import { initResizers } from './ui/resizer.js';
 import { showToast } from './ui/toast.js';
 import { byId, afterNextPaint } from './ui/domUtils.js';
+import { DOM_IDS } from './ui/domIds.js';
 import type { AppContext } from './appContext.js';
 import type { GnId, RawNode, RawEdge } from './types.js';
 
@@ -27,6 +28,9 @@ import { setupUndoRedo } from './controllers/undoRedoController.js';
 import { MobileSidebarController } from './controllers/mobileSidebarController.js';
 import { NodeTypeFilterController } from './controllers/nodeTypeFilterController.js';
 import { setupTabButtons } from './controllers/tabController.js';
+
+// デバウンス: キー入力が落ち着くまでの待機時間 (ms)
+const SAVE_DEBOUNCE_MS = 300;
 
 // ── App ───────────────────────────────────────────────────────────────────────
 
@@ -41,13 +45,11 @@ export class App implements AppContext {
   scrapbookStore!: ScrapbookStore;
   bookmarkStore!: BookmarkStore;
 
-  private scrapbook!: Scrapbook;
   private dashboard!: Dashboard;
   private mobileSidebar!: MobileSidebarController;
   private nodeTypeFilter!: NodeTypeFilterController;
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
   private graphManager!: GraphManager;
-  private graphSwitcher!: GraphSwitcher;
 
   async init(): Promise<void> {
     const { savedPositions, savedViewport } = await this.initData();
@@ -55,7 +57,7 @@ export class App implements AppContext {
     this.setupControllers();
     this.initGraphSwitcher();
 
-    document.getElementById('loading')?.remove();
+    document.getElementById(DOM_IDS.loading)?.remove();
 
     afterNextPaint(() => {
       this.canvas.resize();
@@ -118,7 +120,7 @@ export class App implements AppContext {
   private initUI(): void {
     // Canvas (event handling delegated to CanvasEventController)
     const canvasCtrl = new CanvasEventController(this);
-    this.canvas = new Canvas(byId('cy'), (event) => canvasCtrl.handleCanvasEvent(event), this.registry, this.edgeRegistry);
+    this.canvas = new Canvas(byId(DOM_IDS.cy), (event) => canvasCtrl.handleCanvasEvent(event), this.registry, this.edgeRegistry);
 
     this.sidebar = new Sidebar();
     this.sidebar.setRegistry(this.registry);
@@ -128,9 +130,9 @@ export class App implements AppContext {
     this.scrapbookStore = new ScrapbookStore();
     this.scrapbookStore.load();
     this.bookmarkStore = new BookmarkStore();
-    const elTabScrapbook = byId('tab-scrapbook');
-    const elTabDashboard = byId('tab-dashboard');
-    this.scrapbook = new Scrapbook(elTabScrapbook, this.scrapbookStore);
+    const elTabScrapbook = byId(DOM_IDS.tabScrapbook);
+    const elTabDashboard = byId(DOM_IDS.tabDashboard);
+    new Scrapbook(elTabScrapbook, this.scrapbookStore);
     this.dashboard = new Dashboard(elTabDashboard);
   }
 
@@ -168,7 +170,7 @@ export class App implements AppContext {
     this.saveTimer = setTimeout(() => {
       this.graphManager.saveCurrentGraph(this.db, this.canvas.getPositions(), this.canvas.getViewport()).catch((err) => console.warn('Failed to save graph:', err));
       this.updateStats();
-    }, 300);
+    }, SAVE_DEBOUNCE_MS);
   }
 
   refreshAndSave(): void {
@@ -197,14 +199,14 @@ export class App implements AppContext {
   }
 
   updateStats(): void {
-    const nc = byId('node-count');
-    const ec = byId('edge-count');
+    const nc = byId(DOM_IDS.nodeCount);
+    const ec = byId(DOM_IDS.edgeCount);
     if (nc) nc.textContent = String(this.db.nodeCount());
     if (ec) ec.textContent = String(this.db.edgeCount());
   }
 
   private initGraphSwitcher(): void {
-    this.graphSwitcher = new GraphSwitcher(this.graphManager, async (id: string) => {
+    new GraphSwitcher(this.graphManager, async (id: string) => {
       // Save current graph before switching
       await this.graphManager.saveCurrentGraph(this.db, this.canvas.getPositions(), this.canvas.getViewport());
       // Reset state

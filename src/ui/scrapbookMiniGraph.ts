@@ -58,7 +58,6 @@ export function buildMiniGraph(nodes: RawNode[], edges: RawEdge[]): HTMLElement 
       style: CYTOSCAPE_STYLES,
       elements: [...nodeElements, ...edgeElements],
       layout: { name: 'cose', animate: false } as cytoscape.LayoutOptions,
-      wheelSensitivity: 0.3,
       userZoomingEnabled: true,
       userPanningEnabled: true,
       boxSelectionEnabled: false,

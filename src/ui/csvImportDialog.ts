@@ -1,6 +1,7 @@
 import type { EdgeColumnDef, CsvImportOptions } from '../graph/csvImport.js';
 import { parseCsv } from '../graph/csvImport.js';
 import { byId, el, clearChildren } from './domUtils.js';
+import { DOM_IDS } from './domIds.js';
 import { isValidIdentifier } from '../utils/graphUtils.js';
 import type { TypeRegistry } from '../graph/typeRegistry.js';
 
@@ -10,25 +11,25 @@ import type { TypeRegistry } from '../graph/typeRegistry.js';
  */
 export function showCsvImportDialog(registry: TypeRegistry): Promise<{ csvText: string; options: CsvImportOptions } | null> {
   return new Promise((resolve) => {
-    const overlay = byId('dialog-overlay');
-    const dialog = byId('csv-import-dialog');
+    const overlay = byId(DOM_IDS.dialogOverlay);
+    const dialog = byId(DOM_IDS.csvImportDialog);
     dialog.style.display = 'block';
     overlay.style.display = 'flex';
 
-    const fileInput = byId<HTMLInputElement>('cid-file');
-    const nodeLabelInput = byId<HTMLInputElement>('cid-node-label');
-    const nodeLabelDatalist = byId<HTMLDataListElement>('cid-node-label-list');
+    const fileInput = byId<HTMLInputElement>(DOM_IDS.cidFile);
+    const nodeLabelInput = byId<HTMLInputElement>(DOM_IDS.cidNodeLabel);
+    const nodeLabelDatalist = byId<HTMLDataListElement>(DOM_IDS.cidNodeLabelList);
 
     // 既存ノードタイプを datalist に設定
     clearChildren(nodeLabelDatalist);
     for (const t of registry.getAll()) {
       nodeLabelDatalist.appendChild(el('option', { value: t }));
     }
-    const edgeColsContainer = byId('cid-edge-cols');
-    const addEdgeColBtn = byId('cid-add-edge-col-btn');
-    const cancelBtn = byId('cid-cancel');
-    const confirmBtn = byId('cid-confirm');
-    const previewEl = byId('cid-preview');
+    const edgeColsContainer = byId(DOM_IDS.cidEdgeCols);
+    const addEdgeColBtn = byId(DOM_IDS.cidAddEdgeColBtn);
+    const cancelBtn = byId(DOM_IDS.cidCancel);
+    const confirmBtn = byId(DOM_IDS.cidConfirm);
+    const previewEl = byId(DOM_IDS.cidPreview);
 
     let csvText = '';
     let headers: string[] = [];

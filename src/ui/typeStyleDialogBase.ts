@@ -1,4 +1,5 @@
-import { el, byId } from './domUtils.js';
+import { el, clearChildren, byId } from './domUtils.js';
+import { DOM_IDS } from './domIds.js';
 import { isValidIdentifier } from '../utils/graphUtils.js';
 
 export interface TypeStyleRegistry {
@@ -6,6 +7,74 @@ export interface TypeStyleRegistry {
   add(type: string): void;
   rename(orig: string, next: string): void;
   remove(type: string): void;
+}
+
+export interface StyleListRegistry<TStyle> extends TypeStyleRegistry {
+  getStyle(type: string): TStyle;
+  setStyle(type: string, style: TStyle): void;
+}
+
+export interface StyleSelectConfig<TStyle> {
+  title: string;
+  options: { value: string; label: string }[];
+  getValue: (style: TStyle) => string;
+  styleKey: keyof TStyle;
+}
+
+export function renderStyleList<TStyle extends { color: string }>(
+  list: HTMLElement,
+  registry: StyleListRegistry<TStyle>,
+  selectConfig: StyleSelectConfig<TStyle>,
+  showError: (msg: string) => void,
+  clearError: () => void,
+): void {
+  clearChildren(list);
+  for (const type of registry.getAll()) {
+    const style = registry.getStyle(type);
+
+    const nameInput = el('input', { class: 'tm-item-input', value: type, title: 'タイプ名' });
+    nameInput.dataset['orig'] = type;
+    nameInput.addEventListener('change', () => {
+      const orig = nameInput.dataset['orig']!;
+      const next = nameInput.value.trim();
+      if (!next || next === orig) return;
+      if (!isValidIdentifier(next)) {
+        nameInput.value = orig;
+        showError(`"${next}" は無効です（英数字とアンダースコアのみ使用できます）`);
+        return;
+      }
+      clearError();
+      registry.rename(orig, next);
+      nameInput.dataset['orig'] = next;
+    });
+
+    const colorInput = el('input', { type: 'color', value: style.color, class: 'ets-color-input', title: '色' });
+    colorInput.addEventListener('change', () => {
+      const currentType = nameInput.dataset['orig']!;
+      const currentStyle = registry.getStyle(currentType);
+      registry.setStyle(currentType, { ...currentStyle, color: colorInput.value });
+    });
+
+    const styleSelect = el('select', { class: 'ets-line-select', title: selectConfig.title });
+    for (const opt of selectConfig.options) {
+      const option = el('option', { value: opt.value }, opt.label);
+      if (opt.value === selectConfig.getValue(style)) option.selected = true;
+      styleSelect.appendChild(option);
+    }
+    styleSelect.addEventListener('change', () => {
+      const currentType = nameInput.dataset['orig']!;
+      const currentStyle = registry.getStyle(currentType);
+      registry.setStyle(currentType, { ...currentStyle, [selectConfig.styleKey]: styleSelect.value } as TStyle);
+    });
+
+    const deleteBtn = el('button', { class: 'tm-delete-btn', title: '削除' }, '✕');
+    deleteBtn.addEventListener('click', () => {
+      registry.remove(type);
+      renderStyleList(list, registry, selectConfig, showError, clearError);
+    });
+
+    list.appendChild(el('div', { class: 'ets-item' }, nameInput, colorInput, styleSelect, deleteBtn));
+  }
 }
 
 export interface TypeStyleDialogOptions {
@@ -22,7 +91,7 @@ export function createTypeStyleDialogBase(
   opts: TypeStyleDialogOptions,
 ): Promise<void> {
   return new Promise((resolve) => {
-    const overlay = byId('dialog-overlay');
+    const overlay = byId(DOM_IDS.dialogOverlay);
     const dialog = byId(opts.dialogId);
     const newInput = byId<HTMLInputElement>(opts.newInputId);
     const addBtn = byId<HTMLButtonElement>(opts.addBtnId);

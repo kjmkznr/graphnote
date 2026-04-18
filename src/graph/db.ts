@@ -83,14 +83,8 @@ export class GraphDB {
    * Returns the gnId of the created node.
    */
   createNode(label: string, extraProps: Record<string, PropertyValue> = {}): GnId {
-    assertIdentifier(label);
     const gnId = asGnId(crypto.randomUUID());
-    const allProps: Record<string, PropertyValue> = {
-      ...extraProps,
-      gnId: gnId,
-    };
-    const propsStr = buildPropsString(allProps);
-    this.executor.execute(`CREATE (:${label} {${propsStr}})`);
+    this.createNodeWithGnId(label, gnId, extraProps);
     return gnId;
   }
 
@@ -137,14 +131,8 @@ export class GraphDB {
     type: string,
     extraProps: Record<string, PropertyValue> = {},
   ): GnId {
-    assertIdentifier(type);
     const gnId = asGnId(crypto.randomUUID());
-    const allProps: Record<string, PropertyValue> = { ...extraProps, gnId: gnId };
-    const propsStr = buildPropsString(allProps);
-    this.executor.execute(
-      `MATCH (a), (b) WHERE a.gnId = "${escStr(srcGnId)}" AND b.gnId = "${escStr(dstGnId)}" ` +
-        `CREATE (a)-[:${type} {${propsStr}}]->(b)`,
-    );
+    this.createEdgeWithGnId(srcGnId, dstGnId, type, gnId, extraProps);
     return gnId;
   }
 
@@ -191,8 +179,8 @@ export class GraphDB {
       this.executor.execute(
         `MATCH ()-[r]->() WHERE r.gnId = "${escStr(gnId)}" DELETE r`,
       );
-    } catch {
-      // already gone
+    } catch (err) {
+      console.warn('[db] deleteEdge failed', { gnId, err });
     }
   }
 
@@ -202,7 +190,8 @@ export class GraphDB {
         `MATCH (n) WHERE n.gnId = "${escStr(gnId)}" RETURN n`,
       );
       return rows[0]?.n ?? null;
-    } catch {
+    } catch (err) {
+      console.warn('[db] getNodeByGnId failed', { gnId, err });
       return null;
     }
   }
@@ -213,7 +202,8 @@ export class GraphDB {
         `MATCH ()-[r]->() WHERE r.gnId = "${escStr(gnId)}" RETURN r`,
       );
       return rows[0]?.r ?? null;
-    } catch {
+    } catch (err) {
+      console.warn('[db] getEdgeByGnId failed', { gnId, err });
       return null;
     }
   }

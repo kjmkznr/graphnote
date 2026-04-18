@@ -1,9 +1,10 @@
 import { byId } from '../ui/domUtils.js';
+import { DOM_IDS } from '../ui/domIds.js';
 
 export class MobileSidebarController {
-  private readonly elSidebar = byId('sidebar');
-  private readonly elSidebarToggleBtn = byId('sidebar-toggle-btn');
-  private readonly elSidebarOverlay = byId('sidebar-overlay');
+  private readonly elSidebar = byId(DOM_IDS.sidebar);
+  private readonly elSidebarToggleBtn = byId(DOM_IDS.sidebarToggleBtn);
+  private readonly elSidebarOverlay = byId(DOM_IDS.sidebarOverlay);
 
   setup(): void {
     this.elSidebarToggleBtn.addEventListener('click', () => {
