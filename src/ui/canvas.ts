@@ -8,6 +8,9 @@ import type { EdgeTypeRegistry } from '../graph/edgeTypeRegistry.js';
 import type { TypeRegistry } from '../graph/typeRegistry.js';
 import { Minimap } from './minimap.js';
 
+// Edgehandles の grab 領域。Cytoscape のデフォルト node サイズ (40px) + マージン
+const EDGE_HANDLE_DISTANCE = 52;
+
 function getEventClientPos(e: MouseEvent | TouchEvent): { x: number; y: number } {
   if ('touches' in e) {
     const t = e.changedTouches[0] ?? e.touches[0];
@@ -319,12 +322,11 @@ export class Canvas {
     this.removeEdgeHandles();
     const pos = sourceNode.position();
     const gnId = asGnId(sourceNode.data('gnId') as string);
-    const d = 52;
     const handles = [
-      { id: '__handle_e', x: pos.x + d, y: pos.y,     arrowLabel: '→' },
-      { id: '__handle_w', x: pos.x - d, y: pos.y,     arrowLabel: '←' },
-      { id: '__handle_s', x: pos.x,     y: pos.y + d, arrowLabel: '↓' },
-      { id: '__handle_n', x: pos.x,     y: pos.y - d, arrowLabel: '↑' },
+      { id: '__handle_e', x: pos.x + EDGE_HANDLE_DISTANCE, y: pos.y,                      arrowLabel: '→' },
+      { id: '__handle_w', x: pos.x - EDGE_HANDLE_DISTANCE, y: pos.y,                      arrowLabel: '←' },
+      { id: '__handle_s', x: pos.x,                        y: pos.y + EDGE_HANDLE_DISTANCE, arrowLabel: '↓' },
+      { id: '__handle_n', x: pos.x,                        y: pos.y - EDGE_HANDLE_DISTANCE, arrowLabel: '↑' },
     ];
     for (const h of handles) {
       this.cy.add({
