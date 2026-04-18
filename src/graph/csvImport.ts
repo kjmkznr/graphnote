@@ -1,6 +1,6 @@
-import type { GraphDB } from './db.js';
-import type { GnId, PropertyValue } from '../types.js';
-import { isValidIdentifier } from '../utils/graphUtils.js';
+import type { GraphDB } from "./db.js";
+import type { GnId, PropertyValue } from "../types.js";
+import { isValidIdentifier } from "../utils/graphUtils.js";
 
 export interface CsvImportOptions {
   /** ノードのラベル（Cypherノードタイプ） */
@@ -18,7 +18,7 @@ export interface EdgeColumnDef {
   /** エッジのタイプ名 */
   edgeType: string;
   /** エッジの向き: 'out' = このノード→参照先, 'in' = 参照先→このノード */
-  direction: 'out' | 'in';
+  direction: "out" | "in";
 }
 
 export interface CsvImportResult {
@@ -33,7 +33,7 @@ export interface CsvImportResult {
  */
 export function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
-  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
   let pos = 0;
 
   while (pos < lines.length) {
@@ -42,7 +42,7 @@ export function parseCsv(text: string): string[][] {
       if (lines[pos] === '"') {
         // クォートフィールド
         pos++;
-        let field = '';
+        let field = "";
         while (pos < lines.length) {
           if (lines[pos] === '"') {
             pos++;
@@ -58,21 +58,25 @@ export function parseCsv(text: string): string[][] {
           }
         }
         row.push(field);
-        if (lines[pos] === ',') pos++;
+        if (lines[pos] === ",") pos++;
         else break;
       } else {
         // 非クォートフィールド
-        let field = '';
-        while (pos < lines.length && lines[pos] !== ',' && lines[pos] !== '\n') {
+        let field = "";
+        while (
+          pos < lines.length &&
+          lines[pos] !== "," &&
+          lines[pos] !== "\n"
+        ) {
           field += lines[pos];
           pos++;
         }
         row.push(field);
-        if (lines[pos] === ',') pos++;
+        if (lines[pos] === ",") pos++;
         else break;
       }
     }
-    if (lines[pos] === '\n') pos++;
+    if (lines[pos] === "\n") pos++;
     if (row.length > 0) rows.push(row);
   }
 
@@ -84,11 +88,11 @@ export function parseCsv(text: string): string[][] {
  * 数値・真偽値・null を自動判定する。
  */
 function parseValue(s: string): PropertyValue {
-  if (s === '') return null;
-  if (s === 'true') return true;
-  if (s === 'false') return false;
+  if (s === "") return null;
+  if (s === "true") return true;
+  if (s === "false") return false;
   const n = Number(s);
-  if (!Number.isNaN(n) && s.trim() !== '') return n;
+  if (!Number.isNaN(n) && s.trim() !== "") return n;
   return s;
 }
 
@@ -110,17 +114,19 @@ export function importCsv(
   }
   for (const ec of edgeColumns) {
     if (!isValidIdentifier(ec.edgeType)) {
-      throw new Error(`エッジタイプ "${ec.edgeType}" はCypher識別子として無効です`);
+      throw new Error(
+        `エッジタイプ "${ec.edgeType}" はCypher識別子として無効です`,
+      );
     }
   }
 
   const rows = parseCsv(csvText);
   if (rows.length < 2) {
-    throw new Error('CSVにはヘッダー行とデータ行が必要です');
+    throw new Error("CSVにはヘッダー行とデータ行が必要です");
   }
 
   const headers = rows[0];
-  if (!headers) throw new Error('CSVにはヘッダー行とデータ行が必要です');
+  if (!headers) throw new Error("CSVにはヘッダー行とデータ行が必要です");
   const edgeColSet = new Set(edgeColumns.map((ec) => ec.column));
 
   // ノードを作成し、name → gnId のマップを構築
@@ -131,22 +137,22 @@ export function importCsv(
     const row = rows[i];
     if (!row) continue;
     // 空行をスキップ
-    if (row.every((cell) => cell.trim() === '')) continue;
+    if (row.every((cell) => cell.trim() === "")) continue;
 
     const props: Record<string, PropertyValue> = {};
     for (let j = 0; j < headers.length; j++) {
       const header = headers[j];
       if (!header || edgeColSet.has(header)) continue;
       if (!isValidIdentifier(header)) continue;
-      props[header] = parseValue(row[j] ?? '');
+      props[header] = parseValue(row[j] ?? "");
     }
 
     const gnId = db.createNode(nodeLabel, props);
     nodeCount++;
 
     // name プロパティがあればマップに登録
-    const nameVal = props['name'];
-    if (typeof nameVal === 'string' && nameVal !== '') {
+    const nameVal = props["name"];
+    if (typeof nameVal === "string" && nameVal !== "") {
       nameToGnId.set(nameVal, gnId);
     }
   }
@@ -161,20 +167,20 @@ export function importCsv(
     const allNodes = db.getAllNodes();
     const nodeNameToGnId = new Map<string, GnId>();
     for (const node of allNodes) {
-      const nameVal = node._properties['name'];
-      if (typeof nameVal === 'string' && nameVal !== '') {
-        nodeNameToGnId.set(nameVal, node._properties['gnId'] as GnId);
+      const nameVal = node._properties["name"];
+      if (typeof nameVal === "string" && nameVal !== "") {
+        nodeNameToGnId.set(nameVal, node._properties["gnId"] as GnId);
       }
     }
 
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
       if (!row) continue;
-      if (row.every((cell) => cell.trim() === '')) continue;
+      if (row.every((cell) => cell.trim() === "")) continue;
 
       // このノードの name を取得
-      const nameIdx = headers.indexOf('name');
-      const thisName = nameIdx >= 0 ? (row[nameIdx] ?? '').trim() : '';
+      const nameIdx = headers.indexOf("name");
+      const thisName = nameIdx >= 0 ? (row[nameIdx] ?? "").trim() : "";
       const thisGnId = thisName ? nodeNameToGnId.get(thisName) : undefined;
 
       if (!thisGnId) {
@@ -186,7 +192,7 @@ export function importCsv(
       for (const ec of edgeColumns) {
         const colIdx = headers.indexOf(ec.column);
         if (colIdx < 0) continue;
-        const targetName = (row[colIdx] ?? '').trim();
+        const targetName = (row[colIdx] ?? "").trim();
         if (!targetName) continue;
 
         const targetGnId = nodeNameToGnId.get(targetName);
@@ -196,7 +202,7 @@ export function importCsv(
         }
 
         try {
-          if (ec.direction === 'out') {
+          if (ec.direction === "out") {
             db.createEdge(thisGnId, targetGnId, ec.edgeType);
           } else {
             db.createEdge(targetGnId, thisGnId, ec.edgeType);

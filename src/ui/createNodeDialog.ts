@@ -1,13 +1,15 @@
-import type { TypeRegistry } from '../graph/typeRegistry.js';
-import { el, clearChildren, byId } from './domUtils.js';
-import { DOM_IDS } from './domIds.js';
+import type { TypeRegistry } from "../graph/typeRegistry.js";
+import { el, clearChildren, byId } from "./domUtils.js";
+import { DOM_IDS } from "./domIds.js";
 
 export interface CreateNodeResult {
   type: string;
   name: string;
 }
 
-export function showCreateNodeDialog(registry: TypeRegistry): Promise<CreateNodeResult | null> {
+export function showCreateNodeDialog(
+  registry: TypeRegistry,
+): Promise<CreateNodeResult | null> {
   return new Promise((resolve) => {
     const overlay = byId(DOM_IDS.dialogOverlay);
     const dialog = byId(DOM_IDS.createNodeDialog);
@@ -19,22 +21,22 @@ export function showCreateNodeDialog(registry: TypeRegistry): Promise<CreateNode
     // Populate type options
     clearChildren(typeSelect);
     for (const t of registry.getAll()) {
-      typeSelect.appendChild(el('option', { value: t }, t));
+      typeSelect.appendChild(el("option", { value: t }, t));
     }
 
-    nameInput.value = '';
+    nameInput.value = "";
 
-    overlay.style.display = 'flex';
-    dialog.style.display = 'flex';
+    overlay.style.display = "flex";
+    dialog.style.display = "flex";
     nameInput.focus();
 
     function close(result: CreateNodeResult | null): void {
-      overlay.style.display = 'none';
-      dialog.style.display = 'none';
-      confirmBtn.removeEventListener('click', onConfirm);
-      cancelBtn.removeEventListener('click', onCancel);
-      overlay.removeEventListener('click', onOverlayClick);
-      dialog.removeEventListener('keydown', onKeydown);
+      overlay.style.display = "none";
+      dialog.style.display = "none";
+      confirmBtn.removeEventListener("click", onConfirm);
+      cancelBtn.removeEventListener("click", onCancel);
+      overlay.removeEventListener("click", onOverlayClick);
+      dialog.removeEventListener("keydown", onKeydown);
       resolve(result);
     }
 
@@ -45,20 +47,25 @@ export function showCreateNodeDialog(registry: TypeRegistry): Promise<CreateNode
       close({ type, name });
     }
 
-    function onCancel(): void { close(null); }
+    function onCancel(): void {
+      close(null);
+    }
 
     function onOverlayClick(e: MouseEvent): void {
       if (e.target === overlay) close(null);
     }
 
     function onKeydown(e: KeyboardEvent): void {
-      if (e.key === 'Enter') { e.preventDefault(); onConfirm(); }
-      if (e.key === 'Escape') close(null);
+      if (e.key === "Enter") {
+        e.preventDefault();
+        onConfirm();
+      }
+      if (e.key === "Escape") close(null);
     }
 
-    confirmBtn.addEventListener('click', onConfirm);
-    cancelBtn.addEventListener('click', onCancel);
-    overlay.addEventListener('click', onOverlayClick);
-    dialog.addEventListener('keydown', onKeydown);
+    confirmBtn.addEventListener("click", onConfirm);
+    cancelBtn.addEventListener("click", onCancel);
+    overlay.addEventListener("click", onOverlayClick);
+    dialog.addEventListener("keydown", onKeydown);
   });
 }

@@ -1,8 +1,12 @@
-import type { QueryPanelContext } from '../appContext.js';
-import type { CompletionContext } from '../ui/cypherAutocomplete.js';
-import type { QueryResultCell } from '../types.js';
-import { showToast } from '../ui/toast.js';
-import { extractMatchedGnIds, isEdgeValue, escStr } from '../utils/graphUtils.js';
+import type { QueryPanelContext } from "../appContext.js";
+import type { CompletionContext } from "../ui/cypherAutocomplete.js";
+import type { QueryResultCell } from "../types.js";
+import { showToast } from "../ui/toast.js";
+import {
+  extractMatchedGnIds,
+  isEdgeValue,
+  escStr,
+} from "../utils/graphUtils.js";
 
 function buildCompletionContext(ctx: QueryPanelContext): CompletionContext {
   const nodes = ctx.db.getAllNodes();
@@ -25,27 +29,35 @@ export function refreshCompletionContext(ctx: QueryPanelContext): void {
   ctx.queryPanel.setCompletionContext(buildCompletionContext(ctx));
 }
 
-function enrichRowsWithEdges(ctx: QueryPanelContext, rows: Record<string, unknown>[]): Record<string, unknown>[] {
-  const hasEdge = rows.some(row => Object.values(row).some(isEdgeValue));
+function enrichRowsWithEdges(
+  ctx: QueryPanelContext,
+  rows: Record<string, unknown>[],
+): Record<string, unknown>[] {
+  const hasEdge = rows.some((row) => Object.values(row).some(isEdgeValue));
   if (hasEdge) return rows;
 
   const gnIds: string[] = [];
   for (const row of rows) {
     for (const val of Object.values(row)) {
-      if (val === null || typeof val !== 'object' || Array.isArray(val)) continue;
+      if (val === null || typeof val !== "object" || Array.isArray(val))
+        continue;
       const obj = val as Record<string, unknown>;
-      if (Array.isArray(obj['_labels']) && typeof obj['_properties'] === 'object' && obj['_properties'] !== null) {
-        const props = obj['_properties'] as Record<string, unknown>;
-        if (typeof props['gnId'] === 'string') gnIds.push(props['gnId']);
+      if (
+        Array.isArray(obj["_labels"]) &&
+        typeof obj["_properties"] === "object" &&
+        obj["_properties"] !== null
+      ) {
+        const props = obj["_properties"] as Record<string, unknown>;
+        if (typeof props["gnId"] === "string") gnIds.push(props["gnId"]);
       }
     }
   }
   if (gnIds.length === 0) return rows;
 
   try {
-    const list = gnIds.map(id => `"${escStr(id)}"`).join(', ');
+    const list = gnIds.map((id) => `"${escStr(id)}"`).join(", ");
     const edgeRows = ctx.db.execute<Record<string, unknown>>(
-      `MATCH (a)-[r]->(b) WHERE a.gnId IN [${list}] AND b.gnId IN [${list}] RETURN r`
+      `MATCH (a)-[r]->(b) WHERE a.gnId IN [${list}] AND b.gnId IN [${list}] RETURN r`,
     );
     if (edgeRows.length === 0) return rows;
     return [...rows, ...edgeRows];
@@ -58,7 +70,7 @@ const WRITE_KEYWORDS = /\b(CREATE|MERGE|SET|DELETE|DETACH|REMOVE|DROP)\b/i;
 const STRING_LITERAL = /"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`/g;
 
 function isWriteQuery(query: string): boolean {
-  const stripped = query.replace(STRING_LITERAL, '');
+  const stripped = query.replace(STRING_LITERAL, "");
   return WRITE_KEYWORDS.test(stripped);
 }
 
@@ -67,15 +79,18 @@ async function refreshBookmarks(ctx: QueryPanelContext): Promise<void> {
   ctx.queryPanel.setBookmarks(bookmarks);
 }
 
-function logQueryExecutionMetrics(query: string, metrics: {
-  executeMs: number;
-  syncGraphDataMs: number;
-  refreshGraphMs: number;
-  highlightMs: number;
-  enrichRowsMs: number;
-  totalMs: number;
-}): void {
-  console.info('[perf] queryPanel.onExecute', {
+function logQueryExecutionMetrics(
+  query: string,
+  metrics: {
+    executeMs: number;
+    syncGraphDataMs: number;
+    refreshGraphMs: number;
+    highlightMs: number;
+    enrichRowsMs: number;
+    totalMs: number;
+  },
+): void {
+  console.info("[perf] queryPanel.onExecute", {
     query,
     ...metrics,
   });
@@ -92,7 +107,9 @@ export function setupQueryPanel(ctx: QueryPanelContext): void {
     onDeleteBookmark(id) {
       void ctx.bookmarkStore.remove(id).then(() => refreshBookmarks(ctx));
     },
-    onSelectBookmark() { /* handled internally by QueryPanel */ },
+    onSelectBookmark() {
+      /* handled internally by QueryPanel */
+    },
     onExecute(query) {
       ctx.canvas.clearHighlight();
       if (isWriteQuery(query)) ctx.captureForUndo();
@@ -120,7 +137,10 @@ export function setupQueryPanel(ctx: QueryPanelContext): void {
         const highlightElapsed = performance.now() - highlightStart;
 
         const enrichRowsStart = performance.now();
-        const enrichedRows = enrichRowsWithEdges(ctx, rows as Record<string, unknown>[]);
+        const enrichedRows = enrichRowsWithEdges(
+          ctx,
+          rows as Record<string, unknown>[],
+        );
         const enrichRowsElapsed = performance.now() - enrichRowsStart;
         const totalElapsed = performance.now() - totalStart;
 
@@ -135,7 +155,7 @@ export function setupQueryPanel(ctx: QueryPanelContext): void {
 
         const cell: QueryResultCell = {
           id: crypto.randomUUID(),
-          kind: 'query-result',
+          kind: "query-result",
           createdAt: Date.now(),
           query,
           rows: enrichedRows,
@@ -144,7 +164,7 @@ export function setupQueryPanel(ctx: QueryPanelContext): void {
         if (isWriteQuery(query)) ctx.scrapbookStore.addCell(cell);
       } catch (err) {
         ctx.queryPanel.showError(String(err));
-        showToast(String(err), 'warn');
+        showToast(String(err), "warn");
       }
     },
   });

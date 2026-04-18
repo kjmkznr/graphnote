@@ -15,15 +15,20 @@ export abstract class BaseTypeRegistry<TStyle> {
     if (rawStyles) {
       try {
         const parsed = JSON.parse(rawStyles) as unknown;
-        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-          for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          for (const [k, v] of Object.entries(
+            parsed as Record<string, unknown>,
+          )) {
             if (this.validateStyle(v)) {
               this.styles.set(k, v);
             }
           }
         }
       } catch (err) {
-        console.warn('[typeRegistry] Failed to parse styles from localStorage', { key: styleStorageKey, err });
+        console.warn(
+          "[typeRegistry] Failed to parse styles from localStorage",
+          { key: styleStorageKey, err },
+        );
       }
     }
 
@@ -45,11 +50,17 @@ export abstract class BaseTypeRegistry<TStyle> {
     if (raw) {
       try {
         const parsed = JSON.parse(raw) as unknown;
-        if (Array.isArray(parsed) && parsed.every((v) => typeof v === 'string')) {
+        if (
+          Array.isArray(parsed) &&
+          parsed.every((v) => typeof v === "string")
+        ) {
           return parsed as string[];
         }
       } catch (err) {
-        console.warn('[typeRegistry] Failed to parse types from localStorage', { key: this.storageKey, err });
+        console.warn("[typeRegistry] Failed to parse types from localStorage", {
+          key: this.storageKey,
+          err,
+        });
       }
     }
     return [...this.defaultTypes];

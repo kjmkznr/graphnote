@@ -1,6 +1,12 @@
-import type { ScrapbookCell, MarkdownCell, QueryResultCell, SnapshotCell, SectionCell } from '../types.js';
+import type {
+  ScrapbookCell,
+  MarkdownCell,
+  QueryResultCell,
+  SnapshotCell,
+  SectionCell,
+} from "../types.js";
 
-const STORAGE_KEY = 'graphnote:scrapbook';
+const STORAGE_KEY = "graphnote:scrapbook";
 
 export class ScrapbookStore {
   private cells: ScrapbookCell[] = [];
@@ -8,7 +14,9 @@ export class ScrapbookStore {
 
   load(): void {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem('graphnote:notebook');
+      const raw =
+        localStorage.getItem(STORAGE_KEY) ??
+        localStorage.getItem("graphnote:notebook");
       if (raw) {
         const parsed: unknown = JSON.parse(raw);
         if (Array.isArray(parsed)) {
@@ -40,7 +48,15 @@ export class ScrapbookStore {
     this.notify();
   }
 
-  updateCell(id: string, patch: Partial<MarkdownCell> | Partial<QueryResultCell> | Partial<SnapshotCell> | Partial<SectionCell>, silent = false): void {
+  updateCell(
+    id: string,
+    patch:
+      | Partial<MarkdownCell>
+      | Partial<QueryResultCell>
+      | Partial<SnapshotCell>
+      | Partial<SectionCell>,
+    silent = false,
+  ): void {
     const idx = this.cells.findIndex((c) => c.id === id);
     if (idx === -1) return;
     this.cells[idx] = { ...this.cells[idx], ...patch } as ScrapbookCell;

@@ -1,33 +1,39 @@
-import { GraphDB } from './graph/db.js';
-import { migrateFromLocalStorage } from './graph/persistence.js';
-import { GraphManager } from './graph/graphManager.js';
-import { GraphSwitcher } from './ui/graphSwitcher.js';
-import { parseShareUrl, restoreSharedGraph } from './graph/urlShare.js';
-import { TypeRegistry } from './graph/typeRegistry.js';
-import { EdgeTypeRegistry } from './graph/edgeTypeRegistry.js';
-import { UndoManager } from './graph/undoManager.js';
-import { Canvas } from './ui/canvas.js';
-import { Sidebar } from './ui/sidebar.js';
-import { QueryPanel } from './ui/queryPanel.js';
-import { Scrapbook } from './ui/scrapbook.js';
-import { Dashboard } from './ui/dashboard.js';
-import { ScrapbookStore } from './notebook/scrapbookStore.js';
-import { BookmarkStore } from './graph/bookmarkStore.js';
-import { initResizers } from './ui/resizer.js';
-import { showToast } from './ui/toast.js';
-import { byId, afterNextPaint } from './ui/domUtils.js';
-import { DOM_IDS } from './ui/domIds.js';
-import type { AppContext } from './appContext.js';
-import type { GnId, RawNode, RawEdge } from './types.js';
+import { GraphDB } from "./graph/db.js";
+import { migrateFromLocalStorage } from "./graph/persistence.js";
+import { GraphManager } from "./graph/graphManager.js";
+import { GraphSwitcher } from "./ui/graphSwitcher.js";
+import { parseShareUrl, restoreSharedGraph } from "./graph/urlShare.js";
+import { TypeRegistry } from "./graph/typeRegistry.js";
+import { EdgeTypeRegistry } from "./graph/edgeTypeRegistry.js";
+import { UndoManager } from "./graph/undoManager.js";
+import { Canvas } from "./ui/canvas.js";
+import { Sidebar } from "./ui/sidebar.js";
+import { QueryPanel } from "./ui/queryPanel.js";
+import { Scrapbook } from "./ui/scrapbook.js";
+import { Dashboard } from "./ui/dashboard.js";
+import { ScrapbookStore } from "./notebook/scrapbookStore.js";
+import { BookmarkStore } from "./graph/bookmarkStore.js";
+import { initResizers } from "./ui/resizer.js";
+import { showToast } from "./ui/toast.js";
+import { byId, afterNextPaint } from "./ui/domUtils.js";
+import { DOM_IDS } from "./ui/domIds.js";
+import type { AppContext } from "./appContext.js";
+import type { GnId, RawNode, RawEdge } from "./types.js";
 
-import { CanvasEventController } from './controllers/canvasEventController.js';
-import { setupSidebarCallbacks } from './controllers/sidebarController.js';
-import { setupQueryPanel, refreshCompletionContext } from './controllers/queryPanelController.js';
-import { setupModeControls, setupToolbarButtons } from './controllers/toolbarController.js';
-import { setupUndoRedo } from './controllers/undoRedoController.js';
-import { MobileSidebarController } from './controllers/mobileSidebarController.js';
-import { NodeTypeFilterController } from './controllers/nodeTypeFilterController.js';
-import { setupTabButtons } from './controllers/tabController.js';
+import { CanvasEventController } from "./controllers/canvasEventController.js";
+import { setupSidebarCallbacks } from "./controllers/sidebarController.js";
+import {
+  setupQueryPanel,
+  refreshCompletionContext,
+} from "./controllers/queryPanelController.js";
+import {
+  setupModeControls,
+  setupToolbarButtons,
+} from "./controllers/toolbarController.js";
+import { setupUndoRedo } from "./controllers/undoRedoController.js";
+import { MobileSidebarController } from "./controllers/mobileSidebarController.js";
+import { NodeTypeFilterController } from "./controllers/nodeTypeFilterController.js";
+import { setupTabButtons } from "./controllers/tabController.js";
 
 // デバウンス: キー入力が落ち着くまでの待機時間 (ms)
 const SAVE_DEBOUNCE_MS = 300;
@@ -62,7 +68,11 @@ export class App implements AppContext {
     afterNextPaint(() => {
       this.canvas.resize();
       this.nodeTypeFilter.updateOptions();
-      this.canvas.refreshGraph(this.getFilteredNodes(), this.getFilteredEdges(), savedPositions);
+      this.canvas.refreshGraph(
+        this.getFilteredNodes(),
+        this.getFilteredEdges(),
+        savedPositions,
+      );
       if (savedViewport) {
         this.canvas.setViewport(savedViewport.pan, savedViewport.zoom);
       } else if (this.db.getAllNodes().length > 0) {
@@ -91,22 +101,31 @@ export class App implements AppContext {
 
     // Check for shared graph in URL before falling back to IndexedDB
     let savedPositions: Record<GnId, { x: number; y: number }>;
-    let savedViewport: { pan: { x: number; y: number }; zoom: number } | undefined;
+    let savedViewport:
+      | { pan: { x: number; y: number }; zoom: number }
+      | undefined;
     const sharedGraph = await parseShareUrl();
     if (sharedGraph) {
       // 新しいグラフとしてインポートする（既存グラフを上書きしない）
-      const importedMeta = await this.graphManager.createGraph('共有グラフ');
+      const importedMeta = await this.graphManager.createGraph("共有グラフ");
       await this.graphManager.switchGraph(importedMeta.id, this.db);
       const result = restoreSharedGraph(this.db, sharedGraph);
       savedPositions = result.positions;
       savedViewport = result.viewport;
       // Clear the share hash so it doesn't reload on refresh
-      history.replaceState(null, '', location.pathname);
+      history.replaceState(null, "", location.pathname);
       // Persist the shared graph to IndexedDB
-      await this.graphManager.saveCurrentGraph(this.db, savedPositions, savedViewport);
-      showToast('共有されたグラフをインポートしました', 'success');
+      await this.graphManager.saveCurrentGraph(
+        this.db,
+        savedPositions,
+        savedViewport,
+      );
+      showToast("共有されたグラフをインポートしました", "success");
     } else {
-      const result = await this.graphManager.switchGraph(this.graphManager.currentGraphId, this.db);
+      const result = await this.graphManager.switchGraph(
+        this.graphManager.currentGraphId,
+        this.db,
+      );
       savedPositions = result.positions;
       savedViewport = result.viewport;
     }
@@ -120,7 +139,12 @@ export class App implements AppContext {
   private initUI(): void {
     // Canvas (event handling delegated to CanvasEventController)
     const canvasCtrl = new CanvasEventController(this);
-    this.canvas = new Canvas(byId(DOM_IDS.cy), (event) => canvasCtrl.handleCanvasEvent(event), this.registry, this.edgeRegistry);
+    this.canvas = new Canvas(
+      byId(DOM_IDS.cy),
+      (event) => canvasCtrl.handleCanvasEvent(event),
+      this.registry,
+      this.edgeRegistry,
+    );
 
     this.sidebar = new Sidebar();
     this.sidebar.setRegistry(this.registry);
@@ -153,22 +177,31 @@ export class App implements AppContext {
     setupUndoRedo(this);
 
     initResizers(
-        () => this.canvas.resize(),
-        () => this.canvas.clearHighlight(),
+      () => this.canvas.resize(),
+      () => this.canvas.clearHighlight(),
     );
   }
 
   // ── AppContext implementation ────────────────────────────────────────────────
 
   captureForUndo(): void {
-    const snapshot = UndoManager.captureSnapshot(this.db, this.canvas.getPositions());
+    const snapshot = UndoManager.captureSnapshot(
+      this.db,
+      this.canvas.getPositions(),
+    );
     this.undoManager.pushState(snapshot);
   }
 
   scheduleSave(): void {
     if (this.saveTimer) clearTimeout(this.saveTimer);
     this.saveTimer = setTimeout(() => {
-      this.graphManager.saveCurrentGraph(this.db, this.canvas.getPositions(), this.canvas.getViewport()).catch((err) => console.warn('Failed to save graph:', err));
+      this.graphManager
+        .saveCurrentGraph(
+          this.db,
+          this.canvas.getPositions(),
+          this.canvas.getViewport(),
+        )
+        .catch((err) => console.warn("Failed to save graph:", err));
       this.updateStats();
     }, SAVE_DEBOUNCE_MS);
   }
@@ -177,12 +210,15 @@ export class App implements AppContext {
     try {
       this.canvas.updateEdgeStyles(this.edgeRegistry);
       this.nodeTypeFilter.updateOptions();
-      this.canvas.refreshGraph(this.getFilteredNodes(), this.getFilteredEdges());
+      this.canvas.refreshGraph(
+        this.getFilteredNodes(),
+        this.getFilteredEdges(),
+      );
       refreshCompletionContext(this);
       this.scheduleSave();
     } catch (err) {
       showToast(`グラフの更新に失敗しました: ${String(err)}`);
-      console.error('refreshAndSave failed:', err);
+      console.error("refreshAndSave failed:", err);
     }
   }
 
@@ -208,7 +244,11 @@ export class App implements AppContext {
   private initGraphSwitcher(): void {
     new GraphSwitcher(this.graphManager, async (id: string) => {
       // Save current graph before switching
-      await this.graphManager.saveCurrentGraph(this.db, this.canvas.getPositions(), this.canvas.getViewport());
+      await this.graphManager.saveCurrentGraph(
+        this.db,
+        this.canvas.getPositions(),
+        this.canvas.getViewport(),
+      );
       // Reset state
       this.undoManager.clear();
       this.db.reset();
@@ -219,7 +259,11 @@ export class App implements AppContext {
       }
       this.canvas.updateEdgeStyles(this.edgeRegistry);
       this.nodeTypeFilter.updateOptions();
-      this.canvas.refreshGraph(this.getFilteredNodes(), this.getFilteredEdges(), result.positions);
+      this.canvas.refreshGraph(
+        this.getFilteredNodes(),
+        this.getFilteredEdges(),
+        result.positions,
+      );
       if (result.viewport) {
         this.canvas.setViewport(result.viewport.pan, result.viewport.zoom);
       } else {

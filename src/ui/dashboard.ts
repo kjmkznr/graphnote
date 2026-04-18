@@ -1,19 +1,22 @@
-import type { RawNode, RawEdge } from '../types.js';
-import { type HBarChartData, buildHBarChart, pickColor } from './charts.js';
+import type { RawNode, RawEdge } from "../types.js";
+import { type HBarChartData, buildHBarChart, pickColor } from "./charts.js";
 
 function buildEmptyMessage(msg: string): HTMLElement {
-  const p = document.createElement('p');
-  p.className = 'db-empty';
+  const p = document.createElement("p");
+  p.className = "db-empty";
   p.textContent = msg;
   return p;
 }
 
-function buildSection(title: string, content: HTMLElement | SVGSVGElement): HTMLElement {
-  const section = document.createElement('div');
-  section.className = 'db-section';
+function buildSection(
+  title: string,
+  content: HTMLElement | SVGSVGElement,
+): HTMLElement {
+  const section = document.createElement("div");
+  section.className = "db-section";
 
-  const h = document.createElement('div');
-  h.className = 'db-section-title';
+  const h = document.createElement("div");
+  h.className = "db-section-title";
   h.textContent = title;
   section.appendChild(h);
 
@@ -26,27 +29,35 @@ export class Dashboard {
 
   constructor(container: HTMLElement) {
     this.root = container;
-    this.root.className = 'dashboard-root';
+    this.root.className = "dashboard-root";
   }
 
   refresh(nodes: RawNode[], edges: RawEdge[]): void {
-    this.root.innerHTML = '';
+    this.root.innerHTML = "";
 
-    const grid = document.createElement('div');
-    grid.className = 'db-grid';
+    const grid = document.createElement("div");
+    grid.className = "db-grid";
 
     // ── Summary cards ──────────────────────────────────────────────────────────
-    const cards = document.createElement('div');
-    cards.className = 'db-cards';
+    const cards = document.createElement("div");
+    cards.className = "db-cards";
 
-    cards.appendChild(this.buildCard('ノード数', String(nodes.length), '#6c8ef7'));
-    cards.appendChild(this.buildCard('エッジ数', String(edges.length), '#a78bfa'));
+    cards.appendChild(
+      this.buildCard("ノード数", String(nodes.length), "#6c8ef7"),
+    );
+    cards.appendChild(
+      this.buildCard("エッジ数", String(edges.length), "#a78bfa"),
+    );
 
     const nodeTypeSet = new Set(nodes.flatMap((n) => n._labels));
-    cards.appendChild(this.buildCard('ノードタイプ数', String(nodeTypeSet.size), '#34d399'));
+    cards.appendChild(
+      this.buildCard("ノードタイプ数", String(nodeTypeSet.size), "#34d399"),
+    );
 
     const edgeTypeSet = new Set(edges.map((e) => e._type));
-    cards.appendChild(this.buildCard('エッジタイプ数', String(edgeTypeSet.size), '#fbbf24'));
+    cards.appendChild(
+      this.buildCard("エッジタイプ数", String(edgeTypeSet.size), "#fbbf24"),
+    );
 
     grid.appendChild(cards);
 
@@ -61,12 +72,14 @@ export class Dashboard {
       .sort((a, b) => b[1] - a[1])
       .map(([label, value], i) => ({ label, value, color: pickColor(i) }));
 
-    grid.appendChild(buildSection(
-      'ノードタイプ別分布',
-      nodeTypeData.length > 0
-        ? buildHBarChart(nodeTypeData, 'ノードタイプ別分布')
-        : buildEmptyMessage('ノードがありません'),
-    ));
+    grid.appendChild(
+      buildSection(
+        "ノードタイプ別分布",
+        nodeTypeData.length > 0
+          ? buildHBarChart(nodeTypeData, "ノードタイプ別分布")
+          : buildEmptyMessage("ノードがありません"),
+      ),
+    );
 
     // ── Edge type distribution ─────────────────────────────────────────────────
     const edgeTypeCounts = new Map<string, number>();
@@ -77,24 +90,26 @@ export class Dashboard {
       .sort((a, b) => b[1] - a[1])
       .map(([label, value], i) => ({ label, value, color: pickColor(i) }));
 
-    grid.appendChild(buildSection(
-      'エッジタイプ別分布',
-      edgeTypeData.length > 0
-        ? buildHBarChart(edgeTypeData, 'エッジタイプ別分布')
-        : buildEmptyMessage('エッジがありません'),
-    ));
+    grid.appendChild(
+      buildSection(
+        "エッジタイプ別分布",
+        edgeTypeData.length > 0
+          ? buildHBarChart(edgeTypeData, "エッジタイプ別分布")
+          : buildEmptyMessage("エッジがありません"),
+      ),
+    );
 
     // ── Degree distribution ────────────────────────────────────────────────────
     const internalIdToGnId = new Map<string, string>();
     for (const node of nodes) {
-      const gnId = node._properties['gnId'];
-      if (typeof gnId === 'string') internalIdToGnId.set(node._id, gnId);
+      const gnId = node._properties["gnId"];
+      if (typeof gnId === "string") internalIdToGnId.set(node._id, gnId);
     }
 
     const gnIdDegree = new Map<string, number>();
     for (const node of nodes) {
-      const gnId = node._properties['gnId'];
-      if (typeof gnId === 'string') gnIdDegree.set(gnId, 0);
+      const gnId = node._properties["gnId"];
+      if (typeof gnId === "string") gnIdDegree.set(gnId, 0);
     }
     for (const edge of edges) {
       const srcGnId = internalIdToGnId.get(edge._src);
@@ -109,14 +124,20 @@ export class Dashboard {
     }
     const degreeData: HBarChartData[] = [...degreeBuckets.entries()]
       .sort((a, b) => a[0] - b[0])
-      .map(([deg, count], i) => ({ label: `接続数 ${deg}`, value: count, color: pickColor(i) }));
+      .map(([deg, count], i) => ({
+        label: `接続数 ${deg}`,
+        value: count,
+        color: pickColor(i),
+      }));
 
-    grid.appendChild(buildSection(
-      '接続数分布（ノード数）',
-      degreeData.length > 0
-        ? buildHBarChart(degreeData, '接続数分布')
-        : buildEmptyMessage('ノードがありません'),
-    ));
+    grid.appendChild(
+      buildSection(
+        "接続数分布（ノード数）",
+        degreeData.length > 0
+          ? buildHBarChart(degreeData, "接続数分布")
+          : buildEmptyMessage("ノードがありません"),
+      ),
+    );
 
     // ── Top connected nodes ────────────────────────────────────────────────────
     const topNodes: HBarChartData[] = [...gnIdDegree.entries()]
@@ -124,35 +145,37 @@ export class Dashboard {
       .slice(0, 10)
       .filter(([, deg]) => deg > 0)
       .map(([gnId, deg], i) => {
-        const node = nodes.find((n) => n._properties['gnId'] === gnId);
+        const node = nodes.find((n) => n._properties["gnId"] === gnId);
         const name = node
-          ? String(node._properties['name'] ?? node._labels[0] ?? gnId)
+          ? String(node._properties["name"] ?? node._labels[0] ?? gnId)
           : gnId;
         return { label: name, value: deg, color: pickColor(i) };
       });
 
-    grid.appendChild(buildSection(
-      '接続数 Top 10 ノード',
-      topNodes.length > 0
-        ? buildHBarChart(topNodes, '接続数 Top 10 ノード')
-        : buildEmptyMessage('エッジがありません'),
-    ));
+    grid.appendChild(
+      buildSection(
+        "接続数 Top 10 ノード",
+        topNodes.length > 0
+          ? buildHBarChart(topNodes, "接続数 Top 10 ノード")
+          : buildEmptyMessage("エッジがありません"),
+      ),
+    );
 
     this.root.appendChild(grid);
   }
 
   private buildCard(label: string, value: string, color: string): HTMLElement {
-    const card = document.createElement('div');
-    card.className = 'db-card';
+    const card = document.createElement("div");
+    card.className = "db-card";
     card.style.borderTopColor = color;
 
-    const v = document.createElement('div');
-    v.className = 'db-card-value';
+    const v = document.createElement("div");
+    v.className = "db-card-value";
     v.style.color = color;
     v.textContent = value;
 
-    const l = document.createElement('div');
-    l.className = 'db-card-label';
+    const l = document.createElement("div");
+    l.className = "db-card-label";
     l.textContent = label;
 
     card.appendChild(v);

@@ -1,4 +1,4 @@
-import type cytoscape from 'cytoscape';
+import type cytoscape from "cytoscape";
 
 /**
  * A lightweight Canvas2D minimap for the Cytoscape graph.
@@ -20,19 +20,19 @@ export class Minimap {
     this.cy = cy;
     this.dpr = window.devicePixelRatio || 1;
 
-    this.el = document.createElement('div');
-    this.el.id = 'minimap';
+    this.el = document.createElement("div");
+    this.el.id = "minimap";
     wrapContainer.appendChild(this.el);
 
-    this.canvas = document.createElement('canvas');
+    this.canvas = document.createElement("canvas");
     this.canvas.width = this.W * this.dpr;
     this.canvas.height = this.H * this.dpr;
     this.canvas.style.width = `${this.W}px`;
     this.canvas.style.height = `${this.H}px`;
-    this.canvas.style.display = 'block';
+    this.canvas.style.display = "block";
     this.el.appendChild(this.canvas);
 
-    this.ctx = this.canvas.getContext('2d')!;
+    this.ctx = this.canvas.getContext("2d")!;
     this.ctx.scale(this.dpr, this.dpr);
 
     this.bindCyEvents();
@@ -43,13 +43,13 @@ export class Minimap {
   // ── Cy event binding ─────────────────────────────────────────
 
   private bindCyEvents(): void {
-    this.cy.on('viewport add remove position', () => this.scheduleRender());
+    this.cy.on("viewport add remove position", () => this.scheduleRender());
   }
 
   // ── Mouse event binding ──────────────────────────────────────
 
   private bindMouseEvents(): void {
-    this.canvas.addEventListener('mousedown', (e) => {
+    this.canvas.addEventListener("mousedown", (e) => {
       e.stopPropagation();
       e.preventDefault();
       this.dragging = true;
@@ -62,16 +62,22 @@ export class Minimap {
       this.panToMouse(e);
     };
 
-    const onUp = () => { this.dragging = false; };
+    const onUp = () => {
+      this.dragging = false;
+    };
 
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
   }
 
   // ── Transform (graph coords → minimap coords) ───────────────
 
-  private getTransform(): { scale: number; offsetX: number; offsetY: number } | null {
-    const nodes = this.cy.nodes('[!ghost][!edgeHandle]');
+  private getTransform(): {
+    scale: number;
+    offsetX: number;
+    offsetY: number;
+  } | null {
+    const nodes = this.cy.nodes("[!ghost][!edgeHandle]");
     if (nodes.length === 0) return null;
 
     const bb = nodes.boundingBox();
@@ -129,26 +135,26 @@ export class Minimap {
     ctx.clearRect(0, 0, W, H);
 
     // Background
-    ctx.fillStyle = 'rgba(15, 17, 23, 0.9)';
+    ctx.fillStyle = "rgba(15, 17, 23, 0.9)";
     ctx.fillRect(0, 0, W, H);
 
     const t = this.getTransform();
     if (!t) {
-      this.el.style.display = 'none';
+      this.el.style.display = "none";
       return;
     }
-    this.el.style.display = '';
+    this.el.style.display = "";
 
     const { scale, offsetX, offsetY } = t;
 
     // Draw edges
-    ctx.strokeStyle = 'rgba(74, 85, 104, 0.5)';
+    ctx.strokeStyle = "rgba(74, 85, 104, 0.5)";
     ctx.lineWidth = 0.5;
-    this.cy.edges('[!ghost]').forEach((edge) => {
+    this.cy.edges("[!ghost]").forEach((edge) => {
       const src = edge.source();
       const tgt = edge.target();
-      if (src.data('ghost') || src.data('edgeHandle')) return;
-      if (tgt.data('ghost') || tgt.data('edgeHandle')) return;
+      if (src.data("ghost") || src.data("edgeHandle")) return;
+      if (tgt.data("ghost") || tgt.data("edgeHandle")) return;
       const sp = src.position();
       const tp = tgt.position();
       ctx.beginPath();
@@ -158,11 +164,11 @@ export class Minimap {
     });
 
     // Draw nodes
-    this.cy.nodes('[!ghost][!edgeHandle]').forEach((node) => {
+    this.cy.nodes("[!ghost][!edgeHandle]").forEach((node) => {
       const pos = node.position();
       const x = pos.x * scale + offsetX;
       const y = pos.y * scale + offsetY;
-      const color = (node.data('color') as string) || '#6c8ef7';
+      const color = (node.data("color") as string) || "#6c8ef7";
       const r = Math.min(Math.max(28 * scale, 2), 5);
       ctx.fillStyle = color;
       ctx.beginPath();
@@ -185,10 +191,10 @@ export class Minimap {
     const rw = (vx2 - vx1) * scale;
     const rh = (vy2 - vy1) * scale;
 
-    ctx.strokeStyle = 'rgba(108, 142, 247, 0.7)';
+    ctx.strokeStyle = "rgba(108, 142, 247, 0.7)";
     ctx.lineWidth = 1.5;
     ctx.strokeRect(rx, ry, rw, rh);
-    ctx.fillStyle = 'rgba(108, 142, 247, 0.06)';
+    ctx.fillStyle = "rgba(108, 142, 247, 0.06)";
     ctx.fillRect(rx, ry, rw, rh);
   }
 }
