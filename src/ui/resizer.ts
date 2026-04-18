@@ -1,10 +1,15 @@
 import { byId } from './domUtils.js';
 import { DOM_IDS } from './domIds.js';
 
+// サイドバー幅の下限: プロパティ名が折り返さずに表示できる最小幅
 const SIDEBAR_MIN = 160;
+// サイドバー幅の上限: 画面の半分程度を占める最大幅
 const SIDEBAR_MAX = 700;
+// クエリパネル高さの下限: 1〜2 行のクエリ入力と結果が見える最小高さ
 const QUERY_MIN = 80;
+// クエリパネル高さの上限: 画面の大半を占めないよう抑える最大高さ
 const QUERY_MAX = 600;
+// クエリパネルの初期高さ: 数行のクエリと結果が快適に閲覧できるデフォルト値
 const QUERY_DEFAULT = 220;
 
 // Threshold in px: drags shorter than this are treated as clicks
@@ -69,11 +74,11 @@ export function initResizers(onResize: () => void, onQueryPanelCollapse?: () => 
   // Start collapsed
   applyState();
 
-  function handleToggleStart(startX: number, startY: number, addMoveListener: (fn: (x: number, y: number) => void) => void, addUpListener: (fn: () => void) => void): void {
+  function handleToggleStart(_startX: number, startY: number, addMoveListener: (fn: (_x: number, y: number) => void) => void, addUpListener: (fn: () => void) => void): void {
     let dragged = false;
     const startHeight = collapsed ? lastOpenHeight : getVar('--query-h', lastOpenHeight);
 
-    addMoveListener((x, y) => {
+    addMoveListener((_x, y) => {
       const delta = startY - y;
       if (!dragged && Math.abs(delta) < DRAG_THRESHOLD) return;
 

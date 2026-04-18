@@ -71,7 +71,7 @@ export class Minimap {
   // ── Transform (graph coords → minimap coords) ───────────────
 
   private getTransform(): { scale: number; offsetX: number; offsetY: number } | null {
-    const nodes = this.cy.nodes(':not([ghost]):not([edgeHandle])');
+    const nodes = this.cy.nodes('[!ghost][!edgeHandle]');
     if (nodes.length === 0) return null;
 
     const bb = nodes.boundingBox();
@@ -144,7 +144,7 @@ export class Minimap {
     // Draw edges
     ctx.strokeStyle = 'rgba(74, 85, 104, 0.5)';
     ctx.lineWidth = 0.5;
-    this.cy.edges(':not([ghost])').forEach((edge) => {
+    this.cy.edges('[!ghost]').forEach((edge) => {
       const src = edge.source();
       const tgt = edge.target();
       if (src.data('ghost') || src.data('edgeHandle')) return;
@@ -158,7 +158,7 @@ export class Minimap {
     });
 
     // Draw nodes
-    this.cy.nodes(':not([ghost]):not([edgeHandle])').forEach((node) => {
+    this.cy.nodes('[!ghost][!edgeHandle]').forEach((node) => {
       const pos = node.position();
       const x = pos.x * scale + offsetX;
       const y = pos.y * scale + offsetY;

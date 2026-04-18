@@ -100,7 +100,7 @@ export class GraphRenderer {
 
   getPositions(): PositionMap {
     const positions: PositionMap = {} as PositionMap;
-    this.cy.nodes(':not([ghost]):not([edgeHandle])').forEach((n) => {
+    this.cy.nodes('[!ghost][!edgeHandle]').forEach((n) => {
       const gnId = asGnId(n.data('gnId') as string);
       if (gnId) positions[gnId] = { ...n.position() };
     });
@@ -128,7 +128,7 @@ export class GraphRenderer {
     }
     // Highlight edges where both endpoints are in the matched node set
     if (nodeGnIds.size > 0) {
-      cy.edges(':not([ghost])').filter((edge) =>
+      cy.edges('[!ghost]').filter((edge) =>
         nodeGnIds.has(asGnId(edge.source().id())) && nodeGnIds.has(asGnId(edge.target().id()))
       ).removeClass('query-dimmed').addClass('query-match');
     }
@@ -199,7 +199,7 @@ export class GraphRenderer {
 
     // ── Nodes ──────────────────────────────────────────────────────────────────
     const existingNodeIds = new Set<GnId>();
-    cy.nodes(':not([ghost]):not([edgeHandle])').forEach((n) => {
+    cy.nodes('[!ghost][!edgeHandle]').forEach((n) => {
       const gnId = asGnId(n.data('gnId') as string);
       existingNodeIds.add(gnId);
       if (!desiredNodes.has(gnId)) {
@@ -231,12 +231,12 @@ export class GraphRenderer {
     this.placeNewNodes(newNodeGnIds);
 
     // ── Edges ──────────────────────────────────────────────────────────────────
-    cy.edges(':not([ghost])').forEach((e) => {
+    cy.edges('[!ghost]').forEach((e) => {
       if (!desiredEdges.has(asGnId(e.data('gnId') as string))) e.remove();
     });
 
     const existingEdgeIds = new Set<GnId>(
-      cy.edges(':not([ghost])').map((e) => asGnId(e.data('gnId') as string)),
+      cy.edges('[!ghost]').map((e) => asGnId(e.data('gnId') as string)),
     );
     const newEdgeElements: cytoscape.ElementDefinition[] = [];
     for (const [gnId, rawEdge] of desiredEdges) {
@@ -250,7 +250,7 @@ export class GraphRenderer {
   private placeNewNodes(gnIds: GnId[]): void {
     if (gnIds.length === 0) return;
     const cy = this.cy;
-    const occupied = cy.nodes(':not([ghost]):not([edgeHandle])').map((n) => n.position());
+    const occupied = cy.nodes('[!ghost][!edgeHandle]').map((n) => n.position());
     const selector = gnIds.map((id) => `#${CSS.escape(id)}`).join(', ');
     cy.$(selector).forEach((n) => {
       const pos = findFreePosition(occupied);

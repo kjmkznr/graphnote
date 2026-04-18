@@ -47,6 +47,11 @@ export const CYTOSCAPE_STYLES: cytoscape.StylesheetStyle[] = [
       'text-wrap': 'wrap',
       'text-max-width': '64px',
       'border-width': 2,
+    },
+  },
+  {
+    selector: 'node[borderColor]',
+    style: {
       'border-color': 'data(borderColor)',
     },
   },
