@@ -32,22 +32,40 @@ export function buildNodeTypeStyles(registry: TypeRegistry): cytoscape.Styleshee
   });
 }
 
+// Design token approximations (oklch → hex for Cytoscape)
+// --bg-0: oklch(0.14 0.005 240) ≈ #141920
+// --accent (green): oklch(0.82 0.13 145) ≈ #4ec994
+// --text: oklch(0.95 0.005 240) ≈ #eef0f5
+// --text-mid: oklch(0.72 0.007 240) ≈ #a8afc0
+// --text-dim: oklch(0.52 0.008 240) ≈ #6b7494
+// --line-strong: oklch(0.34 0.008 240) ≈ #3e4560
+const CY_BG = '#141920';
+const CY_ACCENT = '#4ec994';
+const CY_TEXT = '#eef0f5';
+const CY_TEXT_MID = '#a8afc0';
+const CY_TEXT_DIM = '#6b7494';
+const CY_EDGE = '#3e4560';
+const CY_HIGHLIGHT = '#f0b429'; // amber for query match
+
 export const CYTOSCAPE_STYLES: cytoscape.StylesheetStyle[] = [
   {
     selector: 'node',
     style: {
       'background-color': 'data(color)',
       label: 'data(displayLabel)',
-      color: '#fff',
+      color: CY_TEXT,
       'text-valign': 'center',
       'text-halign': 'center',
       'font-size': '11px',
-      'font-family': 'ui-monospace, monospace',
-      width: 56,
-      height: 56,
+      'font-family': 'Geist Mono, ui-monospace, monospace',
+      width: 52,
+      height: 52,
       'text-wrap': 'wrap',
-      'text-max-width': '64px',
+      'text-max-width': '60px',
       'border-width': 2,
+      'border-color': CY_BG,
+      'text-outline-color': CY_BG,
+      'text-outline-width': 2,
     },
   },
   {
@@ -60,7 +78,7 @@ export const CYTOSCAPE_STYLES: cytoscape.StylesheetStyle[] = [
     selector: 'node:selected',
     style: {
       'border-width': 3,
-      'border-color': '#fff',
+      'border-color': CY_ACCENT,
     },
   },
   {
@@ -77,16 +95,16 @@ export const CYTOSCAPE_STYLES: cytoscape.StylesheetStyle[] = [
   {
     selector: 'edge',
     style: {
-      width: 2,
-      'line-color': '#4a5568',
-      'target-arrow-color': '#4a5568',
+      width: 1.5,
+      'line-color': CY_EDGE,
+      'target-arrow-color': CY_EDGE,
       'target-arrow-shape': 'triangle',
       'curve-style': 'bezier',
       label: 'data(label)',
-      'font-size': '10px',
-      'font-family': 'ui-monospace, monospace',
-      color: '#8892a4',
-      'text-background-color': '#0f1117',
+      'font-size': '9.5px',
+      'font-family': 'Geist Mono, ui-monospace, monospace',
+      color: CY_TEXT_DIM,
+      'text-background-color': CY_BG,
       'text-background-opacity': 1,
       'text-background-padding': '2px',
     },
@@ -94,17 +112,18 @@ export const CYTOSCAPE_STYLES: cytoscape.StylesheetStyle[] = [
   {
     selector: 'edge:selected',
     style: {
-      'line-color': '#6c8ef7',
-      'target-arrow-color': '#6c8ef7',
-      color: '#e2e8f0',
+      'line-color': CY_ACCENT,
+      'target-arrow-color': CY_ACCENT,
+      color: CY_TEXT_MID,
+      width: 2,
     },
   },
   {
     selector: 'edge[?ghost]',
     style: {
       width: 2,
-      'line-color': '#6c8ef7',
-      'target-arrow-color': '#6c8ef7',
+      'line-color': CY_ACCENT,
+      'target-arrow-color': CY_ACCENT,
       'target-arrow-shape': 'triangle',
       'line-style': 'dashed',
       opacity: 0.6,
@@ -117,10 +136,10 @@ export const CYTOSCAPE_STYLES: cytoscape.StylesheetStyle[] = [
       width: 18,
       height: 18,
       shape: 'ellipse',
-      'background-color': '#6c8ef7',
+      'background-color': CY_ACCENT,
       'border-width': 0,
       label: 'data(arrowLabel)',
-      color: '#fff',
+      color: CY_BG,
       'font-size': '11px',
       'text-valign': 'center',
       'text-halign': 'center',
@@ -131,7 +150,7 @@ export const CYTOSCAPE_STYLES: cytoscape.StylesheetStyle[] = [
   {
     selector: 'node[?edgeHandle]:hover',
     style: {
-      'background-color': '#a78bfa',
+      'background-color': CY_ACCENT,
       opacity: 1,
       width: 22,
       height: 22,
@@ -145,17 +164,17 @@ export const CYTOSCAPE_STYLES: cytoscape.StylesheetStyle[] = [
     selector: 'node.query-match',
     style: {
       'border-width': 3,
-      'border-color': '#fbbf24',
+      'border-color': CY_HIGHLIGHT,
       'background-color': 'data(color)',
     },
   },
   {
     selector: 'edge.query-match',
     style: {
-      'line-color': '#fbbf24',
-      'target-arrow-color': '#fbbf24',
-      width: 3,
-      color: '#fbbf24',
+      'line-color': CY_HIGHLIGHT,
+      'target-arrow-color': CY_HIGHLIGHT,
+      width: 2.5,
+      color: CY_HIGHLIGHT,
     },
   },
 ];

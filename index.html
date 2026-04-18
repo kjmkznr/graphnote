@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>graphnote</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/src/styles/main.css" />
 </head>
 <body>
@@ -14,161 +17,214 @@
   <div id="init-error" class="init-error hidden"></div>
 
   <div id="app">
-    <!-- Header -->
+    <!-- ── Topbar ───────────────────────────────────────────────── -->
     <header id="header">
-      <span class="logo">graphnote</span>
-      <div class="header-divider"></div>
-      <div id="graph-switcher">
+      <div class="brand">
+        <span class="brand-mark"><i></i></span>
+        graphnote
+      </div>
+
+      <div class="graph-picker" id="graph-switcher">
         <select id="graph-select" title="グラフを切り替え"></select>
-        <button class="header-btn icon-btn" id="graph-new-btn" title="新しいグラフを作成">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <button class="icon-btn" id="graph-new-btn" title="新しいグラフを作成">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
         </button>
-        <button class="header-btn icon-btn" id="graph-rename-btn" title="グラフ名を変更">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        <button class="icon-btn" id="graph-rename-btn" title="グラフ名を変更">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l7.5-7.5 2.5 2.5L5.5 13.5H3z"/></svg>
         </button>
-        <button class="header-btn icon-btn danger" id="graph-delete-btn" title="グラフを削除">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        <button class="icon-btn danger" id="graph-delete-btn" title="グラフを削除">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.7 8h5.6l.7-8"/></svg>
         </button>
       </div>
-      <div class="header-divider"></div>
-      <div id="tab-buttons">
+
+      <div class="tabs" id="tab-buttons">
         <button class="tab-btn active" data-tab="graph">Graph</button>
         <button class="tab-btn" data-tab="scrapbook">Scrapbook</button>
         <button class="tab-btn" data-tab="dashboard">Dashboard</button>
       </div>
-      <div class="header-divider"></div>
-      <div id="undo-redo-buttons">
-        <button class="header-btn icon-btn" id="undo-btn" title="元に戻す (Ctrl+Z)" disabled>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-        </button>
-        <button class="header-btn icon-btn" id="redo-btn" title="やり直し (Ctrl+Shift+Z)" disabled>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10"/></svg>
-        </button>
+
+      <div class="spacer"></div>
+
+      <div class="meta">
+        <div class="meta-item">N <span class="meta-num" id="node-count">0</span></div>
+        <div class="meta-item">E <span class="meta-num" id="edge-count">0</span></div>
       </div>
-      <div class="header-divider"></div>
-      <div id="mode-buttons">
-      </div>
-      <div class="header-stats">
-        <span class="stat">Nodes: <span class="stat-value" id="node-count">0</span></span>
-        <span class="stat">Edges: <span class="stat-value" id="edge-count">0</span></span>
-      </div>
-      <button class="header-btn" id="types-btn">Node Types</button>
-      <button class="header-btn" id="edge-types-btn">Edge Types</button>
-      <div class="dropdown">
-        <button class="header-btn" id="export-btn">Export</button>
-        <div class="dropdown-content">
-          <button id="export-json-btn">JSON (.json)</button>
-          <button id="export-cypher-btn">Cypher (.cypher)</button>
+
+      <div class="actions">
+        <div id="undo-redo-buttons" style="display:flex;gap:2px">
+          <button class="icon-btn" id="undo-btn" title="元に戻す (Ctrl+Z)" disabled>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5h6.5A2.5 2.5 0 0 1 13 10v0a2.5 2.5 0 0 1-2.5 2.5H6"/><path d="M6 5L3.5 7.5 6 10"/></svg>
+          </button>
+          <button class="icon-btn" id="redo-btn" title="やり直し (Ctrl+Shift+Z)" disabled>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7.5H5.5A2.5 2.5 0 0 0 3 10v0a2.5 2.5 0 0 0 2.5 2.5H10"/><path d="M10 5l2.5 2.5L10 10"/></svg>
+          </button>
         </div>
-      </div>
-      <div class="dropdown">
-        <button class="header-btn" id="import-btn">Import</button>
-        <div class="dropdown-content">
-          <button id="import-json-btn">JSON (.json)</button>
-          <button id="import-csv-btn">CSV (.csv)</button>
+        <div class="actions-sep"></div>
+        <div class="dropdown">
+          <button class="icon-btn" id="import-btn" title="Import">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v7M5 7l3 3 3-3"/><path d="M3 11v2h10v-2"/></svg>
+          </button>
+          <div class="dropdown-content">
+            <button id="import-json-btn">JSON (.json)</button>
+            <button id="import-csv-btn">CSV (.csv)</button>
+          </div>
         </div>
+        <div class="dropdown">
+          <button class="icon-btn" id="export-btn" title="Export">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10V3M5 6l3-3 3 3"/><path d="M3 11v2h10v-2"/></svg>
+          </button>
+          <div class="dropdown-content">
+            <button id="export-json-btn">JSON (.json)</button>
+            <button id="export-cypher-btn">Cypher (.cypher)</button>
+          </div>
+        </div>
+        <button class="icon-btn" id="share-btn" title="Share URL">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="4" cy="8" r="1.8"/><circle cx="12" cy="4" r="1.8"/><circle cx="12" cy="12" r="1.8"/><path d="M5.5 7.3l5-2.6M5.5 8.7l5 2.6"/></svg>
+        </button>
+        <div class="actions-sep"></div>
+        <button class="action-btn" id="types-btn">Node Types</button>
+        <button class="action-btn" id="edge-types-btn">Edge Types</button>
+        <button class="action-btn danger" id="reset-btn">Reset</button>
       </div>
-      <button class="header-btn" id="share-btn">Share URL</button>
-      <button class="header-btn danger" id="reset-btn">Reset</button>
     </header>
 
-    <!-- Graph Tab -->
-    <div id="tab-graph" class="tab-panel">
+    <!-- ── Graph Tab ──────────────────────────────────────────────── -->
+    <div id="tab-graph">
 
-    <!-- Canvas -->
-    <div id="canvas-wrap">
-      <div id="cy"></div>
-      <div id="canvas-action-btns">
-        <button id="add-node-btn" class="canvas-overlay-btn" title="キャンバスをクリックしてノードを作成">+ Node</button>
-      </div>
-      <button id="fit-btn" class="canvas-overlay-btn">Fit</button>
-      <div id="layout-btns">
-        <button id="layout-toggle-btn" class="canvas-overlay-btn" title="レイアウトを選択">Layout ▾</button>
-        <div id="layout-submenu">
-          <button id="layout-cose-btn" class="canvas-overlay-btn" title="Cose レイアウト">Cose</button>
-          <button id="layout-circle-btn" class="canvas-overlay-btn" title="Circle レイアウト">Circle</button>
-          <button id="layout-concentric-btn" class="canvas-overlay-btn" title="Concentric レイアウト">Concentric</button>
-          <button id="layout-grid-btn" class="canvas-overlay-btn" title="Grid レイアウト">Grid</button>
-          <button id="layout-breadthfirst-btn" class="canvas-overlay-btn" title="Breadthfirst レイアウト">BFS</button>
+      <!-- Left Rail -->
+      <aside id="left-rail" class="left-rail">
+        <!-- Create actions -->
+        <div class="rail-section">
+          <div id="canvas-action-btns" style="display:flex;flex-direction:column;gap:4px">
+            <button class="rail-btn" id="add-node-btn">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+              New node
+              <span class="kbd">N</span>
+            </button>
+          </div>
+          <div style="height:4px"></div>
+          <div id="mode-buttons"></div>
         </div>
-      </div>
-      <!-- Filter Bar -->
-      <div id="graph-filter-bar">
-        <label for="node-type-filter">Filter by type:</label>
-        <select id="node-type-filter">
-          <option value="">All</option>
-        </select>
-      </div>
-    </div>
 
-    <!-- Query toggle bar (click to open/close, drag to resize) -->
-    <div id="query-toggle"><span id="query-toggle-label"></span></div>
+        <!-- Node type filter -->
+        <div class="rail-section" style="flex:1;overflow-y:auto;min-height:0">
+          <div class="rail-label">
+            <span>Node types</span>
+            <span class="count" id="rail-type-count"></span>
+          </div>
+          <select id="node-type-filter" aria-label="Node type filter" style="display:none">
+            <option value="">All</option>
+          </select>
+          <div id="node-type-chips"></div>
+        </div>
 
-    <!-- Horizontal resize handle (between main area and sidebar) -->
-    <div id="resize-h" class="resize-handle"></div>
+        <!-- Graph filter bar (hidden, functional) -->
+        <div id="graph-filter-bar" style="display:none"></div>
 
-    <!-- Sidebar -->
-    <div id="sidebar">
-      <div id="sidebar-header">Properties</div>
-      <div id="sidebar-empty">
-        ノードまたはエッジを選択すると<br>プロパティとノートを編集できます
+        <!-- Node/Edge type managers (hidden but functional) -->
+        <div class="rail-section">
+          <div class="rail-label"><span>Actions</span></div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+          </div>
+        </div>
+      </aside>
+
+      <!-- Canvas -->
+      <div id="canvas-wrap">
+        <!-- Cytoscape container -->
+        <div id="cy"></div>
+
+        <!-- Canvas floating toolbar -->
+        <div class="canvas-toolbar">
+          <button id="layout-cose-btn" class="ct-btn" title="Cose レイアウト">Force</button>
+          <button id="layout-circle-btn" class="ct-btn" title="Circle レイアウト">Circle</button>
+          <button id="layout-concentric-btn" class="ct-btn" title="Concentric レイアウト">Radial</button>
+          <button id="layout-grid-btn" class="ct-btn" title="Grid レイアウト">Grid</button>
+          <button id="layout-breadthfirst-btn" class="ct-btn" title="Breadthfirst レイアウト">BFS</button>
+          <div class="ct-sep"></div>
+          <button id="fit-btn" class="ct-btn">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6V3h3M13 6V3h-3M3 10v3h3M13 10v3h-3"/></svg>
+            Fit
+          </button>
+        </div>
+
+        <!-- Minimap (injected by minimap.ts) -->
       </div>
-      <div id="sidebar-content" style="display:none">
-        <div id="element-header"></div>
-        <div id="sidebar-scroll">
-          <div id="properties-section">
-            <div class="section-label">Properties</div>
-            <div id="properties-list"></div>
-            <div class="add-prop-row">
-              <input class="add-prop-key" id="new-prop-key" placeholder="key" aria-label="プロパティキー" />
-              <input class="add-prop-val" id="new-prop-val" placeholder="value" aria-label="プロパティ値" />
-              <button class="add-prop-btn" id="add-prop-btn">Add</button>
+
+      <!-- Resize handle -->
+      <div id="resize-h" class="resize-handle"></div>
+
+      <!-- Sidebar / Properties panel -->
+      <div id="sidebar">
+        <div id="sidebar-header" class="prop-panel-label">Properties</div>
+
+        <div id="sidebar-empty" class="prop-empty">
+          <div class="prop-empty-glyph"></div>
+          <div class="prop-empty-title">ノードまたはエッジを選択</div>
+          <div class="prop-empty-hint">
+            キャンバス上のノード/エッジをクリックするとプロパティとノートを編集できます。
+          </div>
+        </div>
+
+        <div id="sidebar-content" style="display:none">
+          <div id="element-header"></div>
+          <div id="sidebar-scroll">
+            <div id="properties-section">
+              <div class="section-label">Properties</div>
+              <div id="properties-list"></div>
+              <div class="add-prop-row">
+                <input class="add-prop-key" id="new-prop-key" placeholder="key" aria-label="プロパティキー" />
+                <input class="add-prop-val" id="new-prop-val" placeholder="value" aria-label="プロパティ値" />
+                <button class="add-prop-btn" id="add-prop-btn">Add</button>
+              </div>
+            </div>
+            <div id="note-section">
+              <div class="section-label">Note</div>
+              <textarea id="note-textarea" placeholder="Markdown で自由にメモできます…" aria-label="ノート"></textarea>
+              <div id="note-preview"></div>
             </div>
           </div>
-          <div id="note-section">
-            <div class="section-label">Note</div>
-            <textarea id="note-textarea" placeholder="Markdown で自由にメモできます…" aria-label="ノート"></textarea>
-            <div id="note-preview"></div>
-          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Query Panel -->
-    <div id="query-panel" class="query-panel-inner">
-      <div id="query-panel-header">
-        <span class="panel-label">Cypher</span>
+      <!-- Cypher console ───────────────────────── -->
+      <div id="query-toggle">
+        <span class="caret">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>
+        </span>
+        <span id="query-toggle-label" class="cypher-title">Cypher</span>
         <span class="shortcut-hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> to run</span>
-        <button class="run-btn" id="run-btn">
-          <svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor"><path d="M2 1.5l8 4.5-8 4.5z"/></svg>
+        <button class="cypher-run" id="run-btn">
+          <svg width="9" height="9" viewBox="0 0 12 12" fill="currentColor"><path d="M2 1.5l8 4.5-8 4.5z"/></svg>
           Run
         </button>
       </div>
-      <div id="query-body">
-        <textarea id="query-input" spellcheck="false" placeholder="MATCH (n) RETURN n LIMIT 10" aria-label="Cypherクエリ"></textarea>
-        <div id="query-results">
-          <span style="color: var(--text-muted); font-size: 12px;">クエリを実行すると結果が表示されます</span>
+
+      <div id="query-panel" class="query-panel-inner">
+        <div id="query-panel-header">
+          <!-- Bookmark bar inserted here by QueryPanel -->
+        </div>
+        <div id="query-body">
+          <textarea id="query-input" spellcheck="false" placeholder="MATCH (n) RETURN n LIMIT 10" aria-label="Cypherクエリ"></textarea>
+          <div id="query-results">
+            <span class="results-placeholder">クエリを実行すると結果が表示されます</span>
+          </div>
         </div>
       </div>
-    </div>
 
     </div><!-- /#tab-graph -->
 
-    <!-- Scrapbook Tab -->
-    <div id="tab-scrapbook" style="display:none">
-    </div><!-- /#tab-scrapbook -->
+    <!-- ── Scrapbook Tab ──────────────────────────────────────────── -->
+    <div id="tab-scrapbook" style="display:none"></div>
 
-    <!-- Dashboard Tab -->
-    <div id="tab-dashboard" style="display:none">
-    </div><!-- /#tab-dashboard -->
+    <!-- ── Dashboard Tab ─────────────────────────────────────────── -->
+    <div id="tab-dashboard" style="display:none"></div>
 
-  </div>
+  </div><!-- /#app -->
 
-  <!-- Mobile sidebar overlay -->
+  <!-- Mobile sidebar overlay (kept for compat) -->
   <div id="sidebar-overlay"></div>
-
-  <!-- Mobile sidebar toggle button -->
-  <button id="sidebar-toggle-btn" title="プロパティを表示">≡</button>
+  <button id="sidebar-toggle-btn" title="プロパティを表示" style="display:none">≡</button>
 
   <!-- Context Menu -->
   <div id="context-menu" style="display:none"></div>
@@ -179,7 +235,6 @@
   <!-- Dialog Overlay -->
   <div id="dialog-overlay">
 
-    <!-- Create Node Dialog -->
     <div id="create-node-dialog" class="dialog-box" style="display:none">
       <div class="dialog-title">ノードを作成</div>
       <div class="dialog-field">
@@ -196,7 +251,6 @@
       </div>
     </div>
 
-    <!-- Create Edge Dialog -->
     <div id="create-edge-dialog" class="dialog-box" style="display:none">
       <div class="dialog-title">エッジを作成</div>
       <div class="dialog-field">
@@ -213,12 +267,9 @@
       </div>
     </div>
 
-    <!-- Type Manager Dialog -->
     <div id="type-manager-dialog" class="dialog-box" style="display:none">
       <div class="dialog-title">Node Types を管理</div>
-      <div class="tm-list-wrap">
-        <div id="tm-list"></div>
-      </div>
+      <div class="tm-list-wrap"><div id="tm-list"></div></div>
       <div class="tm-add-row">
         <input id="tm-new-input" class="dialog-input" placeholder="新しいタイプ名" aria-label="新しいノードタイプ名" />
         <button id="tm-add-btn" class="dialog-btn dialog-btn-primary">Add</button>
@@ -228,12 +279,9 @@
       </div>
     </div>
 
-    <!-- Node Type Style Dialog -->
     <div id="node-type-style-dialog" class="dialog-box" style="display:none">
       <div class="dialog-title">Node Types を管理</div>
-      <div class="tm-list-wrap">
-        <div id="nts-list"></div>
-      </div>
+      <div class="tm-list-wrap"><div id="nts-list"></div></div>
       <div class="tm-add-row">
         <input id="nts-new-input" class="dialog-input" placeholder="新しいタイプ名" aria-label="新しいノードタイプ名" />
         <button id="nts-add-btn" class="dialog-btn dialog-btn-primary">Add</button>
@@ -243,12 +291,9 @@
       </div>
     </div>
 
-    <!-- Edge Type Style Dialog -->
     <div id="edge-type-style-dialog" class="dialog-box" style="display:none">
       <div class="dialog-title">Edge Types を管理</div>
-      <div class="tm-list-wrap">
-        <div id="ets-list"></div>
-      </div>
+      <div class="tm-list-wrap"><div id="ets-list"></div></div>
       <div class="tm-add-row">
         <input id="ets-new-input" class="dialog-input" placeholder="新しいタイプ名" aria-label="新しいエッジタイプ名" />
         <button id="ets-add-btn" class="dialog-btn dialog-btn-primary">Add</button>
@@ -258,7 +303,6 @@
       </div>
     </div>
 
-    <!-- CSV Import Dialog -->
     <div id="csv-import-dialog" class="dialog-box" style="display:none">
       <div class="dialog-title">CSV インポート</div>
       <div class="dialog-field">
@@ -286,7 +330,76 @@ Bob,25,Osaka,Alice</pre>
       </div>
     </div>
 
-  </div>
+  </div><!-- /#dialog-overlay -->
+
+  <script>
+    // Node type chips: sync visual chips with the hidden #node-type-filter select.
+    // Runs after the app initializes and keeps them in sync via MutationObserver.
+    (function initNodeTypeChips() {
+      let ready = false;
+
+      function build() {
+        const select = document.getElementById('node-type-filter');
+        const container = document.getElementById('node-type-chips');
+        const countEl = document.getElementById('rail-type-count');
+        if (!select || !container) return;
+
+        container.innerHTML = '';
+        let total = 0;
+        let activeCount = 0;
+
+        for (const opt of select.options) {
+          total++;
+          const chip = document.createElement('button');
+          chip.className = 'type-chip';
+          const isAll = opt.value === '';
+          const isActive = select.value === opt.value;
+          if (isActive) activeCount++;
+          chip.dataset.active = isActive ? 'true' : 'false';
+
+          if (isAll) {
+            chip.innerHTML = '<span class="type-name" style="font-style:italic">All types</span>';
+          } else {
+            const colorVar = '--t-' + opt.value.toLowerCase().replace(/\s+/g, '-');
+            chip.innerHTML =
+              '<span class="type-swatch" style="--swatch:var(' + colorVar + ',var(--text-dim))"></span>' +
+              '<span class="type-name">' + opt.value + '</span>';
+          }
+
+          chip.addEventListener('click', () => {
+            select.value = opt.value;
+            select.dispatchEvent(new Event('change'));
+          });
+          container.appendChild(chip);
+        }
+
+        if (countEl) {
+          const nonAll = total - 1;
+          countEl.textContent = nonAll > 0 ? String(nonAll) : '';
+        }
+      }
+
+      function attach() {
+        const select = document.getElementById('node-type-filter');
+        if (!select || ready) return;
+        ready = true;
+
+        // Rebuild chips whenever the select's options change
+        const obs = new MutationObserver(build);
+        obs.observe(select, { childList: true });
+
+        // Also rebuild when value changes (from chip click dispatching 'change')
+        select.addEventListener('change', build);
+
+        build();
+      }
+
+      // Try immediately, then retry for async app init
+      attach();
+      setTimeout(attach, 500);
+      setTimeout(attach, 1500);
+    })();
+  </script>
 
   <script type="module" src="/src/main.ts"></script>
 </body>
