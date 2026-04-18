@@ -202,33 +202,8 @@ export async function loadGraph(
   if (saved.version !== 1) return { positions: {} };
 
   db.reset();
-
-  for (const pNode of saved.nodes) {
-    if (!pNode.id || !pNode.labels[0]) continue;
-    const label = pNode.labels[0];
-    const props: Record<string, string | number | boolean | null> = {};
-    for (const [k, v] of Object.entries(pNode.properties)) {
-      if (k !== 'gnId') props[k] = v;
-    }
-    try {
-      db.createNodeWithGnId(label, asGnId(pNode.id), props);
-    } catch (err) {
-      console.warn('Failed to restore node:', err);
-    }
-  }
-
-  for (const pEdge of saved.edges) {
-    if (!pEdge.srcId || !pEdge.dstId) continue;
-    const props: Record<string, string | number | boolean | null> = {};
-    for (const [k, v] of Object.entries(pEdge.properties)) {
-      if (k !== 'gnId') props[k] = v;
-    }
-    try {
-      db.createEdgeWithGnId(asGnId(pEdge.srcId), asGnId(pEdge.dstId), pEdge.type, asGnId(pEdge.id), props);
-    } catch (err) {
-      console.warn('Failed to restore edge:', err);
-    }
-  }
+  restoreNodes(db, saved.nodes);
+  restoreEdges(db, saved.edges);
 
   return { positions: saved.positions ?? {} as Record<GnId, { x: number; y: number }>, viewport: saved.viewport };
 }
@@ -295,6 +270,37 @@ export function exportToCypher(
   URL.revokeObjectURL(url);
 }
 
+function restoreNodes(db: GraphDB, nodes: PersistedGraph['nodes']): void {
+  for (const pNode of nodes) {
+    if (!pNode.id || !pNode.labels[0]) continue;
+    const label = pNode.labels[0];
+    const props: Record<string, string | number | boolean | null> = {};
+    for (const [k, v] of Object.entries(pNode.properties)) {
+      if (k !== 'gnId') props[k] = v;
+    }
+    try {
+      db.createNodeWithGnId(label, asGnId(pNode.id), props);
+    } catch (err) {
+      console.warn('Failed to restore node:', err);
+    }
+  }
+}
+
+function restoreEdges(db: GraphDB, edges: PersistedGraph['edges']): void {
+  for (const pEdge of edges) {
+    if (!pEdge.srcId || !pEdge.dstId) continue;
+    const props: Record<string, string | number | boolean | null> = {};
+    for (const [k, v] of Object.entries(pEdge.properties)) {
+      if (k !== 'gnId') props[k] = v;
+    }
+    try {
+      db.createEdgeWithGnId(asGnId(pEdge.srcId), asGnId(pEdge.dstId), pEdge.type, asGnId(pEdge.id), props);
+    } catch (err) {
+      console.warn('Failed to restore edge:', err);
+    }
+  }
+}
+
 export function loadFromJson(db: GraphDB, json: string): { positions: Record<GnId, { x: number; y: number }> } | null {
   let saved: PersistedGraph;
   try {
@@ -308,33 +314,8 @@ export function loadFromJson(db: GraphDB, json: string): { positions: Record<GnI
   }
 
   db.reset();
-
-  for (const pNode of saved.nodes) {
-    if (!pNode.id || !pNode.labels[0]) continue;
-    const label = pNode.labels[0];
-    const props: Record<string, string | number | boolean | null> = {};
-    for (const [k, v] of Object.entries(pNode.properties)) {
-      if (k !== 'gnId') props[k] = v;
-    }
-    try {
-      db.createNodeWithGnId(label, asGnId(pNode.id), props);
-    } catch (err) {
-      console.warn('Failed to restore node:', err);
-    }
-  }
-
-  for (const pEdge of saved.edges) {
-    if (!pEdge.srcId || !pEdge.dstId) continue;
-    const props: Record<string, string | number | boolean | null> = {};
-    for (const [k, v] of Object.entries(pEdge.properties)) {
-      if (k !== 'gnId') props[k] = v;
-    }
-    try {
-      db.createEdgeWithGnId(asGnId(pEdge.srcId), asGnId(pEdge.dstId), pEdge.type, asGnId(pEdge.id), props);
-    } catch (err) {
-      console.warn('Failed to restore edge:', err);
-    }
-  }
+  restoreNodes(db, saved.nodes);
+  restoreEdges(db, saved.edges);
 
   return { positions: saved.positions ?? {} as Record<GnId, { x: number; y: number }> };
 }
