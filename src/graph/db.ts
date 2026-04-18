@@ -191,8 +191,8 @@ export class GraphDB {
       this.executor.execute(
         `MATCH ()-[r]->() WHERE r.gnId = "${escStr(gnId)}" DELETE r`,
       );
-    } catch {
-      // already gone
+    } catch (err) {
+      console.warn('[db] deleteEdge failed', { gnId, err });
     }
   }
 
@@ -202,7 +202,8 @@ export class GraphDB {
         `MATCH (n) WHERE n.gnId = "${escStr(gnId)}" RETURN n`,
       );
       return rows[0]?.n ?? null;
-    } catch {
+    } catch (err) {
+      console.warn('[db] getNodeByGnId failed', { gnId, err });
       return null;
     }
   }
@@ -213,7 +214,8 @@ export class GraphDB {
         `MATCH ()-[r]->() WHERE r.gnId = "${escStr(gnId)}" RETURN r`,
       );
       return rows[0]?.r ?? null;
-    } catch {
+    } catch (err) {
+      console.warn('[db] getEdgeByGnId failed', { gnId, err });
       return null;
     }
   }
