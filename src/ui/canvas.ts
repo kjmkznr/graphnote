@@ -62,6 +62,8 @@ export class Canvas {
       userZoomingEnabled: true,
       userPanningEnabled: true,
       boxSelectionEnabled: false,
+      textureOnViewport: true,
+      hideEdgesOnViewport: true,
     });
 
     this.renderer = new GraphRenderer(this.cy, this.nodeRegistry);

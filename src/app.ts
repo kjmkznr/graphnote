@@ -171,12 +171,13 @@ export class App implements AppContext {
 
   scheduleSave(): void {
     if (this.saveTimer) clearTimeout(this.saveTimer);
+    const debounceMs = Math.min(SAVE_DEBOUNCE_MS + this.db.nodeCount() * 2, 3000);
     this.saveTimer = setTimeout(() => {
       this.graphManager
         .saveCurrentGraph(this.db, this.canvas.getPositions(), this.canvas.getViewport())
         .catch((err) => console.warn('Failed to save graph:', err));
       this.updateStats();
-    }, SAVE_DEBOUNCE_MS);
+    }, debounceMs);
   }
 
   refreshAndSave(): void {

@@ -48,6 +48,8 @@ function buildPropsString(props: Record<string, PropertyValue>): string {
 
 export class GraphDB {
   private executor!: IGraphExecutor;
+  private _cachedNodes: RawNode[] | null = null;
+  private _cachedEdges: RawEdge[] | null = null;
 
   async init(): Promise<void> {
     this.executor = new WasmGraphExecutor(new WasmGraph());
@@ -66,14 +68,25 @@ export class GraphDB {
     return this.executor.exportCypher();
   }
 
+  private invalidateCache(): void {
+    this._cachedNodes = null;
+    this._cachedEdges = null;
+  }
+
   getAllNodes(): RawNode[] {
-    const rows = this.execute<{ n: RawNode }>('MATCH (n) RETURN n');
-    return rows.map((r) => r.n);
+    if (!this._cachedNodes) {
+      const rows = this.execute<{ n: RawNode }>('MATCH (n) RETURN n');
+      this._cachedNodes = rows.map((r) => r.n);
+    }
+    return this._cachedNodes;
   }
 
   getAllEdges(): RawEdge[] {
-    const rows = this.execute<{ r: RawEdge }>('MATCH ()-[r]->() RETURN r');
-    return rows.map((r) => r.r);
+    if (!this._cachedEdges) {
+      const rows = this.execute<{ r: RawEdge }>('MATCH ()-[r]->() RETURN r');
+      this._cachedEdges = rows.map((r) => r.r);
+    }
+    return this._cachedEdges;
   }
 
   /**
@@ -102,6 +115,7 @@ export class GraphDB {
     };
     const propsStr = buildPropsString(allProps);
     this.executor.execute(`CREATE (:${label} {${propsStr}})`);
+    this.invalidateCache();
   }
 
   /**
@@ -124,6 +138,7 @@ export class GraphDB {
       `MATCH (a), (b) WHERE a.gnId = "${escStr(srcGnId)}" AND b.gnId = "${escStr(dstGnId)}" ` +
         `CREATE (a)-[:${type} {${propsStr}}]->(b)`,
     );
+    this.invalidateCache();
   }
 
   /**
@@ -150,6 +165,7 @@ export class GraphDB {
     this.executor.execute(
       `MATCH (n) WHERE n.gnId = "${escStr(gnId)}" REMOVE n:${oldLabel} SET n:${newLabel}`,
     );
+    this.invalidateCache();
   }
 
   /** Update a single property on a node identified by gnId. */
@@ -157,6 +173,7 @@ export class GraphDB {
     assertIdentifier(key);
     const val = propValueToCypher(value);
     this.executor.execute(`MATCH (n) WHERE n.gnId = "${escStr(gnId)}" SET n.${key} = ${val}`);
+    this.invalidateCache();
   }
 
   /** Update a single property on an edge identified by gnId. */
@@ -166,18 +183,21 @@ export class GraphDB {
     this.executor.execute(
       `MATCH ()-[r]->() WHERE r.gnId = "${escStr(gnId)}" SET r.${key} = ${val}`,
     );
+    this.invalidateCache();
   }
 
   /** Delete a node (and its connected edges) identified by gnId. */
   deleteNode(gnId: GnId): void {
     // DETACH DELETE removes the node and all its connected edges in one query.
     this.executor.execute(`MATCH (n) WHERE n.gnId = "${escStr(gnId)}" DETACH DELETE n`);
+    this.invalidateCache();
   }
 
   /** Delete an edge identified by gnId. */
   deleteEdge(gnId: GnId): void {
     try {
       this.executor.execute(`MATCH ()-[r]->() WHERE r.gnId = "${escStr(gnId)}" DELETE r`);
+      this.invalidateCache();
     } catch (err) {
       console.warn('[db] deleteEdge failed', { gnId, err });
     }
@@ -217,5 +237,6 @@ export class GraphDB {
 
   reset(): void {
     this.executor.reset();
+    this.invalidateCache();
   }
 }

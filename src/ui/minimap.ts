@@ -12,6 +12,8 @@ export class Minimap {
   private cy: cytoscape.Core;
   private dragging = false;
   private renderPending = false;
+  private lastRenderTime = 0;
+  private readonly RENDER_THROTTLE_MS = 100;
   private readonly W = 180;
   private readonly H = 130;
   private readonly dpr: number;
@@ -122,9 +124,21 @@ export class Minimap {
 
   scheduleRender(): void {
     if (this.renderPending) return;
+    const now = performance.now();
+    const elapsed = now - this.lastRenderTime;
+    if (elapsed < this.RENDER_THROTTLE_MS) {
+      this.renderPending = true;
+      setTimeout(() => {
+        this.renderPending = false;
+        this.lastRenderTime = performance.now();
+        this.render();
+      }, this.RENDER_THROTTLE_MS - elapsed);
+      return;
+    }
     this.renderPending = true;
     requestAnimationFrame(() => {
       this.renderPending = false;
+      this.lastRenderTime = performance.now();
       this.render();
     });
   }
