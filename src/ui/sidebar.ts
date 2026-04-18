@@ -7,6 +7,13 @@ import { createPropertyInput, detectPropertyType, getPropertyTypeBadge } from '.
 // Properties that are internal and should never be shown to the user
 const HIDDEN_PROPS = new Set(['gnId', 'note']);
 
+export type SidebarCallbacks = {
+  onNoteChange: (gnId: GnId, note: string) => void;
+  onPropertyChange: (gnId: GnId, key: string, value: PropertyValue) => void;
+  onAddProperty: (gnId: GnId, key: string, value: string) => void;
+  onLabelChange: (gnId: GnId, oldLabel: string, newLabel: string) => void;
+};
+
 export class Sidebar {
   private registry: TypeRegistry | undefined;
   private elHeader = byId('element-header');
@@ -23,10 +30,7 @@ export class Sidebar {
   private currentType: 'node' | 'edge' | null = null;
   private currentLabel: string | null = null;
 
-  private onNoteChangeCb: ((gnId: GnId, note: string) => void) | null = null;
-  private onPropertyChangeCb: ((gnId: GnId, key: string, value: PropertyValue) => void) | null = null;
-  private onAddPropertyCb: ((gnId: GnId, key: string, value: string) => void) | null = null;
-  private onLabelChangeCb: ((gnId: GnId, oldLabel: string, newLabel: string) => void) | null = null;
+  private callbacks: Partial<SidebarCallbacks> = {};
 
   setRegistry(registry: TypeRegistry): void {
     this.registry = registry;
@@ -34,8 +38,8 @@ export class Sidebar {
 
   constructor() {
     this.elNoteTextarea.addEventListener('input', () => {
-      if (!this.currentGnId || !this.onNoteChangeCb) return;
-      this.onNoteChangeCb(this.currentGnId, this.elNoteTextarea.value);
+      if (!this.currentGnId) return;
+      this.callbacks.onNoteChange?.(this.currentGnId, this.elNoteTextarea.value);
       this.updatePreview();
     });
 
@@ -58,7 +62,7 @@ export class Sidebar {
       const key = this.elNewPropKey.value.trim();
       const val = this.elNewPropVal.value.trim();
       if (!key || !this.currentGnId) return;
-      this.onAddPropertyCb?.(this.currentGnId, key, val);
+      this.callbacks.onAddProperty?.(this.currentGnId, key, val);
       this.elNewPropKey.value = '';
       this.elNewPropVal.value = '';
     });
@@ -112,10 +116,7 @@ export class Sidebar {
 
   getCurrentType(): 'node' | 'edge' | null { return this.currentType; }
 
-  onNoteChange(cb: (gnId: GnId, note: string) => void): void { this.onNoteChangeCb = cb; }
-  onPropertyChange(cb: (gnId: GnId, key: string, value: PropertyValue) => void): void { this.onPropertyChangeCb = cb; }
-  onAddProperty(cb: (gnId: GnId, key: string, value: string) => void): void { this.onAddPropertyCb = cb; }
-  onLabelChange(cb: (gnId: GnId, oldLabel: string, newLabel: string) => void): void { this.onLabelChangeCb = cb; }
+  setCallbacks(cbs: SidebarCallbacks): void { this.callbacks = cbs; }
 
   private renderNodeHeader(label: string): void {
     this.registry?.ensure(label);
@@ -139,7 +140,7 @@ export class Sidebar {
     select.addEventListener('change', () => {
       const newLabel = select.value;
       if (!newLabel || !this.currentGnId || !this.currentLabel || newLabel === this.currentLabel) return;
-      this.onLabelChangeCb?.(this.currentGnId, this.currentLabel, newLabel);
+      this.callbacks.onLabelChange?.(this.currentGnId, this.currentLabel, newLabel);
       this.currentLabel = newLabel;
     });
 
@@ -195,7 +196,7 @@ export class Sidebar {
         value: v,
         onChange: (newVal) => {
           if (!this.currentGnId) return;
-          this.onPropertyChangeCb?.(this.currentGnId, k, newVal);
+          this.callbacks.onPropertyChange?.(this.currentGnId, k, newVal);
         },
       });
 
