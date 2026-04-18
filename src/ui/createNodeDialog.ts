@@ -1,5 +1,6 @@
 import type { TypeRegistry } from '../graph/typeRegistry.js';
 import { el, clearChildren, byId } from './domUtils.js';
+import { DOM_IDS } from './domIds.js';
 
 export interface CreateNodeResult {
   type: string;
@@ -8,12 +9,12 @@ export interface CreateNodeResult {
 
 export function showCreateNodeDialog(registry: TypeRegistry): Promise<CreateNodeResult | null> {
   return new Promise((resolve) => {
-    const overlay = byId('dialog-overlay');
-    const dialog = byId('create-node-dialog');
-    const typeSelect = byId<HTMLSelectElement>('cnd-type');
-    const nameInput = byId<HTMLInputElement>('cnd-name');
-    const confirmBtn = byId<HTMLButtonElement>('cnd-confirm');
-    const cancelBtn = byId<HTMLButtonElement>('cnd-cancel');
+    const overlay = byId(DOM_IDS.dialogOverlay);
+    const dialog = byId(DOM_IDS.createNodeDialog);
+    const typeSelect = byId<HTMLSelectElement>(DOM_IDS.cndType);
+    const nameInput = byId<HTMLInputElement>(DOM_IDS.cndName);
+    const confirmBtn = byId<HTMLButtonElement>(DOM_IDS.cndConfirm);
+    const cancelBtn = byId<HTMLButtonElement>(DOM_IDS.cndCancel);
 
     // Populate type options
     clearChildren(typeSelect);

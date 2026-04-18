@@ -4,6 +4,7 @@ import { showCreateNodeDialog } from '../ui/createNodeDialog.js';
 import { showCreateEdgeDialog } from '../ui/createEdgeDialog.js';
 import { showToast } from '../ui/toast.js';
 import { clearChildren, el, escHtml, byId } from '../ui/domUtils.js';
+import { DOM_IDS } from '../ui/domIds.js';
 import { extractMatchedGnIds, escStr } from '../utils/graphUtils.js';
 import { Marked } from 'marked';
 import DOMPurify from 'dompurify';
@@ -109,8 +110,8 @@ function hideContextMenu(ctxMenu: HTMLElement): void {
 
 export class CanvasEventController {
   private readonly ctx: CanvasEventContext;
-  private readonly ctxMenu = byId('context-menu');
-  private readonly tooltip = byId('hover-tooltip');
+  private readonly ctxMenu = byId(DOM_IDS.contextMenu);
+  private readonly tooltip = byId(DOM_IDS.hoverTooltip);
 
   constructor(ctx: CanvasEventContext) {
     this.ctx = ctx;

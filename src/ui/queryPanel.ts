@@ -1,4 +1,5 @@
 import { escHtml, byId } from './domUtils.js';
+import { DOM_IDS } from './domIds.js';
 import { getCompletions, applyCompletion } from './cypherAutocomplete.js';
 import type { CompletionContext, CompletionItem } from './cypherAutocomplete.js';
 import type { Bookmark } from '../graph/bookmarkStore.js';
@@ -20,9 +21,9 @@ const KIND_ICON: Record<CompletionItem['kind'], string> = {
 };
 
 export class QueryPanel {
-  private elInput = byId<HTMLTextAreaElement>('query-input');
-  private elRunBtn = byId<HTMLButtonElement>('run-btn');
-  private elResults = byId('query-results');
+  private elInput = byId<HTMLTextAreaElement>(DOM_IDS.queryInput);
+  private elRunBtn = byId<HTMLButtonElement>(DOM_IDS.runBtn);
+  private elResults = byId(DOM_IDS.queryResults);
   private onExecuteCb: ((query: string) => void) | null = null;
   private onSaveBookmarkCb: ((name: string, query: string) => void) | null = null;
   private onDeleteBookmarkCb: ((id: string) => void) | null = null;
@@ -53,12 +54,12 @@ export class QueryPanel {
     });
 
     const bookmarkBar = this.createBookmarkBar();
-    const header = byId('query-panel-header');
+    const header = byId(DOM_IDS.queryPanelHeader);
     header.insertAdjacentElement('afterend', bookmarkBar);
 
-    this.elBookmarkSelect = byId<HTMLSelectElement>('bookmark-select');
-    this.elBookmarkSaveBtn = byId<HTMLButtonElement>('bookmark-save-btn');
-    this.elBookmarkDeleteBtn = byId<HTMLButtonElement>('bookmark-delete-btn');
+    this.elBookmarkSelect = byId<HTMLSelectElement>(DOM_IDS.bookmarkSelect);
+    this.elBookmarkSaveBtn = byId<HTMLButtonElement>(DOM_IDS.bookmarkSaveBtn);
+    this.elBookmarkDeleteBtn = byId<HTMLButtonElement>(DOM_IDS.bookmarkDeleteBtn);
 
     this.elBookmarkSelect.addEventListener('change', () => {
       const query = this.elBookmarkSelect.value;
@@ -87,14 +88,14 @@ export class QueryPanel {
 
   private createBookmarkBar(): HTMLElement {
     const bar = document.createElement('div');
-    bar.id = 'bookmark-bar';
+    bar.id = DOM_IDS.bookmarkBar;
     bar.className = 'bookmark-bar';
     bar.innerHTML = `
-      <select id="bookmark-select" class="bookmark-select" aria-label="保存済みクエリ">
+      <select id="${DOM_IDS.bookmarkSelect}" class="bookmark-select" aria-label="保存済みクエリ">
         <option value="">── Bookmarks ──</option>
       </select>
-      <button id="bookmark-save-btn" class="bookmark-btn" title="現在のクエリをブックマークに保存">★ 保存</button>
-      <button id="bookmark-delete-btn" class="bookmark-btn bookmark-btn-danger" title="選択中のブックマークを削除" disabled>✕ 削除</button>
+      <button id="${DOM_IDS.bookmarkSaveBtn}" class="bookmark-btn" title="現在のクエリをブックマークに保存">★ 保存</button>
+      <button id="${DOM_IDS.bookmarkDeleteBtn}" class="bookmark-btn bookmark-btn-danger" title="選択中のブックマークを削除" disabled>✕ 削除</button>
     `;
     return bar;
   }

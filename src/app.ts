@@ -16,6 +16,7 @@ import { BookmarkStore } from './graph/bookmarkStore.js';
 import { initResizers } from './ui/resizer.js';
 import { showToast } from './ui/toast.js';
 import { byId, afterNextPaint } from './ui/domUtils.js';
+import { DOM_IDS } from './ui/domIds.js';
 import type { AppContext } from './appContext.js';
 import type { GnId, RawNode, RawEdge } from './types.js';
 
@@ -55,7 +56,7 @@ export class App implements AppContext {
     this.setupControllers();
     this.initGraphSwitcher();
 
-    document.getElementById('loading')?.remove();
+    document.getElementById(DOM_IDS.loading)?.remove();
 
     afterNextPaint(() => {
       this.canvas.resize();
@@ -118,7 +119,7 @@ export class App implements AppContext {
   private initUI(): void {
     // Canvas (event handling delegated to CanvasEventController)
     const canvasCtrl = new CanvasEventController(this);
-    this.canvas = new Canvas(byId('cy'), (event) => canvasCtrl.handleCanvasEvent(event), this.registry, this.edgeRegistry);
+    this.canvas = new Canvas(byId(DOM_IDS.cy), (event) => canvasCtrl.handleCanvasEvent(event), this.registry, this.edgeRegistry);
 
     this.sidebar = new Sidebar();
     this.sidebar.setRegistry(this.registry);
@@ -128,8 +129,8 @@ export class App implements AppContext {
     this.scrapbookStore = new ScrapbookStore();
     this.scrapbookStore.load();
     this.bookmarkStore = new BookmarkStore();
-    const elTabScrapbook = byId('tab-scrapbook');
-    const elTabDashboard = byId('tab-dashboard');
+    const elTabScrapbook = byId(DOM_IDS.tabScrapbook);
+    const elTabDashboard = byId(DOM_IDS.tabDashboard);
     this.scrapbook = new Scrapbook(elTabScrapbook, this.scrapbookStore);
     this.dashboard = new Dashboard(elTabDashboard);
   }
@@ -197,8 +198,8 @@ export class App implements AppContext {
   }
 
   updateStats(): void {
-    const nc = byId('node-count');
-    const ec = byId('edge-count');
+    const nc = byId(DOM_IDS.nodeCount);
+    const ec = byId(DOM_IDS.edgeCount);
     if (nc) nc.textContent = String(this.db.nodeCount());
     if (ec) ec.textContent = String(this.db.edgeCount());
   }

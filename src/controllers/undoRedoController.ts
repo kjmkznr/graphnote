@@ -1,10 +1,11 @@
 import type { UndoContext } from '../appContext.js';
 import { UndoManager } from '../graph/undoManager.js';
 import { byId } from '../ui/domUtils.js';
+import { DOM_IDS } from '../ui/domIds.js';
 
 export function setupUndoRedo(ctx: UndoContext): void {
-  const elUndoBtn = byId<HTMLButtonElement>('undo-btn');
-  const elRedoBtn = byId<HTMLButtonElement>('redo-btn');
+  const elUndoBtn = byId<HTMLButtonElement>(DOM_IDS.undoBtn);
+  const elRedoBtn = byId<HTMLButtonElement>(DOM_IDS.redoBtn);
 
   function updateButtons(): void {
     elUndoBtn.disabled = !ctx.undoManager.canUndo();

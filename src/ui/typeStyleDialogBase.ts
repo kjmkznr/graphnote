@@ -1,4 +1,5 @@
 import { el, byId } from './domUtils.js';
+import { DOM_IDS } from './domIds.js';
 import { isValidIdentifier } from '../utils/graphUtils.js';
 
 export interface TypeStyleRegistry {
@@ -22,7 +23,7 @@ export function createTypeStyleDialogBase(
   opts: TypeStyleDialogOptions,
 ): Promise<void> {
   return new Promise((resolve) => {
-    const overlay = byId('dialog-overlay');
+    const overlay = byId(DOM_IDS.dialogOverlay);
     const dialog = byId(opts.dialogId);
     const newInput = byId<HTMLInputElement>(opts.newInputId);
     const addBtn = byId<HTMLButtonElement>(opts.addBtnId);

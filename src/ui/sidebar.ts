@@ -1,6 +1,7 @@
 import type { GnId, RawNode, RawEdge, PropertyValue } from '../types.js';
 import type { TypeRegistry } from '../graph/typeRegistry.js';
 import { el, clearChildren, byId } from './domUtils.js';
+import { DOM_IDS } from './domIds.js';
 import { renderMarkdownContent } from './markdownEditor.js';
 import { createPropertyInput, detectPropertyType, getPropertyTypeBadge } from './propertyInput.js';
 
@@ -9,15 +10,15 @@ const HIDDEN_PROPS = new Set(['gnId', 'note']);
 
 export class Sidebar {
   private registry: TypeRegistry | undefined;
-  private elHeader = byId('element-header');
-  private elEmpty = byId('sidebar-empty');
-  private elContent = byId('sidebar-content');
-  private elPropsList = byId('properties-list');
-  private elNoteTextarea = byId<HTMLTextAreaElement>('note-textarea');
-  private elNotePreview = byId('note-preview');
-  private elNewPropKey = byId<HTMLInputElement>('new-prop-key');
-  private elNewPropVal = byId<HTMLInputElement>('new-prop-val');
-  private elAddPropBtn = byId('add-prop-btn');
+  private elHeader = byId(DOM_IDS.elementHeader);
+  private elEmpty = byId(DOM_IDS.sidebarEmpty);
+  private elContent = byId(DOM_IDS.sidebarContent);
+  private elPropsList = byId(DOM_IDS.propertiesList);
+  private elNoteTextarea = byId<HTMLTextAreaElement>(DOM_IDS.noteTextarea);
+  private elNotePreview = byId(DOM_IDS.notePreview);
+  private elNewPropKey = byId<HTMLInputElement>(DOM_IDS.newPropKey);
+  private elNewPropVal = byId<HTMLInputElement>(DOM_IDS.newPropVal);
+  private elAddPropBtn = byId(DOM_IDS.addPropBtn);
 
   private currentGnId: GnId | null = null;
   private currentType: 'node' | 'edge' | null = null;

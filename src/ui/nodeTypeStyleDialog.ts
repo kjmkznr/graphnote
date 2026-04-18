@@ -1,10 +1,11 @@
 import type { TypeRegistry, NodeShape } from '../graph/typeRegistry.js';
 import { el, clearChildren, byId } from './domUtils.js';
+import { DOM_IDS } from './domIds.js';
 import { isValidIdentifier } from '../utils/graphUtils.js';
 import { createTypeStyleDialogBase } from './typeStyleDialogBase.js';
 
 export function showNodeTypeStyleDialog(registry: TypeRegistry): Promise<void> {
-  const list = byId('nts-list');
+  const list = byId(DOM_IDS.ntsList);
 
   function renderList(showError: (msg: string) => void, clearError: () => void): void {
     clearChildren(list);
@@ -70,11 +71,11 @@ export function showNodeTypeStyleDialog(registry: TypeRegistry): Promise<void> {
   }
 
   return createTypeStyleDialogBase(registry, {
-    dialogId: 'node-type-style-dialog',
-    listId: 'nts-list',
-    newInputId: 'nts-new-input',
-    addBtnId: 'nts-add-btn',
-    closeBtnId: 'nts-close-btn',
+    dialogId: DOM_IDS.nodeTypeStyleDialog,
+    listId: DOM_IDS.ntsList,
+    newInputId: DOM_IDS.ntsNewInput,
+    addBtnId: DOM_IDS.ntsAddBtn,
+    closeBtnId: DOM_IDS.ntsCloseBtn,
     renderList,
   });
 }

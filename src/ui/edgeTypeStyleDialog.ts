@@ -1,10 +1,11 @@
 import type { EdgeTypeRegistry, LineStyle } from '../graph/edgeTypeRegistry.js';
 import { el, clearChildren, byId } from './domUtils.js';
+import { DOM_IDS } from './domIds.js';
 import { isValidIdentifier } from '../utils/graphUtils.js';
 import { createTypeStyleDialogBase } from './typeStyleDialogBase.js';
 
 export function showEdgeTypeStyleDialog(edgeRegistry: EdgeTypeRegistry): Promise<void> {
-  const list = byId('ets-list');
+  const list = byId(DOM_IDS.etsList);
 
   function renderList(showError: (msg: string) => void, clearError: () => void): void {
     clearChildren(list);
@@ -66,11 +67,11 @@ export function showEdgeTypeStyleDialog(edgeRegistry: EdgeTypeRegistry): Promise
   }
 
   return createTypeStyleDialogBase(edgeRegistry, {
-    dialogId: 'edge-type-style-dialog',
-    listId: 'ets-list',
-    newInputId: 'ets-new-input',
-    addBtnId: 'ets-add-btn',
-    closeBtnId: 'ets-close-btn',
+    dialogId: DOM_IDS.edgeTypeStyleDialog,
+    listId: DOM_IDS.etsList,
+    newInputId: DOM_IDS.etsNewInput,
+    addBtnId: DOM_IDS.etsAddBtn,
+    closeBtnId: DOM_IDS.etsCloseBtn,
     renderList,
   });
 }

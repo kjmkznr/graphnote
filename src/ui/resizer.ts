@@ -1,4 +1,5 @@
 import { byId } from './domUtils.js';
+import { DOM_IDS } from './domIds.js';
 
 const SIDEBAR_MIN = 160;
 const SIDEBAR_MAX = 700;
@@ -19,11 +20,11 @@ function getVar(name: string, fallback: number): number {
 }
 
 export function initResizers(onResize: () => void, onQueryPanelCollapse?: () => void): void {
-  const app = byId('app');
+  const app = byId(DOM_IDS.app);
 
   // ── Horizontal resizer (canvas | sidebar) ────────────────────────────────
 
-  const resizeH = byId('resize-h');
+  const resizeH = byId(DOM_IDS.resizeH);
 
   resizeH.addEventListener('mousedown', (startEvent) => {
     startEvent.preventDefault();
@@ -54,8 +55,8 @@ export function initResizers(onResize: () => void, onQueryPanelCollapse?: () => 
 
   // ── Query toggle bar (click to open/close, drag to resize) ───────────────
 
-  const toggle = byId('query-toggle');
-  const toggleLabel = byId('query-toggle-label');
+  const toggle = byId(DOM_IDS.queryToggle);
+  const toggleLabel = byId(DOM_IDS.queryToggleLabel);
   let collapsed = true;
   let lastOpenHeight = QUERY_DEFAULT;
 

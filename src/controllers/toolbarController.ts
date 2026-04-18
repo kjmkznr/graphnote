@@ -9,6 +9,7 @@ import { showCsvImportDialog } from '../ui/csvImportDialog.js';
 import { importCsv } from '../graph/csvImport.js';
 import { showToast } from '../ui/toast.js';
 import { byId } from '../ui/domUtils.js';
+import { DOM_IDS } from '../ui/domIds.js';
 
 async function openFilePicker(): Promise<string | null> {
   return new Promise((resolve) => {
@@ -32,8 +33,8 @@ async function openFilePicker(): Promise<string | null> {
 }
 
 export function setupModeControls(ctx: ToolbarContext): void {
-  const elAddNodeBtn = byId('add-node-btn');
-  const elActionBtns = byId('canvas-action-btns');
+  const elAddNodeBtn = byId(DOM_IDS.addNodeBtn);
+  const elActionBtns = byId(DOM_IDS.canvasActionBtns);
 
   function applyMode(mode: InteractionMode): void {
     ctx.canvas.setMode(mode);
@@ -53,28 +54,27 @@ export function setupModeControls(ctx: ToolbarContext): void {
 }
 
 export function setupToolbarButtons(ctx: ToolbarContext): void {
-  byId('fit-btn')?.addEventListener('click', () => ctx.canvas.fitView());
-  const layoutNames = ['cose', 'circle', 'concentric', 'grid', 'breadthfirst'] as const;
-  for (const layoutName of layoutNames) {
-    byId(`layout-${layoutName}-btn`)?.addEventListener('click', () => {
-      ctx.canvas.applyLayout(layoutName);
-    });
-  }
+  byId(DOM_IDS.fitBtn)?.addEventListener('click', () => ctx.canvas.fitView());
+  byId(DOM_IDS.layoutCoseBtn)?.addEventListener('click', () => ctx.canvas.applyLayout('cose'));
+  byId(DOM_IDS.layoutCircleBtn)?.addEventListener('click', () => ctx.canvas.applyLayout('circle'));
+  byId(DOM_IDS.layoutConcentricBtn)?.addEventListener('click', () => ctx.canvas.applyLayout('concentric'));
+  byId(DOM_IDS.layoutGridBtn)?.addEventListener('click', () => ctx.canvas.applyLayout('grid'));
+  byId(DOM_IDS.layoutBreadthfirstBtn)?.addEventListener('click', () => ctx.canvas.applyLayout('breadthfirst'));
 
-  byId('types-btn')?.addEventListener('click', () => {
+  byId(DOM_IDS.typesBtn)?.addEventListener('click', () => {
     showNodeTypeStyleDialog(ctx.registry).then(() => {
       ctx.canvas.updateNodeStyles(ctx.registry);
       ctx.canvas.refreshGraph(ctx.db.getAllNodes(), ctx.db.getAllEdges());
     });
   });
 
-  byId('edge-types-btn')?.addEventListener('click', () => {
+  byId(DOM_IDS.edgeTypesBtn)?.addEventListener('click', () => {
     showEdgeTypeStyleDialog(ctx.edgeRegistry).then(() => {
       ctx.canvas.updateEdgeStyles(ctx.edgeRegistry);
     });
   });
 
-  byId('reset-btn')?.addEventListener('click', () => {
+  byId(DOM_IDS.resetBtn)?.addEventListener('click', () => {
     if (!window.confirm('グラフをリセットしますか？')) return;
     ctx.captureForUndo();
     ctx.db.reset();
@@ -85,17 +85,17 @@ export function setupToolbarButtons(ctx: ToolbarContext): void {
     ctx.updateStats();
   });
 
-  byId('export-json-btn')?.addEventListener('click', () => {
+  byId(DOM_IDS.exportJsonBtn)?.addEventListener('click', () => {
     exportToFile(ctx.db, ctx.canvas.getPositions());
     showToast('JSON形式でエクスポートしました', 'success');
   });
 
-  byId('export-cypher-btn')?.addEventListener('click', () => {
+  byId(DOM_IDS.exportCypherBtn)?.addEventListener('click', () => {
     exportToCypher(ctx.db, ctx.canvas.getPositions());
     showToast('Cypher形式でエクスポートしました', 'success');
   });
 
-  byId('share-btn')?.addEventListener('click', () => {
+  byId(DOM_IDS.shareBtn)?.addEventListener('click', () => {
     buildShareUrl(ctx.db, ctx.canvas.getPositions(), ctx.canvas.getViewport())
       .then((url) => {
         if (!url) {
@@ -115,7 +115,7 @@ export function setupToolbarButtons(ctx: ToolbarContext): void {
       });
   });
 
-  byId('import-json-btn')?.addEventListener('click', () => {
+  byId(DOM_IDS.importJsonBtn)?.addEventListener('click', () => {
     const snapshotBeforeImport = UndoManager.captureSnapshot(ctx.db, ctx.canvas.getPositions());
     openFilePicker().then((json) => {
       if (json === null) {
@@ -136,7 +136,7 @@ export function setupToolbarButtons(ctx: ToolbarContext): void {
     });
   });
 
-  byId('import-csv-btn')?.addEventListener('click', () => {
+  byId(DOM_IDS.importCsvBtn)?.addEventListener('click', () => {
     showCsvImportDialog(ctx.registry).then((result) => {
       if (!result) {
         showToast('CSVインポートをキャンセルしました', 'warn');
