@@ -41,13 +41,11 @@ export class App implements AppContext {
   scrapbookStore!: ScrapbookStore;
   bookmarkStore!: BookmarkStore;
 
-  private scrapbook!: Scrapbook;
   private dashboard!: Dashboard;
   private mobileSidebar!: MobileSidebarController;
   private nodeTypeFilter!: NodeTypeFilterController;
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
   private graphManager!: GraphManager;
-  private graphSwitcher!: GraphSwitcher;
 
   async init(): Promise<void> {
     const { savedPositions, savedViewport } = await this.initData();
@@ -130,7 +128,7 @@ export class App implements AppContext {
     this.bookmarkStore = new BookmarkStore();
     const elTabScrapbook = byId('tab-scrapbook');
     const elTabDashboard = byId('tab-dashboard');
-    this.scrapbook = new Scrapbook(elTabScrapbook, this.scrapbookStore);
+    new Scrapbook(elTabScrapbook, this.scrapbookStore);
     this.dashboard = new Dashboard(elTabDashboard);
   }
 
@@ -204,7 +202,7 @@ export class App implements AppContext {
   }
 
   private initGraphSwitcher(): void {
-    this.graphSwitcher = new GraphSwitcher(this.graphManager, async (id: string) => {
+    new GraphSwitcher(this.graphManager, async (id: string) => {
       // Save current graph before switching
       await this.graphManager.saveCurrentGraph(this.db, this.canvas.getPositions(), this.canvas.getViewport());
       // Reset state
