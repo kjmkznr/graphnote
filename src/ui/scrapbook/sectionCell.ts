@@ -4,23 +4,12 @@ import { el } from '../domUtils.js';
 
 export function renderSectionCell(cell: SectionCell, store: ScrapbookStore): HTMLElement {
   const wrap = el('div', {
-    class: 'nb-cell nb-cell-section',
+    class: 'scrap-section-title',
     'data-id': cell.id,
   });
 
-  const deleteBtn = el(
-    'button',
-    {
-      class: 'nb-cell-delete-btn nb-section-delete-btn',
-      title: 'セクションを削除',
-    },
-    '✕',
-  );
-  deleteBtn.addEventListener('click', () => {
-    store.deleteCell(cell.id);
-  });
-
-  const titleEl = el('span', { class: 'nb-section-title' }, cell.title);
+  const titleEl = el('h3', {});
+  titleEl.textContent = cell.title;
   titleEl.setAttribute('contenteditable', 'true');
   titleEl.setAttribute('spellcheck', 'false');
   titleEl.addEventListener('blur', () => {
@@ -35,8 +24,13 @@ export function renderSectionCell(cell: SectionCell, store: ScrapbookStore): HTM
       titleEl.blur();
     }
   });
-
   wrap.appendChild(titleEl);
+
+  const deleteBtn = el('button', { class: 'scrap-section-delete-btn', title: '削除' }, '✕');
+  deleteBtn.addEventListener('click', () => {
+    store.deleteCell(cell.id);
+  });
   wrap.appendChild(deleteBtn);
+
   return wrap;
 }

@@ -2,6 +2,43 @@ import type { ScrapbookStore } from '../../notebook/scrapbookStore.js';
 import { el } from '../domUtils.js';
 import { makeMarkdownEditor } from '../markdownEditor.js';
 
+// Kind accent colours
+export const KIND_COLOR = {
+  snapshot: 'var(--accent)',
+  markdown: 'oklch(0.74 0.14 300)',
+  'query-result': 'oklch(0.75 0.14 60)',
+  section: 'var(--text-dim)',
+} as const;
+
+export function formatCellDate(ts: number): string {
+  const d = new Date(ts);
+  return d.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
+}
+
+// Build `.scrap-kind` row with coloured dot
+export function makeKindRow(kindLabel: string, color: string, ts: number): HTMLElement {
+  const row = el('div', { class: 'scrap-kind' });
+  const dot = el('span', { class: 'dot' });
+  dot.style.background = color;
+  row.appendChild(dot);
+  row.appendChild(document.createTextNode(`${kindLabel} · ${formatCellDate(ts)}`));
+  return row;
+}
+
+// Build `.scrap-aside` with a delete button
+export function makeAside(cellId: string, store: ScrapbookStore): HTMLElement {
+  const aside = el('div', { class: 'scrap-aside' });
+  const deleteBtn = el('button', { class: 'scrap-delete-btn', title: '削除' }, '✕');
+  deleteBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    store.deleteCell(cellId);
+  });
+  aside.appendChild(deleteBtn);
+  return aside;
+}
+
+// ── Legacy helpers kept for queryResultCell ─────────────────────────────────
+
 export function makeCellHeader(
   kindLabel: string,
   cellId: string,

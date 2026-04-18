@@ -19,7 +19,7 @@ export function setupTabButtons(canvas: Canvas, db: GraphDB, dashboard: Dashboar
       history.replaceState(null, '', `#${tab}`);
     }
     elTabGraph.style.display = tab === 'graph' ? 'contents' : 'none';
-    elTabScrapbook.style.display = tab === 'scrapbook' ? 'flex' : 'none';
+    elTabScrapbook.style.display = tab === 'scrapbook' ? 'grid' : 'none';
     elTabDashboard.style.display = tab === 'dashboard' ? 'block' : 'none';
     document.querySelectorAll<HTMLButtonElement>('.tab-btn').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.tab === tab);

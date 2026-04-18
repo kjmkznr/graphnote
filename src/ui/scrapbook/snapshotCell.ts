@@ -1,35 +1,34 @@
 import type { ScrapbookStore } from '../../notebook/scrapbookStore.js';
 import type { SnapshotCell } from '../../types.js';
 import { el } from '../domUtils.js';
-import { attachMemoButton, makeCellHeader, makeMemoSection } from './cellHelpers.js';
+import { KIND_COLOR, makeAside, makeKindRow } from './cellHelpers.js';
 
 export function renderSnapshotCell(cell: SnapshotCell, store: ScrapbookStore): HTMLElement {
   const wrap = el('div', {
-    class: 'nb-cell nb-cell-snapshot',
+    class: 'scrap-item',
+    'data-type': 'snapshot',
     'data-id': cell.id,
   });
 
-  const header = makeCellHeader('Snapshot', cell.id, store);
-  attachMemoButton(header);
-  wrap.appendChild(header);
-
-  const memoWrap = makeMemoSection(cell.id, cell.memo, store);
-  wrap.appendChild(memoWrap);
-
-  const label = el('div', { class: 'nb-snapshot-label' }, cell.label);
-  wrap.appendChild(label);
-
+  // Thumbnail
+  const thumb = el('div', { class: 'scrap-thumb' });
   const img = el('img', {
-    class: 'nb-snapshot-thumbnail',
     src: cell.pngDataUrl,
     alt: cell.label,
+    style: 'width:100%;height:100%;object-fit:cover;display:block;cursor:pointer',
   }) as HTMLImageElement;
-  const imgWrap = el('div', { class: 'nb-snapshot-img-wrap' });
-  imgWrap.appendChild(img);
-  imgWrap.addEventListener('click', () => {
-    openSnapshotModal(cell);
-  });
-  wrap.appendChild(imgWrap);
+  img.addEventListener('click', () => openSnapshotModal(cell));
+  thumb.appendChild(img);
+  wrap.appendChild(thumb);
+
+  // Meta
+  const meta = el('div', { class: 'scrap-meta' });
+  meta.appendChild(makeKindRow('snapshot', KIND_COLOR.snapshot, cell.createdAt));
+  meta.appendChild(el('div', { class: 'scrap-title' }, cell.label));
+  wrap.appendChild(meta);
+
+  // Aside
+  wrap.appendChild(makeAside(cell.id, store));
 
   return wrap;
 }

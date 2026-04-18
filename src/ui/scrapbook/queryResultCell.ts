@@ -4,43 +4,54 @@ import { isEdgeValue } from '../../utils/graphUtils.js';
 import { buildBarChart, buildLineChart } from '../charts.js';
 import { clearChildren, el } from '../domUtils.js';
 import { buildMiniGraph } from '../scrapbookMiniGraph.js';
-import { attachMemoButton, makeCellHeader, makeMemoSection } from './cellHelpers.js';
+import { KIND_COLOR, makeAside, makeKindRow } from './cellHelpers.js';
 
 export function renderQueryResultCell(cell: QueryResultCell, store: ScrapbookStore): HTMLElement {
   const wrap = el('div', {
-    class: 'nb-cell nb-cell-query',
+    class: 'scrap-item scrap-item-cypher',
+    'data-type': 'query-result',
     'data-id': cell.id,
   });
 
-  const header = makeCellHeader('Query Result', cell.id, store);
-  attachMemoButton(header);
-  wrap.appendChild(header);
+  // Meta column
+  const meta = el('div', { class: 'scrap-meta' });
+  meta.appendChild(makeKindRow('cypher', KIND_COLOR['query-result'], cell.createdAt));
 
-  const memoWrap = makeMemoSection(cell.id, cell.memo, store);
-  wrap.appendChild(memoWrap);
+  const queryEl = el('pre', { class: 'scrap-query-text' }, cell.query);
+  meta.appendChild(queryEl);
 
-  const queryEl = el('pre', { class: 'nb-query-text' }, cell.query);
-  wrap.appendChild(queryEl);
-
-  const meta = el(
+  const summary = el(
     'div',
-    { class: 'nb-query-meta' },
+    { class: 'scrap-body' },
     `${cell.rows.length} rows · ${cell.elapsedMs.toFixed(1)} ms`,
   );
-  wrap.appendChild(meta);
+  meta.appendChild(summary);
 
+  // Expandable details
   if (cell.rows.length > 0) {
+    const details = el('div', { class: 'scrap-query-details nb-hidden' });
     const { nodes, edges } = extractGraphElements(cell.rows);
     if (nodes.length > 0) {
-      wrap.appendChild(buildMiniGraph(nodes, edges));
+      details.appendChild(buildMiniGraph(nodes, edges));
     }
     const flatRows = flattenRows(cell.rows);
     const numericKeys = getNumericKeys(flatRows);
     if (numericKeys.length > 0) {
-      wrap.appendChild(buildChartSection(flatRows, numericKeys));
+      details.appendChild(buildChartSection(flatRows, numericKeys));
     }
-    wrap.appendChild(buildTable(flatRows));
+    details.appendChild(buildTable(flatRows));
+
+    const toggle = el('button', { class: 'scrap-expand-btn' }, 'Show details');
+    toggle.addEventListener('click', () => {
+      const hidden = details.classList.toggle('nb-hidden');
+      toggle.textContent = hidden ? 'Show details' : 'Hide details';
+    });
+    meta.appendChild(toggle);
+    meta.appendChild(details);
   }
+
+  wrap.appendChild(meta);
+  wrap.appendChild(makeAside(cell.id, store));
 
   return wrap;
 }
