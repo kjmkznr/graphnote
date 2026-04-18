@@ -28,7 +28,6 @@ export type { PositionMap };
 export class Canvas {
   private cy: cytoscape.Core;
   private renderer: GraphRenderer;
-  private minimap: Minimap;
   private mode: InteractionMode = 'edit';
 
   // Edge-creation drag state
@@ -58,7 +57,7 @@ export class Canvas {
     });
 
     this.renderer = new GraphRenderer(this.cy, this.nodeRegistry);
-    this.minimap = new Minimap(container.parentElement!, this.cy);
+    new Minimap(container.parentElement!, this.cy);
     this.bindEvents();
     this.applyStyles();
   }

@@ -68,11 +68,11 @@ export function initResizers(onResize: () => void, onQueryPanelCollapse?: () => 
   // Start collapsed
   applyState();
 
-  function handleToggleStart(startX: number, startY: number, addMoveListener: (fn: (x: number, y: number) => void) => void, addUpListener: (fn: () => void) => void): void {
+  function handleToggleStart(_startX: number, startY: number, addMoveListener: (fn: (_x: number, y: number) => void) => void, addUpListener: (fn: () => void) => void): void {
     let dragged = false;
     const startHeight = collapsed ? lastOpenHeight : getVar('--query-h', lastOpenHeight);
 
-    addMoveListener((x, y) => {
+    addMoveListener((_x, y) => {
       const delta = startY - y;
       if (!dragged && Math.abs(delta) < DRAG_THRESHOLD) return;
 
