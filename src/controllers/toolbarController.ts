@@ -73,6 +73,10 @@ export function setupToolbarButtons(ctx: ToolbarContext): void {
   byId(DOM_IDS.layoutBreadthfirstBtn)?.addEventListener('click', () =>
     ctx.canvas.applyLayout('breadthfirst'),
   );
+  byId(DOM_IDS.layoutRadialBtn)?.addEventListener('click', () => ctx.canvas.applyLayout('radial'));
+  byId(DOM_IDS.layoutHierarchicalBtn)?.addEventListener('click', () =>
+    ctx.canvas.applyLayout('hierarchical'),
+  );
 
   byId(DOM_IDS.typesBtn)?.addEventListener('click', () => {
     showNodeTypeStyleDialog(ctx.registry).then(() => {

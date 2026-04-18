@@ -137,14 +137,29 @@ export class Canvas {
     this.cy.fit(undefined, 40);
   }
 
-  applyLayout(name: 'cose' | 'circle' | 'concentric' | 'grid' | 'breadthfirst'): void {
-    this.cy
-      .layout({
-        name,
+  applyLayout(
+    name: 'cose' | 'circle' | 'concentric' | 'grid' | 'breadthfirst' | 'radial' | 'hierarchical',
+  ): void {
+    let options: cytoscape.LayoutOptions;
+    if (name === 'radial') {
+      options = {
+        name: 'breadthfirst',
+        circle: true,
         animate: true,
         animationDuration: 400,
-      } as cytoscape.LayoutOptions)
-      .run();
+      } as cytoscape.LayoutOptions;
+    } else if (name === 'hierarchical') {
+      options = {
+        name: 'breadthfirst',
+        directed: true,
+        spacingFactor: 1.5,
+        animate: true,
+        animationDuration: 400,
+      } as cytoscape.LayoutOptions;
+    } else {
+      options = { name, animate: true, animationDuration: 400 } as cytoscape.LayoutOptions;
+    }
+    this.cy.layout(options).run();
   }
 
   resize(): void {

@@ -48,6 +48,8 @@ export const DOM_IDS = {
   layoutConcentricBtn: 'layout-concentric-btn',
   layoutGridBtn: 'layout-grid-btn',
   layoutBreadthfirstBtn: 'layout-breadthfirst-btn',
+  layoutRadialBtn: 'layout-radial-btn',
+  layoutHierarchicalBtn: 'layout-hierarchical-btn',
   nodeTypeFilter: 'node-type-filter',
 
   // ── Query panel / resizer ─────────────────────────────────────────────────
