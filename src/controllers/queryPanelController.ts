@@ -85,66 +85,67 @@ export function setupQueryPanel(ctx: QueryPanelContext): void {
   refreshCompletionContext(ctx);
   void refreshBookmarks(ctx);
 
-  ctx.queryPanel.onSaveBookmark((name, query) => {
-    void ctx.bookmarkStore.add(name, query).then(() => refreshBookmarks(ctx));
-  });
+  ctx.queryPanel.setCallbacks({
+    onSaveBookmark(name, query) {
+      void ctx.bookmarkStore.add(name, query).then(() => refreshBookmarks(ctx));
+    },
+    onDeleteBookmark(id) {
+      void ctx.bookmarkStore.remove(id).then(() => refreshBookmarks(ctx));
+    },
+    onSelectBookmark() { /* handled internally by QueryPanel */ },
+    onExecute(query) {
+      ctx.canvas.clearHighlight();
+      if (isWriteQuery(query)) ctx.captureForUndo();
+      const totalStart = performance.now();
+      try {
+        const executeStart = performance.now();
+        const rows = ctx.db.execute(query);
+        const executeElapsed = performance.now() - executeStart;
+        ctx.queryPanel.showResult(rows, executeElapsed);
 
-  ctx.queryPanel.onDeleteBookmark((id) => {
-    void ctx.bookmarkStore.remove(id).then(() => refreshBookmarks(ctx));
-  });
+        const syncGraphDataStart = performance.now();
+        const allNodes = ctx.db.getAllNodes();
+        const allEdges = ctx.db.getAllEdges();
+        const syncGraphDataElapsed = performance.now() - syncGraphDataStart;
 
-  ctx.queryPanel.onExecute((query) => {
-    ctx.canvas.clearHighlight();
-    if (isWriteQuery(query)) ctx.captureForUndo();
-    const totalStart = performance.now();
-    try {
-      const executeStart = performance.now();
-      const rows = ctx.db.execute(query);
-      const executeElapsed = performance.now() - executeStart;
-      ctx.queryPanel.showResult(rows, executeElapsed);
+        const refreshGraphStart = performance.now();
+        ctx.canvas.refreshGraph(allNodes, allEdges);
+        const refreshGraphElapsed = performance.now() - refreshGraphStart;
 
-      const syncGraphDataStart = performance.now();
-      const allNodes = ctx.db.getAllNodes();
-      const allEdges = ctx.db.getAllEdges();
-      const syncGraphDataElapsed = performance.now() - syncGraphDataStart;
+        ctx.scheduleSave();
 
-      const refreshGraphStart = performance.now();
-      ctx.canvas.refreshGraph(allNodes, allEdges);
-      const refreshGraphElapsed = performance.now() - refreshGraphStart;
+        const { nodeGnIds, edgeGnIds } = extractMatchedGnIds(rows);
+        const highlightStart = performance.now();
+        ctx.canvas.highlightByGnId(nodeGnIds, edgeGnIds);
+        const highlightElapsed = performance.now() - highlightStart;
 
-      ctx.scheduleSave();
+        const enrichRowsStart = performance.now();
+        const enrichedRows = enrichRowsWithEdges(ctx, rows as Record<string, unknown>[]);
+        const enrichRowsElapsed = performance.now() - enrichRowsStart;
+        const totalElapsed = performance.now() - totalStart;
 
-      const { nodeGnIds, edgeGnIds } = extractMatchedGnIds(rows);
-      const highlightStart = performance.now();
-      ctx.canvas.highlightByGnId(nodeGnIds, edgeGnIds);
-      const highlightElapsed = performance.now() - highlightStart;
+        logQueryExecutionMetrics(query, {
+          executeMs: executeElapsed,
+          syncGraphDataMs: syncGraphDataElapsed,
+          refreshGraphMs: refreshGraphElapsed,
+          highlightMs: highlightElapsed,
+          enrichRowsMs: enrichRowsElapsed,
+          totalMs: totalElapsed,
+        });
 
-      const enrichRowsStart = performance.now();
-      const enrichedRows = enrichRowsWithEdges(ctx, rows as Record<string, unknown>[]);
-      const enrichRowsElapsed = performance.now() - enrichRowsStart;
-      const totalElapsed = performance.now() - totalStart;
-
-      logQueryExecutionMetrics(query, {
-        executeMs: executeElapsed,
-        syncGraphDataMs: syncGraphDataElapsed,
-        refreshGraphMs: refreshGraphElapsed,
-        highlightMs: highlightElapsed,
-        enrichRowsMs: enrichRowsElapsed,
-        totalMs: totalElapsed,
-      });
-
-      const cell: QueryResultCell = {
-        id: crypto.randomUUID(),
-        kind: 'query-result',
-        createdAt: Date.now(),
-        query,
-        rows: enrichedRows,
-        elapsedMs: executeElapsed,
-      };
-      if (isWriteQuery(query)) ctx.scrapbookStore.addCell(cell);
-    } catch (err) {
-      ctx.queryPanel.showError(String(err));
-      showToast(String(err), 'warn');
-    }
+        const cell: QueryResultCell = {
+          id: crypto.randomUUID(),
+          kind: 'query-result',
+          createdAt: Date.now(),
+          query,
+          rows: enrichedRows,
+          elapsedMs: executeElapsed,
+        };
+        if (isWriteQuery(query)) ctx.scrapbookStore.addCell(cell);
+      } catch (err) {
+        ctx.queryPanel.showError(String(err));
+        showToast(String(err), 'warn');
+      }
+    },
   });
 }
