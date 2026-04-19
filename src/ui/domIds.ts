@@ -79,6 +79,11 @@ export const DOM_IDS = {
   newPropVal: 'new-prop-val',
   addPropBtn: 'add-prop-btn',
 
+  // ── Responsive drawer controls ────────────────────────────────────────────
+  drawerBackdrop: 'drawer-backdrop',
+  propsToggleBtn: 'props-toggle-btn',
+  railToggleBtn: 'rail-toggle-btn',
+
   // ── Mobile sidebar ────────────────────────────────────────────────────────
   sidebarOverlay: 'sidebar-overlay',
   sidebarToggleBtn: 'sidebar-toggle-btn',

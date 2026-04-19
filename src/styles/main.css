@@ -2567,3 +2567,247 @@ textarea {
   background: var(--accent-bg);
   color: var(--accent-text);
 }
+
+/* ============================================================
+   RESPONSIVE LAYOUT
+   lg ≥ 1100px  — standard 3-panel
+   md 700–1099  — icon-strip rail (40px) + sidebar overlay
+   sm < 700     — full-drawer rails, minimal topbar
+   ============================================================ */
+
+/* Drawer backdrop */
+.drawer-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  background: oklch(0 0 0 / 0.5);
+  backdrop-filter: blur(1px);
+}
+.drawer-backdrop[data-show="true"] {
+  display: block;
+}
+
+/* Props-toggle: shows in canvas toolbar on md/sm */
+.props-toggle {
+  display: none;
+}
+
+/* Rail-toggle: hamburger in topbar, sm only */
+.rail-toggle {
+  display: none;
+  align-self: center;
+  margin: 0 4px;
+}
+
+/* ── md ≤ 1099px ── */
+@media (max-width: 1099px) {
+  /* Drop sidebar column and resize-h column from grid */
+  #app {
+    grid-template-columns: 40px 1fr;
+  }
+
+  /* Hide resize handle */
+  #resize-h {
+    display: none;
+  }
+
+  /* Fix canvas-wrap to col 2 */
+  #canvas-wrap {
+    grid-column: 2;
+  }
+
+  /* Sidebar becomes a fixed slide-over */
+  #sidebar {
+    position: fixed;
+    top: var(--chrome-h);
+    right: 0;
+    bottom: 0;
+    width: 300px;
+    grid-column: unset;
+    grid-row: unset;
+    transform: translateX(105%);
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 30;
+    border-left: 1px solid var(--line);
+    box-shadow: -12px 0 40px oklch(0 0 0 / 0.5);
+  }
+  #sidebar[data-open="true"] {
+    transform: translateX(0);
+  }
+
+  /* Query toggle/panel span all grid columns */
+  #query-toggle {
+    grid-column: 1 / -1;
+  }
+  #query-panel {
+    grid-column: 1 / -1;
+  }
+
+  /* Left rail: icon-only strip */
+  #left-rail {
+    width: 40px;
+    overflow: hidden;
+  }
+  .rail-label,
+  .type-name,
+  .type-count {
+    display: none;
+  }
+  .kbd {
+    display: none;
+  }
+  .type-chip {
+    justify-content: center;
+    padding: 5px 4px;
+  }
+  .rail-btn {
+    justify-content: center;
+    padding: 5px 4px;
+    gap: 0;
+  }
+  .rail-section {
+    padding: 6px 4px;
+  }
+
+  /* Show props-toggle button */
+  .props-toggle {
+    display: inline-flex;
+  }
+
+  /* Meta shorten */
+  .meta {
+    gap: 6px;
+    padding: 0 6px;
+  }
+
+  /* Canvas toolbar: max-width to prevent overflow */
+  .canvas-toolbar {
+    max-width: calc(100% - 16px);
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+}
+
+/* ── sm ≤ 699px ── */
+@media (max-width: 699px) {
+  /* Canvas only — both panels are drawers */
+  #app {
+    grid-template-columns: 1fr;
+  }
+
+  /* Canvas fills grid col 1 */
+  #canvas-wrap {
+    grid-column: 1;
+  }
+
+  /* Left rail: full-width fixed drawer from left */
+  #left-rail {
+    position: fixed;
+    top: var(--chrome-h);
+    left: 0;
+    bottom: 0;
+    width: 220px;
+    overflow: hidden;
+    overflow-y: auto;
+    grid-column: unset;
+    grid-row: unset;
+    transform: translateX(-105%);
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 30;
+    border-right: 1px solid var(--line);
+    box-shadow: 12px 0 40px oklch(0 0 0 / 0.5);
+  }
+  #left-rail[data-open="true"] {
+    transform: translateX(0);
+  }
+
+  /* Restore full rail content when open as drawer */
+  .rail-label,
+  .type-name,
+  .type-count {
+    display: revert;
+  }
+  .kbd {
+    display: revert;
+  }
+  .type-chip {
+    justify-content: flex-start;
+    padding: 4px 7px;
+  }
+  .rail-btn {
+    justify-content: flex-start;
+    padding: 5px 8px;
+    gap: 6px;
+  }
+  .rail-section {
+    padding: 8px 10px 10px;
+  }
+
+  /* Topbar: minimal */
+  .graph-picker {
+    display: none;
+  }
+  .meta {
+    display: none;
+  }
+  .spacer {
+    display: none;
+  }
+  .actions .hide-sm {
+    display: none;
+  }
+
+  /* Rail toggle visible */
+  .rail-toggle {
+    display: inline-flex;
+  }
+
+  /* Canvas toolbar: compact */
+  .canvas-toolbar {
+    gap: 0;
+    padding: 2px;
+  }
+  .ct-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+  .canvas-toolbar .ct-btn span {
+    display: none;
+  }
+
+  /* Minimap: hidden */
+  #minimap {
+    display: none;
+  }
+
+  /* Query toggle/panel span full width */
+  #query-toggle {
+    grid-column: 1 / -1;
+  }
+  #query-panel {
+    grid-column: 1 / -1;
+  }
+
+  /* Scrapbook: collapse rail into a drawer */
+  .scrapbook-root {
+    grid-template-columns: 1fr;
+    position: relative;
+  }
+  .scrap-rail {
+    position: fixed;
+    top: var(--chrome-h);
+    left: 0;
+    bottom: 0;
+    width: 220px;
+    min-width: 220px;
+    z-index: 30;
+    border-right: 1px solid var(--line);
+    box-shadow: 12px 0 40px oklch(0 0 0 / 0.5);
+    transform: translateX(-105%);
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .scrap-rail[data-open="true"] {
+    transform: translateX(0);
+  }
+}
