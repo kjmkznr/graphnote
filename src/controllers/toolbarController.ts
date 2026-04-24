@@ -62,7 +62,39 @@ export function setupModeControls(ctx: ToolbarContext): void {
   applyMode('edit');
 }
 
+function setupDropdowns(): void {
+  const dropdowns = document.querySelectorAll<HTMLElement>('.dropdown');
+
+  dropdowns.forEach((dropdown) => {
+    const triggerBtn = dropdown.querySelector<HTMLElement>(':scope > button');
+    triggerBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = dropdown.classList.contains('open');
+      // Close all dropdowns
+      dropdowns.forEach((d) => d.classList.remove('open'));
+      if (!isOpen) dropdown.classList.add('open');
+    });
+
+    // Close when a menu item is clicked
+    const content = dropdown.querySelector('.dropdown-content');
+    content?.addEventListener('click', () => {
+      dropdown.classList.remove('open');
+    });
+  });
+
+  document.addEventListener('click', () => {
+    dropdowns.forEach((d) => d.classList.remove('open'));
+  });
+
+  // Close on Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') dropdowns.forEach((d) => d.classList.remove('open'));
+  });
+}
+
 export function setupToolbarButtons(ctx: ToolbarContext): void {
+  setupDropdowns();
+
   byId(DOM_IDS.fitBtn)?.addEventListener('click', () => ctx.canvas.fitView());
   byId(DOM_IDS.layoutCoseBtn)?.addEventListener('click', () => ctx.canvas.applyLayout('cose'));
   byId(DOM_IDS.layoutCircleBtn)?.addEventListener('click', () => ctx.canvas.applyLayout('circle'));

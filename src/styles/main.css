@@ -426,7 +426,7 @@ textarea {
   background: var(--bg-3);
   color: var(--text);
 }
-.dropdown:hover .dropdown-content {
+.dropdown.open .dropdown-content {
   display: block;
 }
 
