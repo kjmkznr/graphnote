@@ -164,7 +164,7 @@ textarea {
   background: var(--bg-1);
   border-bottom: 1px solid var(--line);
   min-height: var(--chrome-h);
-  overflow: hidden;
+  overflow-x: clip;
 }
 
 .brand {
