@@ -25,6 +25,7 @@ export function setupSidebarCallbacks(ctx: SidebarContext): void {
         } else {
           ctx.db.updateNodeProperty(gnId, key, value);
         }
+        ctx.canvas.refreshGraph(ctx.db.getAllNodes(), ctx.db.getAllEdges());
         ctx.scheduleSave();
       } catch (err) {
         showToast(String(err), 'warn');
