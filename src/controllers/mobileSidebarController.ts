@@ -23,7 +23,7 @@ export class MobileSidebarController {
   setup(): void {
     // Props-toggle button (canvas toolbar)
     this.elPropsToggle.addEventListener('click', () => {
-      if (this.elSidebar.dataset['open'] === 'true') {
+      if (this.elSidebar.dataset.open === 'true') {
         this.closeSidebar();
       } else {
         this.openSidebar();
@@ -35,11 +35,11 @@ export class MobileSidebarController {
     this.elRailToggle.addEventListener('click', () => {
       const scrapRail = document.querySelector<HTMLElement>('.scrap-rail');
       const activeRail = scrapRail && this.isScrapbookVisible() ? scrapRail : this.elRail;
-      if (activeRail.dataset['open'] === 'true') {
-        activeRail.dataset['open'] = 'false';
-        if (this.elSidebar.dataset['open'] !== 'true') this.hideBackdrop();
+      if (activeRail.dataset.open === 'true') {
+        activeRail.dataset.open = 'false';
+        if (this.elSidebar.dataset.open !== 'true') this.hideBackdrop();
       } else {
-        activeRail.dataset['open'] = 'true';
+        activeRail.dataset.open = 'true';
         this.showBackdrop();
       }
     });
@@ -54,7 +54,7 @@ export class MobileSidebarController {
 
     // Legacy compat
     this.elSidebarToggleBtn.addEventListener('click', () => {
-      if (this.elSidebar.dataset['open'] === 'true') {
+      if (this.elSidebar.dataset.open === 'true') {
         this.closeSidebar();
       } else {
         this.openSidebar();
@@ -83,7 +83,7 @@ export class MobileSidebarController {
   }
 
   private openSidebar(): void {
-    this.elSidebar.dataset['open'] = 'true';
+    this.elSidebar.dataset.open = 'true';
     this.showBackdrop();
     // legacy compat
     this.elSidebar.classList.add('mobile-open');
@@ -91,15 +91,15 @@ export class MobileSidebarController {
   }
 
   private closeSidebar(): void {
-    this.elSidebar.dataset['open'] = 'false';
+    this.elSidebar.dataset.open = 'false';
     this.elSidebar.classList.remove('mobile-open');
     this.elSidebarOverlay.classList.remove('active');
-    if (this.elRail.dataset['open'] !== 'true') this.hideBackdrop();
+    if (this.elRail.dataset.open !== 'true') this.hideBackdrop();
   }
 
   private closeRail(): void {
-    this.elRail.dataset['open'] = 'false';
-    if (this.elSidebar.dataset['open'] !== 'true') this.hideBackdrop();
+    this.elRail.dataset.open = 'false';
+    if (this.elSidebar.dataset.open !== 'true') this.hideBackdrop();
   }
 
   closeAll(): void {
@@ -107,15 +107,15 @@ export class MobileSidebarController {
     this.closeRail();
     // Also close scrapbook rail if visible
     const scrapRail = document.querySelector<HTMLElement>('.scrap-rail');
-    if (scrapRail) scrapRail.dataset['open'] = 'false';
+    if (scrapRail) scrapRail.dataset.open = 'false';
     this.hideBackdrop();
   }
 
   private showBackdrop(): void {
-    this.elBackdrop.dataset['show'] = 'true';
+    this.elBackdrop.dataset.show = 'true';
   }
 
   private hideBackdrop(): void {
-    this.elBackdrop.dataset['show'] = 'false';
+    this.elBackdrop.dataset.show = 'false';
   }
 }

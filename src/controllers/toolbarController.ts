@@ -71,7 +71,9 @@ function setupDropdowns(): void {
       e.stopPropagation();
       const isOpen = dropdown.classList.contains('open');
       // Close all dropdowns
-      dropdowns.forEach((d) => d.classList.remove('open'));
+      dropdowns.forEach((d) => {
+        d.classList.remove('open');
+      });
       if (!isOpen) dropdown.classList.add('open');
     });
 
@@ -83,12 +85,17 @@ function setupDropdowns(): void {
   });
 
   document.addEventListener('click', () => {
-    dropdowns.forEach((d) => d.classList.remove('open'));
+    dropdowns.forEach((d) => {
+      d.classList.remove('open');
+    });
   });
 
   // Close on Escape
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') dropdowns.forEach((d) => d.classList.remove('open'));
+    if (e.key === 'Escape')
+      dropdowns.forEach((d) => {
+        d.classList.remove('open');
+      });
   });
 }
 
