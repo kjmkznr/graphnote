@@ -32,9 +32,7 @@ jobs:
         uses: HatsuneMiku3939/direnv-action@f38552012d41671bcfe28f426be145eac7c5ae48
 
       - name: Install dependencies
-        run: |
-          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> .npmrc
-          npm ci
+        run: npm ci
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
