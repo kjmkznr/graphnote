@@ -20,9 +20,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.12",
-    "@types/cytoscape": "^3.31.0",
     "@types/dompurify": "^3.0.5",
-    "@types/marked": "^6.0.0",
     "fake-indexeddb": "^6.2.5",
     "typescript": "^6.0.3",
     "vite": "8.0.8",
