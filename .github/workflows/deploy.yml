@@ -25,11 +25,11 @@ jobs:
       - name: Install Nix
         uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f
 
-      - name: Nix build
-        run: nix build
-
       - name: Flake
         run: nix flake check
+
+      - name: Use direnv
+        uses: HatsuneMiku3939/direnv-action@f38552012d41671bcfe28f426be145eac7c5ae48
 
       - name: Set npm registry
         run: npm config set registry https://npm.pkg.github.com
@@ -58,11 +58,11 @@ jobs:
       - name: Install Nix
         uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f
 
-      - name: Nix build
-        run: nix build
-
       - name: Flake
         run: nix flake check
+
+      - name: Use direnv
+        uses: HatsuneMiku3939/direnv-action@f38552012d41671bcfe28f426be145eac7c5ae48
 
       - name: Set npm registry
         run: npm config set registry https://npm.pkg.github.com
