@@ -11,6 +11,7 @@
 - `.gitignore` に `.direnv` を追加
 
 #### CI/CD
+- GitHub Actions の実行環境を Nix ベースに変更（`actions/setup-node` を `cachix/install-nix-action` に置換）
 - Dependabot にクールダウン期間（7日）を設定し、ライブラリリリースから1週間後にアップデートPRを作成するよう変更
 
 ---
