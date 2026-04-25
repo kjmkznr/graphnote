@@ -69,7 +69,7 @@ export class GraphDB {
     return this.executor.exportCypher();
   }
 
-  private invalidateCache(): void {
+  invalidateCache(): void {
     if (this._bulkLoading) return;
     this._cachedNodes = null;
     this._cachedEdges = null;
@@ -100,7 +100,15 @@ export class GraphDB {
   getAllNodes(): RawNode[] {
     if (!this._cachedNodes) {
       const rows = this.execute<{ n: RawNode }>('MATCH (n) RETURN n');
-      this._cachedNodes = rows.map((r) => r.n);
+      const seen = new Set<string>();
+      this._cachedNodes = rows
+        .map((r) => r.n)
+        .filter((n) => {
+          const gnId = n._properties.gnId as string | undefined;
+          if (!gnId || seen.has(gnId)) return false;
+          seen.add(gnId);
+          return true;
+        });
     }
     return this._cachedNodes;
   }
@@ -108,7 +116,15 @@ export class GraphDB {
   getAllEdges(): RawEdge[] {
     if (!this._cachedEdges) {
       const rows = this.execute<{ r: RawEdge }>('MATCH ()-[r]->() RETURN r');
-      this._cachedEdges = rows.map((r) => r.r);
+      const seen = new Set<string>();
+      this._cachedEdges = rows
+        .map((r) => r.r)
+        .filter((e) => {
+          const gnId = e._properties.gnId as string | undefined;
+          if (!gnId || seen.has(gnId)) return false;
+          seen.add(gnId);
+          return true;
+        });
     }
     return this._cachedEdges;
   }

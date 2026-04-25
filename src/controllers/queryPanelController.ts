@@ -115,6 +115,8 @@ export function setupQueryPanel(ctx: QueryPanelContext): void {
         const executeElapsed = performance.now() - executeStart;
         ctx.queryPanel.showResult(rows, executeElapsed);
 
+        if (isWriteQuery(query)) ctx.db.invalidateCache();
+
         const syncGraphDataStart = performance.now();
         const allNodes = ctx.db.getAllNodes();
         const allEdges = ctx.db.getAllEdges();
