@@ -18,6 +18,7 @@ export function setupUndoRedo(ctx: UndoContext): void {
     const prev = ctx.undoManager.undo(current);
     if (!prev) return;
     const positions = UndoManager.restoreSnapshot(ctx.db, prev);
+    ctx.db.applyConstraints(ctx.registry.getAll());
     ctx.sidebar.hide();
     ctx.updateNodeTypeFilterOptions();
     ctx.canvas.refreshGraph(ctx.getFilteredNodes(), ctx.getFilteredEdges(), positions);
@@ -30,6 +31,7 @@ export function setupUndoRedo(ctx: UndoContext): void {
     const next = ctx.undoManager.redo(current);
     if (!next) return;
     const positions = UndoManager.restoreSnapshot(ctx.db, next);
+    ctx.db.applyConstraints(ctx.registry.getAll());
     ctx.sidebar.hide();
     ctx.updateNodeTypeFilterOptions();
     ctx.canvas.refreshGraph(ctx.getFilteredNodes(), ctx.getFilteredEdges(), positions);

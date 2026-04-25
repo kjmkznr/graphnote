@@ -2,6 +2,9 @@ export abstract class BaseTypeRegistry<TStyle> {
   private types: string[];
   private styles: Map<string, TStyle>;
 
+  /** Called whenever a new type is successfully registered (add or rename). */
+  onTypeAdded?: (type: string) => void;
+
   constructor(
     private readonly storageKey: string,
     private readonly styleStorageKey: string,
@@ -83,6 +86,7 @@ export abstract class BaseTypeRegistry<TStyle> {
       this.styles.set(t, this.defaultStyleForIndex(index));
     }
     this.save();
+    this.onTypeAdded?.(t);
   }
 
   remove(type: string): void {
@@ -103,6 +107,7 @@ export abstract class BaseTypeRegistry<TStyle> {
       this.styles.delete(oldType);
     }
     this.save();
+    this.onTypeAdded?.(t);
   }
 
   /** Ensure a type (possibly created via Cypher) is in the list. */

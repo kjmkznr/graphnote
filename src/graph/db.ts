@@ -243,6 +243,26 @@ export class GraphDB {
     }
   }
 
+  /**
+   * Create a uniqueness constraint on gnId for the given node label.
+   * Safe to call multiple times for the same label (errors are silently ignored).
+   */
+  createConstraint(label: string): void {
+    assertIdentifier(label);
+    try {
+      this.executor.execute(`CREATE CONSTRAINT FOR (n:${label}) REQUIRE n.gnId IS UNIQUE`);
+    } catch {
+      // constraint already exists or unsupported — ignore
+    }
+  }
+
+  /** Apply gnId uniqueness constraints for all given labels. */
+  applyConstraints(labels: string[]): void {
+    for (const label of labels) {
+      this.createConstraint(label);
+    }
+  }
+
   getNodeByGnId(gnId: GnId): RawNode | null {
     try {
       const rows = this.execute<{ n: RawNode }>(

@@ -79,6 +79,7 @@ export class App implements AppContext {
     await this.db.init();
 
     this.registry = new TypeRegistry();
+    this.registry.onTypeAdded = (type) => this.db.createConstraint(type);
     this.edgeRegistry = new EdgeTypeRegistry();
 
     // Migrate existing localStorage data to IndexedDB
@@ -109,6 +110,7 @@ export class App implements AppContext {
       savedPositions = result.positions;
       savedViewport = result.viewport;
     }
+    this.db.applyConstraints(this.registry.getAll());
     for (const edge of this.db.getAllEdges()) {
       this.edgeRegistry.ensure(edge._type);
     }
@@ -226,6 +228,7 @@ export class App implements AppContext {
       this.db.reset();
       // Load new graph
       const result = await this.graphManager.switchGraph(id, this.db);
+      this.db.applyConstraints(this.registry.getAll());
       for (const edge of this.db.getAllEdges()) {
         this.edgeRegistry.ensure(edge._type);
       }

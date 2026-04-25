@@ -48,6 +48,7 @@ export interface UndoContext extends Pick<AppOperations, 'scheduleSave'> {
   readonly canvas: Canvas;
   readonly sidebar: Sidebar;
   readonly undoManager: UndoManager;
+  readonly registry: TypeRegistry;
   getFilteredNodes(): RawNode[];
   getFilteredEdges(): RawEdge[];
   updateNodeTypeFilterOptions(): void;
