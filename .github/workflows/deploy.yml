@@ -22,12 +22,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          registry-url: https://npm.pkg.github.com
+      - name: Install Nix
+        uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f
+
+      - name: Nix build
+        run: nix build
+
+      - name: Flake
+        run: nix flake check
+
+      - name: Set npm registry
+        run: npm config set registry https://npm.pkg.github.com
 
       - name: Install dependencies
         run: npm ci
@@ -50,12 +55,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          registry-url: https://npm.pkg.github.com
+      - name: Install Nix
+        uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f
+
+      - name: Nix build
+        run: nix build
+
+      - name: Flake
+        run: nix flake check
+
+      - name: Set npm registry
+        run: npm config set registry https://npm.pkg.github.com
 
       - name: Install dependencies
         run: npm ci
