@@ -23,6 +23,9 @@
           packages = [
             pkgs.nodejs_24
           ];
+          shellHook = ''
+            export PATH="$PWD/node_modules/.bin:$PATH"
+          '';
         };
       });
     };
