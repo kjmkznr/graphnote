@@ -20,8 +20,8 @@
     {
       devShells = forAllSystems ({ pkgs }: {
         default = pkgs.mkShell {
-          packages = [
-            pkgs.nodejs_24
+          packages = with pkgs;[
+            nodejs_24
           ];
           shellHook = ''
             export PATH="$PWD/node_modules/.bin:$PATH"
