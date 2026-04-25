@@ -15,7 +15,7 @@
   "dependencies": {
     "@kjmkznr/egrph-wasm": "^0.3.1",
     "cytoscape": "^3.33.2",
-    "dompurify": "^3.3.3",
+    "dompurify": "3.4.0",
     "marked": "^18.0.1"
   },
   "devDependencies": {
