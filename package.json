@@ -19,7 +19,7 @@
     "marked": "^18.0.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.12",
+    "@biomejs/biome": "^2.4.13",
     "@types/dompurify": "^3.0.5",
     "fake-indexeddb": "^6.2.5",
     "typescript": "^6.0.3",
