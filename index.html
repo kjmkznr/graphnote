@@ -139,6 +139,22 @@
         <!-- Cytoscape container -->
         <div id="cy"></div>
 
+        <!-- Search Panel -->
+        <div id="search-panel" class="search-panel" style="display:none">
+          <svg class="search-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg>
+          <input id="search-input" class="search-input" placeholder="ノードを検索..." />
+          <span id="search-match-count" class="search-match-count"></span>
+          <button id="search-prev-btn" class="search-nav-btn" title="前へ (Shift+Enter)">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l4-4 4 4"/></svg>
+          </button>
+          <button id="search-next-btn" class="search-nav-btn" title="次へ (Enter)">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>
+          </button>
+          <button id="search-close-btn" class="search-close-btn" title="閉じる (Escape)">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+          </button>
+        </div>
+
         <!-- Canvas floating toolbar -->
         <div class="canvas-toolbar">
           <button id="layout-cose-btn" class="ct-btn" title="Cose レイアウト">Force</button>

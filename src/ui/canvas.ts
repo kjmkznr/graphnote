@@ -76,6 +76,11 @@ export class Canvas {
 
   // ── Public API ──────────────────────────────────────────────────────────────
 
+  /** Expose the Cytoscape core for advanced operations (e.g. search navigation). */
+  getCy(): cytoscape.Core {
+    return this.cy;
+  }
+
   getMode(): InteractionMode {
     return this.mode;
   }
