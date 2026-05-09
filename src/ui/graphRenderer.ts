@@ -194,6 +194,20 @@ export class GraphRenderer {
     this.cy.elements().removeClass('query-match query-dimmed');
   }
 
+  getHighlightState(): { nodes: Set<GnId>; edges: Set<GnId> } {
+    const nodes = new Set<GnId>();
+    const edges = new Set<GnId>();
+    this.cy.elements('.query-match').forEach((el) => {
+      const id = el.id();
+      if (el.isNode()) {
+        nodes.add(asGnId(id));
+      } else if (id.startsWith('e-')) {
+        edges.add(asGnId(id.slice(2)));
+      }
+    });
+    return { nodes, edges };
+  }
+
   // ── Private refresh helpers ─────────────────────────────────────────────────
 
   /** Full clear + rebuild. Used only on initial load or after import. */

@@ -14,6 +14,8 @@ export function setupSearch(ctx: SearchContext): void {
   let matchGnIds: GnId[] = [];
   let activeIndex = -1;
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  // Captured lazily before the first highlight overwrite, so close/empty-input restores prior query highlight.
+  let savedHighlight: { nodes: Set<GnId>; edges: Set<GnId> } | null = null;
 
   // ── Keyboard shortcut: Ctrl+F / Cmd+F ───────────────────────────────────
 
@@ -47,6 +49,15 @@ export function setupSearch(ctx: SearchContext): void {
     }
   });
 
+  // ── Outside-click closes panel ──────────────────────────────────────────
+  // Use 'click' (fires only when down/up on same target) so canvas drags/pans don't close the panel.
+
+  document.addEventListener('click', (e) => {
+    if (!panel.isVisible()) return;
+    if (panel.contains(e.target)) return;
+    closeSearch();
+  });
+
   // ── Panel callbacks ─────────────────────────────────────────────────────
 
   panel.setCallbacks({
@@ -72,7 +83,7 @@ export function setupSearch(ctx: SearchContext): void {
     if (!trimmed) {
       matchGnIds = [];
       activeIndex = -1;
-      ctx.canvas.clearHighlight();
+      restoreHighlight();
       panel.clearMatchCount();
       return;
     }
@@ -87,14 +98,35 @@ export function setupSearch(ctx: SearchContext): void {
 
     if (matchGnIds.length === 0) {
       activeIndex = -1;
+      ensureHighlightSnapshot();
       ctx.canvas.clearHighlight();
       panel.setMatchCount(0, 0);
       return;
     }
 
+    ensureHighlightSnapshot();
     activeIndex = 0;
     highlightAll();
     navigateTo(activeIndex);
+  }
+
+  function ensureHighlightSnapshot(): void {
+    if (savedHighlight === null) {
+      savedHighlight = ctx.canvas.getHighlightState();
+    }
+  }
+
+  function restoreHighlight(): void {
+    if (savedHighlight === null) {
+      ctx.canvas.clearHighlight();
+      return;
+    }
+    if (savedHighlight.nodes.size === 0 && savedHighlight.edges.size === 0) {
+      ctx.canvas.clearHighlight();
+    } else {
+      ctx.canvas.highlightByGnId(savedHighlight.nodes, savedHighlight.edges);
+    }
+    savedHighlight = null;
   }
 
   function matchesNode(node: RawNode, lowerQuery: string): boolean {
@@ -149,13 +181,15 @@ export function setupSearch(ctx: SearchContext): void {
     panel.hide();
     panel.setInputValue('');
     panel.clearMatchCount();
-    ctx.canvas.clearHighlight();
-    matchGnIds = [];
-    activeIndex = -1;
     if (debounceTimer) {
       clearTimeout(debounceTimer);
       debounceTimer = null;
     }
+    if (savedHighlight !== null) {
+      restoreHighlight();
+    }
+    matchGnIds = [];
+    activeIndex = -1;
   }
 }
 

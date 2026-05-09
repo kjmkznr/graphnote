@@ -55,12 +55,12 @@ export class SearchPanel {
     return this.panel.style.display !== 'none';
   }
 
-  getInputValue(): string {
-    return this.input.value;
-  }
-
   setInputValue(value: string): void {
     this.input.value = value;
+  }
+
+  contains(target: EventTarget | null): boolean {
+    return target instanceof Node && this.panel.contains(target);
   }
 
   focusInput(): void {

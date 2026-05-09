@@ -138,6 +138,10 @@ export class Canvas {
     this.renderer.clearHighlight();
   }
 
+  getHighlightState(): { nodes: Set<GnId>; edges: Set<GnId> } {
+    return this.renderer.getHighlightState();
+  }
+
   fitView(): void {
     this.cy.fit(undefined, 40);
   }
