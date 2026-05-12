@@ -3,6 +3,7 @@ import { CanvasEventController } from './controllers/canvasEventController.js';
 import { MobileSidebarController } from './controllers/mobileSidebarController.js';
 import { NodeTypeFilterController } from './controllers/nodeTypeFilterController.js';
 import { refreshCompletionContext, setupQueryPanel } from './controllers/queryPanelController.js';
+import { setupSearch } from './controllers/searchController.js';
 import { setupSidebarCallbacks } from './controllers/sidebarController.js';
 import { setupTabButtons } from './controllers/tabController.js';
 import { setupModeControls, setupToolbarButtons } from './controllers/toolbarController.js';
@@ -153,6 +154,7 @@ export class App implements AppContext {
 
     setupSidebarCallbacks(this);
     setupQueryPanel(this);
+    setupSearch(this);
     setupModeControls(this);
     setupToolbarButtons(this);
     setupTabButtons(this.canvas, this.db, this.dashboard);

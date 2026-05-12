@@ -134,4 +134,12 @@ export const DOM_IDS = {
   cidAddEdgeColBtn: 'cid-add-edge-col-btn',
   cidCancel: 'cid-cancel',
   cidConfirm: 'cid-confirm',
+
+  // ── Search Panel ──────────────────────────────────────────────────────────
+  searchPanel: 'search-panel',
+  searchInput: 'search-input',
+  searchMatchCount: 'search-match-count',
+  searchPrevBtn: 'search-prev-btn',
+  searchNextBtn: 'search-next-btn',
+  searchCloseBtn: 'search-close-btn',
 } as const;

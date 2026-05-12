@@ -76,6 +76,11 @@ export class Canvas {
 
   // ── Public API ──────────────────────────────────────────────────────────────
 
+  /** Expose the Cytoscape core for advanced operations (e.g. search navigation). */
+  getCy(): cytoscape.Core {
+    return this.cy;
+  }
+
   getMode(): InteractionMode {
     return this.mode;
   }
@@ -131,6 +136,10 @@ export class Canvas {
 
   clearHighlight(): void {
     this.renderer.clearHighlight();
+  }
+
+  getHighlightState(): { nodes: Set<GnId>; edges: Set<GnId> } {
+    return this.renderer.getHighlightState();
   }
 
   fitView(): void {
