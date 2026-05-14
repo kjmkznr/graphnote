@@ -47,7 +47,7 @@ export class Minimap {
   // ── Cy event binding ─────────────────────────────────────────
 
   private bindCyEvents(): void {
-    this.cy.on('viewport add remove position', () => this.scheduleRender());
+    this.cy.on('viewport add remove position data style', () => this.scheduleRender());
   }
 
   // ── Mouse event binding ──────────────────────────────────────
@@ -81,7 +81,7 @@ export class Minimap {
     offsetX: number;
     offsetY: number;
   } | null {
-    const nodes = this.cy.nodes('[!ghost][!edgeHandle]');
+    const nodes = this.cy.nodes('[!ghost][!edgeHandle]').filter((n) => n.visible());
     if (nodes.length === 0) return null;
 
     const bb = nodes.boundingBox();
@@ -164,10 +164,27 @@ export class Minimap {
 
     const { scale, offsetX, offsetY } = t;
 
-    // Draw edges
+    // Draw group containers (compound nodes) as outlined rectangles
+    this.cy.nodes('[?isGroup]').forEach((group) => {
+      if (!group.visible()) return;
+      const bb = group.boundingBox({ includeLabels: false });
+      const rx = bb.x1 * scale + offsetX;
+      const ry = bb.y1 * scale + offsetY;
+      const rw = (bb.x2 - bb.x1) * scale;
+      const rh = (bb.y2 - bb.y1) * scale;
+      const color = (group.data('color') as string) || '#6c8ef7';
+      ctx.fillStyle = `${color}1a`;
+      ctx.fillRect(rx, ry, rw, rh);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 0.6;
+      ctx.strokeRect(rx, ry, rw, rh);
+    });
+
+    // Draw edges (skip those connected to hidden nodes)
     ctx.strokeStyle = 'rgba(74, 85, 104, 0.5)';
     ctx.lineWidth = 0.5;
     this.cy.edges('[!ghost]').forEach((edge) => {
+      if (!edge.visible()) return;
       const src = edge.source();
       const tgt = edge.target();
       if (src.data('ghost') || src.data('edgeHandle')) return;
@@ -180,8 +197,9 @@ export class Minimap {
       ctx.stroke();
     });
 
-    // Draw nodes
-    this.cy.nodes('[!ghost][!edgeHandle]').forEach((node) => {
+    // Draw nodes (skip groups and hidden nodes)
+    this.cy.nodes('[!ghost][!edgeHandle][!isGroup]').forEach((node) => {
+      if (!node.visible()) return;
       const pos = node.position();
       const x = pos.x * scale + offsetX;
       const y = pos.y * scale + offsetY;
