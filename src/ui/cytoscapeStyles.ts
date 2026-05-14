@@ -201,6 +201,15 @@ export const CYTOSCAPE_STYLES: cytoscape.StylesheetStyle[] = [
       height: 22,
     },
   },
+];
+
+/**
+ * Highlight (query match / source) styles applied AFTER user-configured
+ * node-type styles so that the per-type background/border colors do not
+ * override the amber highlight. Must be the last stylesheet block passed
+ * to cy.style().
+ */
+export const HIGHLIGHT_STYLES: cytoscape.StylesheetStyle[] = [
   {
     selector: '.query-dimmed',
     style: { opacity: 0.12 },

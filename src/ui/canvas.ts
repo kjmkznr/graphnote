@@ -10,7 +10,12 @@ import type {
   RawNode,
 } from '../types.js';
 import { asGnId } from '../types.js';
-import { buildEdgeTypeStyles, buildNodeTypeStyles, CYTOSCAPE_STYLES } from './cytoscapeStyles.js';
+import {
+  buildEdgeTypeStyles,
+  buildNodeTypeStyles,
+  CYTOSCAPE_STYLES,
+  HIGHLIGHT_STYLES,
+} from './cytoscapeStyles.js';
 import type { PositionMap } from './graphRenderer.js';
 import { GraphRenderer } from './graphRenderer.js';
 import { Minimap } from './minimap.js';
@@ -276,7 +281,14 @@ export class Canvas {
   private applyStyles(): void {
     const edgeTypeStyles = this.edgeRegistryRef ? buildEdgeTypeStyles(this.edgeRegistryRef) : [];
     const nodeTypeStyles = this.nodeRegistry ? buildNodeTypeStyles(this.nodeRegistry) : [];
-    this.cy.style([...CYTOSCAPE_STYLES, ...nodeTypeStyles, ...edgeTypeStyles]);
+    // HIGHLIGHT_STYLES must come last so the query-match / query-source rules
+    // win over the per-type background/border colors.
+    this.cy.style([
+      ...CYTOSCAPE_STYLES,
+      ...nodeTypeStyles,
+      ...edgeTypeStyles,
+      ...HIGHLIGHT_STYLES,
+    ]);
   }
 
   // ── Event binding ───────────────────────────────────────────────────────────
