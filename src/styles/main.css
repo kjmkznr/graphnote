@@ -2202,6 +2202,51 @@ textarea {
   background: oklch(0.24 0.04 290);
   color: oklch(0.8 0.1 290);
 }
+.badge-group {
+  background: oklch(0.24 0.06 220);
+  color: oklch(0.82 0.1 220);
+}
+
+/* ── Sidebar: group editing controls ───────────────────────────── */
+.group-color-input {
+  width: 60px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+}
+.group-collapse-btn {
+  font-family: var(--ui-mono);
+  font-size: 11px;
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-mid);
+  cursor: pointer;
+}
+.group-collapse-btn:hover {
+  background: var(--bg-1);
+  color: var(--text);
+}
+.group-delete-btn {
+  font-family: var(--ui);
+  font-size: 11px;
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: transparent;
+  color: oklch(0.7 0.15 25);
+  cursor: pointer;
+}
+.group-delete-btn:hover {
+  background: oklch(0.2 0.08 25);
+}
+.prop-row-action {
+  justify-content: flex-end;
+}
 
 .element-title {
   font-size: 14px;

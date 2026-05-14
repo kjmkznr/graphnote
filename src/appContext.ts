@@ -1,6 +1,7 @@
 import type { BookmarkStore } from './graph/bookmarkStore.js';
 import type { GraphDB } from './graph/db.js';
 import type { EdgeTypeRegistry } from './graph/edgeTypeRegistry.js';
+import type { GroupStore } from './graph/groupStore.js';
 import type { TypeRegistry } from './graph/typeRegistry.js';
 import type { UndoManager } from './graph/undoManager.js';
 import type { ScrapbookStore } from './notebook/scrapbookStore.js';
@@ -21,10 +22,12 @@ export interface AppOperations {
 /**
  * サイドバーコントローラーが必要とする依存のサブセット。
  */
-export interface SidebarContext extends Pick<AppOperations, 'captureForUndo' | 'scheduleSave'> {
+export interface SidebarContext
+  extends Pick<AppOperations, 'captureForUndo' | 'scheduleSave' | 'refreshAndSave'> {
   readonly db: GraphDB;
   readonly canvas: Canvas;
   readonly sidebar: Sidebar;
+  readonly groupStore: GroupStore;
 }
 
 /**
@@ -49,6 +52,7 @@ export interface UndoContext extends Pick<AppOperations, 'scheduleSave'> {
   readonly sidebar: Sidebar;
   readonly undoManager: UndoManager;
   readonly registry: TypeRegistry;
+  readonly groupStore: GroupStore;
   getFilteredNodes(): RawNode[];
   getFilteredEdges(): RawEdge[];
   updateNodeTypeFilterOptions(): void;
@@ -57,12 +61,14 @@ export interface UndoContext extends Pick<AppOperations, 'scheduleSave'> {
 /**
  * ツールバーコントローラーが必要とする依存のサブセット。
  */
-export interface ToolbarContext extends Pick<AppOperations, 'captureForUndo' | 'refreshAndSave'> {
+export interface ToolbarContext
+  extends Pick<AppOperations, 'captureForUndo' | 'scheduleSave' | 'refreshAndSave'> {
   readonly db: GraphDB;
   readonly canvas: Canvas;
   readonly sidebar: Sidebar;
   readonly registry: TypeRegistry;
   readonly edgeRegistry: EdgeTypeRegistry;
+  readonly groupStore: GroupStore;
   readonly undoManager: UndoManager;
   readonly scrapbookStore: ScrapbookStore;
   updateStats(): void;
@@ -87,6 +93,7 @@ export interface CanvasEventContext
   readonly sidebar: Sidebar;
   readonly registry: TypeRegistry;
   readonly edgeRegistry: EdgeTypeRegistry;
+  readonly groupStore: GroupStore;
   readonly scrapbookStore: ScrapbookStore;
   isMobile(): boolean;
   openMobileSidebar(): void;

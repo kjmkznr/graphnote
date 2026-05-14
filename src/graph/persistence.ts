@@ -1,4 +1,4 @@
-import type { GnId, PersistedGraph, RawEdge, RawNode } from '../types.js';
+import type { GnId, PersistedGraph, PersistedGroup, RawEdge, RawNode } from '../types.js';
 import { asGnId } from '../types.js';
 import type { GraphDB } from './db.js';
 
@@ -24,6 +24,7 @@ function buildPersistedGraph(
   edges: RawEdge[],
   positions: Record<GnId, { x: number; y: number }>,
   viewport?: { pan: { x: number; y: number }; zoom: number },
+  groups?: PersistedGroup[],
 ): PersistedGraph {
   // Map from WasmGraph internal _id (ephemeral) to stable gnId
   const internalIdToGnId = new Map<string, GnId>(
@@ -50,6 +51,7 @@ function buildPersistedGraph(
         properties: e._properties,
       }))
       .filter((e) => e.id && e.srcId && e.dstId),
+    groups: groups && groups.length > 0 ? groups : undefined,
     positions,
     viewport,
   };
@@ -173,10 +175,11 @@ export async function saveGraph(
   viewport?: { pan: { x: number; y: number }; zoom: number },
   storage: IAsyncStorage = new IndexedDBStorage(),
   graphId?: string,
+  groups?: PersistedGroup[],
 ): Promise<void> {
   const nodes = db.getAllNodes();
   const edges = db.getAllEdges();
-  const data = buildPersistedGraph(nodes, edges, positions, viewport);
+  const data = buildPersistedGraph(nodes, edges, positions, viewport, groups);
   const key = graphId ? `graph:${graphId}` : STORAGE_KEY;
 
   try {
@@ -193,19 +196,20 @@ export async function loadGraph(
 ): Promise<{
   positions: Record<GnId, { x: number; y: number }>;
   viewport?: { pan: { x: number; y: number }; zoom: number };
+  groups: PersistedGroup[];
 }> {
   const key = graphId ? `graph:${graphId}` : STORAGE_KEY;
   const raw = await storage.getItem(key);
-  if (!raw) return { positions: {} };
+  if (!raw) return { positions: {}, groups: [] };
 
   let saved: PersistedGraph;
   try {
     saved = JSON.parse(raw) as PersistedGraph;
   } catch {
-    return { positions: {} };
+    return { positions: {}, groups: [] };
   }
 
-  if (saved.version !== 1) return { positions: {} };
+  if (saved.version !== 1) return { positions: {}, groups: [] };
 
   db.reset();
   restoreNodes(db, saved.nodes);
@@ -214,6 +218,7 @@ export async function loadGraph(
   return {
     positions: saved.positions ?? ({} as Record<GnId, { x: number; y: number }>),
     viewport: saved.viewport,
+    groups: saved.groups ?? [],
   };
 }
 
@@ -334,7 +339,7 @@ function restoreEdges(db: GraphDB, edges: PersistedGraph['edges']): void {
 export function loadFromJson(
   db: GraphDB,
   json: string,
-): { positions: Record<GnId, { x: number; y: number }> } | null {
+): { positions: Record<GnId, { x: number; y: number }>; groups: PersistedGroup[] } | null {
   let saved: PersistedGraph;
   try {
     saved = JSON.parse(json) as PersistedGraph;
@@ -352,5 +357,6 @@ export function loadFromJson(
 
   return {
     positions: saved.positions ?? ({} as Record<GnId, { x: number; y: number }>),
+    groups: saved.groups ?? [],
   };
 }

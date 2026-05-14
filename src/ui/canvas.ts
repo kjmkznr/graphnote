@@ -1,7 +1,14 @@
 import cytoscape from 'cytoscape';
 import type { EdgeTypeRegistry } from '../graph/edgeTypeRegistry.js';
 import type { TypeRegistry } from '../graph/typeRegistry.js';
-import type { CanvasEvent, GnId, InteractionMode, RawEdge, RawNode } from '../types.js';
+import type {
+  CanvasEvent,
+  GnId,
+  InteractionMode,
+  PersistedGroup,
+  RawEdge,
+  RawNode,
+} from '../types.js';
 import { asGnId } from '../types.js';
 import { buildEdgeTypeStyles, buildNodeTypeStyles, CYTOSCAPE_STYLES } from './cytoscapeStyles.js';
 import type { PositionMap } from './graphRenderer.js';
@@ -10,6 +17,43 @@ import { Minimap } from './minimap.js';
 
 // Edgehandles の grab 領域。Cytoscape のデフォルト node サイズ (40px) + マージン
 const EDGE_HANDLE_DISTANCE = 52;
+
+/**
+ * Compute the union bounding box of a compound node's children, excluding
+ * one child by gnId. Returns null if no other children exist.
+ * Pads slightly so dropping near the edge still counts as "inside".
+ */
+function bboxExcludingChild(
+  group: cytoscape.NodeSingular,
+  excludeGnId: string,
+): { x1: number; y1: number; x2: number; y2: number } | null {
+  // If empty group (or only contains the dragged node), fall back to the
+  // group's own rendered bounding box so users can drop the first node into
+  // a freshly created empty group.
+  const others = group
+    .children('[!ghost][!edgeHandle]')
+    .filter((c) => c.data('gnId') !== excludeGnId);
+
+  if (others.length === 0) {
+    const bb = group.boundingBox({ includeLabels: false });
+    return { x1: bb.x1, y1: bb.y1, x2: bb.x2, y2: bb.y2 };
+  }
+
+  let x1 = Infinity;
+  let y1 = Infinity;
+  let x2 = -Infinity;
+  let y2 = -Infinity;
+  others.forEach((c) => {
+    const bb = c.boundingBox({ includeLabels: false });
+    if (bb.x1 < x1) x1 = bb.x1;
+    if (bb.y1 < y1) y1 = bb.y1;
+    if (bb.x2 > x2) x2 = bb.x2;
+    if (bb.y2 > y2) y2 = bb.y2;
+  });
+  // Pad by group padding (24px in styles) so the catchment zone matches the rendered border.
+  const pad = 28;
+  return { x1: x1 - pad, y1: y1 - pad, x2: x2 + pad, y2: y2 + pad };
+}
 
 function getEventClientPos(e: MouseEvent | TouchEvent): {
   x: number;
@@ -97,7 +141,10 @@ export class Canvas {
         });
       }
     } else {
-      this.cy.nodes('[!ghost][!edgeHandle]').forEach((n) => {
+      this.cy.nodes('[!ghost][!edgeHandle][!isGroup]').forEach((n) => {
+        n.grabify();
+      });
+      this.cy.nodes('[?isGroup]').forEach((n) => {
         n.grabify();
       });
     }
@@ -112,14 +159,23 @@ export class Canvas {
     this.renderer.hintPosition(gnId, pos);
   }
 
-  refreshGraph(nodes: RawNode[], edges: RawEdge[], savedPositions?: PositionMap): void {
-    const newNodeGnIds = this.renderer.refreshGraph(nodes, edges, savedPositions);
+  refreshGraph(
+    nodes: RawNode[],
+    edges: RawEdge[],
+    savedPositions?: PositionMap,
+    groups: PersistedGroup[] = [],
+  ): void {
+    const newNodeGnIds = this.renderer.refreshGraph(nodes, edges, savedPositions, groups);
     // Apply grabify only to newly added nodes (full rebuild passes all node gnIds)
     this.setMode(this.mode, newNodeGnIds);
   }
 
   getPositions(): PositionMap {
     return this.renderer.getPositions();
+  }
+
+  getGroupPositions(): PositionMap {
+    return this.renderer.getGroupPositions();
   }
 
   getViewport(): { pan: { x: number; y: number }; zoom: number } {
@@ -228,12 +284,67 @@ export class Canvas {
     this.bindHoverEvents();
     this.bindEdgeDragEvents();
     this.bindDeleteKeyEvent();
+    this.bindGroupEvents();
+  }
+
+  private bindGroupEvents(): void {
+    const cy = this.cy;
+
+    cy.on('tap', 'node[?isGroup]', (e) => {
+      if (this.dragState.active) return;
+      const groupId = asGnId(e.target.data('gnId') as string);
+      if (groupId) this.onEvent({ kind: 'group-clicked', groupId });
+    });
+
+    cy.on('cxttap', 'node[?isGroup]', (e) => {
+      const groupId = asGnId(e.target.data('gnId') as string);
+      const { x, y } = getEventClientPos(e.originalEvent as MouseEvent | TouchEvent);
+      if (groupId) this.onEvent({ kind: 'group-context', groupId, x, y });
+    });
+
+    cy.on('dbltap', 'node[?isGroup]', (e) => {
+      const groupId = asGnId(e.target.data('gnId') as string);
+      if (groupId) this.onEvent({ kind: 'group-dblclick', groupId });
+    });
+
+    // Re-evaluate parent when a normal node finishes being dragged.
+    cy.on('dragfree', 'node[!ghost][!edgeHandle][!isGroup]', (e) => {
+      const n = e.target as cytoscape.NodeSingular;
+      const gnId = asGnId(n.data('gnId') as string);
+      if (!gnId) return;
+      const pos = n.position();
+      const targetGroupId = this.findGroupAtPosition(pos, gnId);
+      const parents = n.parent();
+      const currentParent = parents.nonempty() ? asGnId(parents.first().id()) : null;
+      if (targetGroupId !== currentParent) {
+        this.onEvent({ kind: 'node-group-changed', gnId, groupId: targetGroupId });
+      }
+    });
+  }
+
+  /**
+   * Find the smallest group whose bounding box contains `pos`, excluding the
+   * node being dragged so its own contribution to the parent bbox is ignored.
+   */
+  private findGroupAtPosition(pos: { x: number; y: number }, excludeGnId: GnId): GnId | null {
+    let best: { id: GnId; area: number } | null = null;
+    this.cy.nodes('[?isGroup]').forEach((g) => {
+      const groupId = asGnId(g.data('gnId') as string);
+      if (!groupId) return;
+      // For containment we shrink the bbox slightly using the children excluding the dragged node.
+      const bb = bboxExcludingChild(g, excludeGnId);
+      if (!bb) return;
+      if (pos.x < bb.x1 || pos.x > bb.x2 || pos.y < bb.y1 || pos.y > bb.y2) return;
+      const area = (bb.x2 - bb.x1) * (bb.y2 - bb.y1);
+      if (!best || area < best.area) best = { id: groupId, area };
+    });
+    return best ? (best as { id: GnId; area: number }).id : null;
   }
 
   private bindTapEvents(): void {
     const cy = this.cy;
 
-    cy.on('tap', 'node[!ghost]', (e) => {
+    cy.on('tap', 'node[!ghost][!isGroup]', (e) => {
       if (this.dragState.active) return;
       const gnId = asGnId(e.target.data('gnId') as string);
       if (gnId) this.onEvent({ kind: 'node-clicked', gnId });
@@ -257,7 +368,7 @@ export class Canvas {
       }
     });
 
-    cy.on('cxttap', 'node[!ghost]', (e) => {
+    cy.on('cxttap', 'node[!ghost][!isGroup]', (e) => {
       const gnId = asGnId(e.target.data('gnId') as string);
       const { x, y } = getEventClientPos(e.originalEvent as MouseEvent | TouchEvent);
       if (gnId) this.onEvent({ kind: 'node-context', gnId, x, y });
@@ -300,7 +411,7 @@ export class Canvas {
         });
         return;
       }
-      if (t.data('ghost')) return;
+      if (t.data('ghost') || t.data('isGroup')) return;
       if (this.mode !== 'edit') return;
       if (this.edgeHandleTimer) {
         clearTimeout(this.edgeHandleTimer);
@@ -408,7 +519,7 @@ export class Canvas {
         return;
       const selected = cy.$(':selected');
       const nodeGnIds = selected
-        .nodes('[!ghost][!edgeHandle]')
+        .nodes('[!ghost][!edgeHandle][!isGroup]')
         .map((n) => asGnId(n.data('gnId') as string))
         .filter(Boolean);
       const edgeGnIds = selected

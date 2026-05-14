@@ -156,6 +156,7 @@ export function restoreSharedGraph(
 ): {
   positions: Record<GnId, { x: number; y: number }>;
   viewport?: { pan: { x: number; y: number }; zoom: number };
+  groups: import('../types.js').PersistedGroup[];
 } {
   db.reset();
 
@@ -195,5 +196,6 @@ export function restoreSharedGraph(
   return {
     positions: graph.positions ?? ({} as Record<GnId, { x: number; y: number }>),
     viewport: graph.viewport,
+    groups: graph.groups ?? [],
   };
 }

@@ -170,7 +170,84 @@ export class CanvasEventController {
       case 'element-unhovered':
         hideTooltip(this.tooltip);
         break;
+      case 'group-clicked':
+        this.handleGroupClicked(event.groupId);
+        break;
+      case 'group-context':
+        this.handleGroupContext(event.groupId, event.x, event.y);
+        break;
+      case 'group-dblclick':
+        this.handleGroupDblclick(event.groupId);
+        break;
+      case 'node-group-changed':
+        this.handleNodeGroupChanged(event.gnId, event.groupId);
+        break;
     }
+  }
+
+  private handleGroupClicked(groupId: GnId): void {
+    const group = this.ctx.groupStore.get(groupId);
+    if (!group) return;
+    this.ctx.sidebar.showGroup(group);
+    if (this.ctx.isMobile()) this.ctx.openMobileSidebar();
+  }
+
+  private handleGroupContext(groupId: GnId, x: number, y: number): void {
+    const group = this.ctx.groupStore.get(groupId);
+    if (!group) return;
+    showContextMenu(
+      this.ctxMenu,
+      [
+        {
+          label: group.collapsed ? 'グループを展開' : 'グループを折りたたむ',
+          action: () => {
+            this.ctx.captureForUndo();
+            if (!group.collapsed) {
+              const pos = this.ctx.canvas.getGroupPositions()[groupId];
+              if (pos) this.ctx.groupStore.setPosition(groupId, pos);
+            }
+            this.ctx.groupStore.setCollapsed(groupId, !group.collapsed);
+            this.ctx.refreshAndSave();
+          },
+        },
+        {
+          label: 'グループを削除',
+          danger: true,
+          action: () => {
+            this.ctx.captureForUndo();
+            for (const n of this.ctx.db.getAllNodes()) {
+              if ((n._properties.group as string | undefined) === groupId) {
+                const nodeGnId = n._properties.gnId as string | undefined;
+                if (nodeGnId) this.ctx.db.setNodeGroup(nodeGnId as GnId, null);
+              }
+            }
+            this.ctx.groupStore.remove(groupId);
+            this.ctx.sidebar.hide();
+            this.ctx.refreshAndSave();
+          },
+        },
+      ],
+      x,
+      y,
+    );
+  }
+
+  private handleGroupDblclick(groupId: GnId): void {
+    const group = this.ctx.groupStore.get(groupId);
+    if (!group) return;
+    this.ctx.captureForUndo();
+    if (!group.collapsed) {
+      const pos = this.ctx.canvas.getGroupPositions()[groupId];
+      if (pos) this.ctx.groupStore.setPosition(groupId, pos);
+    }
+    this.ctx.groupStore.setCollapsed(groupId, !group.collapsed);
+    this.ctx.refreshAndSave();
+  }
+
+  private handleNodeGroupChanged(gnId: GnId, groupId: GnId | null): void {
+    this.ctx.captureForUndo();
+    this.ctx.db.setNodeGroup(gnId, groupId);
+    this.ctx.refreshAndSave();
   }
 
   private handleNodeHovered(gnId: GnId, x: number, y: number): void {

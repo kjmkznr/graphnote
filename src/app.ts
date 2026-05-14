@@ -12,6 +12,7 @@ import { BookmarkStore } from './graph/bookmarkStore.js';
 import { GraphDB } from './graph/db.js';
 import { EdgeTypeRegistry } from './graph/edgeTypeRegistry.js';
 import { GraphManager } from './graph/graphManager.js';
+import { GroupStore } from './graph/groupStore.js';
 import { migrateFromLocalStorage } from './graph/persistence.js';
 import { TypeRegistry } from './graph/typeRegistry.js';
 import { UndoManager } from './graph/undoManager.js';
@@ -41,6 +42,7 @@ export class App implements AppContext {
   queryPanel!: QueryPanel;
   registry!: TypeRegistry;
   edgeRegistry!: EdgeTypeRegistry;
+  groupStore = new GroupStore();
   undoManager = new UndoManager();
   scrapbookStore!: ScrapbookStore;
   bookmarkStore!: BookmarkStore;
@@ -62,7 +64,12 @@ export class App implements AppContext {
     afterNextPaint(() => {
       this.canvas.resize();
       this.nodeTypeFilter.updateOptions();
-      this.canvas.refreshGraph(this.getFilteredNodes(), this.getFilteredEdges(), savedPositions);
+      this.canvas.refreshGraph(
+        this.getFilteredNodes(),
+        this.getFilteredEdges(),
+        savedPositions,
+        this.groupStore.list(),
+      );
       if (savedViewport) {
         this.canvas.setViewport(savedViewport.pan, savedViewport.zoom);
       } else if (this.db.getAllNodes().length > 0) {
@@ -101,15 +108,22 @@ export class App implements AppContext {
       const result = restoreSharedGraph(this.db, sharedGraph);
       savedPositions = result.positions;
       savedViewport = result.viewport;
+      this.groupStore.loadAll(result.groups);
       // Clear the share hash so it doesn't reload on refresh
       history.replaceState(null, '', location.pathname);
       // Persist the shared graph to IndexedDB
-      await this.graphManager.saveCurrentGraph(this.db, savedPositions, savedViewport);
+      await this.graphManager.saveCurrentGraph(
+        this.db,
+        savedPositions,
+        savedViewport,
+        this.groupStore.dump(),
+      );
       showToast('共有されたグラフをインポートしました', 'success');
     } else {
       const result = await this.graphManager.switchGraph(this.graphManager.currentGraphId, this.db);
       savedPositions = result.positions;
       savedViewport = result.viewport;
+      this.groupStore.loadAll(result.groups);
     }
     this.db.applyConstraints(this.registry.getAll());
     for (const edge of this.db.getAllEdges()) {
@@ -169,7 +183,11 @@ export class App implements AppContext {
   // ── AppContext implementation ────────────────────────────────────────────────
 
   captureForUndo(): void {
-    const snapshot = UndoManager.captureSnapshot(this.db, this.canvas.getPositions());
+    const snapshot = UndoManager.captureSnapshot(
+      this.db,
+      this.canvas.getPositions(),
+      this.groupStore.dump(),
+    );
     this.undoManager.pushState(snapshot);
   }
 
@@ -178,7 +196,12 @@ export class App implements AppContext {
     const debounceMs = Math.min(SAVE_DEBOUNCE_MS + this.db.nodeCount() * 2, 3000);
     this.saveTimer = setTimeout(() => {
       this.graphManager
-        .saveCurrentGraph(this.db, this.canvas.getPositions(), this.canvas.getViewport())
+        .saveCurrentGraph(
+          this.db,
+          this.canvas.getPositions(),
+          this.canvas.getViewport(),
+          this.groupStore.dump(),
+        )
         .catch((err) => console.warn('Failed to save graph:', err));
       this.updateStats();
     }, debounceMs);
@@ -188,7 +211,12 @@ export class App implements AppContext {
     try {
       this.canvas.updateEdgeStyles(this.edgeRegistry);
       this.nodeTypeFilter.updateOptions();
-      this.canvas.refreshGraph(this.getFilteredNodes(), this.getFilteredEdges());
+      this.canvas.refreshGraph(
+        this.getFilteredNodes(),
+        this.getFilteredEdges(),
+        undefined,
+        this.groupStore.list(),
+      );
       // Defer autocomplete context rebuild — it only affects query typing, not visible graph state
       setTimeout(() => refreshCompletionContext(this), 0);
       this.scheduleSave();
@@ -224,19 +252,27 @@ export class App implements AppContext {
         this.db,
         this.canvas.getPositions(),
         this.canvas.getViewport(),
+        this.groupStore.dump(),
       );
       // Reset state
       this.undoManager.clear();
       this.db.reset();
+      this.groupStore.clear();
       // Load new graph
       const result = await this.graphManager.switchGraph(id, this.db);
+      this.groupStore.loadAll(result.groups);
       this.db.applyConstraints(this.registry.getAll());
       for (const edge of this.db.getAllEdges()) {
         this.edgeRegistry.ensure(edge._type);
       }
       this.canvas.updateEdgeStyles(this.edgeRegistry);
       this.nodeTypeFilter.updateOptions();
-      this.canvas.refreshGraph(this.getFilteredNodes(), this.getFilteredEdges(), result.positions);
+      this.canvas.refreshGraph(
+        this.getFilteredNodes(),
+        this.getFilteredEdges(),
+        result.positions,
+        this.groupStore.list(),
+      );
       if (result.viewport) {
         this.canvas.setViewport(result.viewport.pan, result.viewport.zoom);
       } else {

@@ -102,6 +102,16 @@ function setupDropdowns(): void {
 export function setupToolbarButtons(ctx: ToolbarContext): void {
   setupDropdowns();
 
+  byId(DOM_IDS.addGroupBtn)?.addEventListener('click', () => {
+    ctx.captureForUndo();
+    const group = ctx.groupStore.create('New Group');
+    // Place the new (empty) group near the current viewport center
+    const center = ctx.canvas.clientToCanvasPosition(window.innerWidth / 2, window.innerHeight / 2);
+    ctx.groupStore.setPosition(group.id, center);
+    ctx.refreshAndSave();
+    ctx.sidebar.showGroup(group);
+  });
+
   byId(DOM_IDS.fitBtn)?.addEventListener('click', () => ctx.canvas.fitView());
   byId(DOM_IDS.layoutCoseBtn)?.addEventListener('click', () => ctx.canvas.applyLayout('cose'));
   byId(DOM_IDS.layoutCircleBtn)?.addEventListener('click', () => ctx.canvas.applyLayout('circle'));
@@ -134,6 +144,7 @@ export function setupToolbarButtons(ctx: ToolbarContext): void {
     if (!window.confirm('グラフをリセットしますか？')) return;
     ctx.captureForUndo();
     ctx.db.reset();
+    ctx.groupStore.clear();
     clearSaved().catch((err) => console.warn('Failed to clear saved graph:', err));
     ctx.scrapbookStore.clear();
     ctx.sidebar.hide();
@@ -175,7 +186,11 @@ export function setupToolbarButtons(ctx: ToolbarContext): void {
   });
 
   byId(DOM_IDS.importJsonBtn)?.addEventListener('click', () => {
-    const snapshotBeforeImport = UndoManager.captureSnapshot(ctx.db, ctx.canvas.getPositions());
+    const snapshotBeforeImport = UndoManager.captureSnapshot(
+      ctx.db,
+      ctx.canvas.getPositions(),
+      ctx.groupStore.dump(),
+    );
     openFilePicker().then((json) => {
       if (json === null) {
         showToast('インポートをキャンセルしました', 'warn');
@@ -186,12 +201,23 @@ export function setupToolbarButtons(ctx: ToolbarContext): void {
         showToast('インポートに失敗しました', 'warn');
         return;
       }
+      ctx.groupStore.loadAll(result.groups);
       ctx.undoManager.pushState(snapshotBeforeImport);
-      saveGraph(ctx.db, result.positions).catch((err) =>
-        console.warn('Failed to save graph:', err),
-      );
+      saveGraph(
+        ctx.db,
+        result.positions,
+        undefined,
+        undefined,
+        undefined,
+        ctx.groupStore.dump(),
+      ).catch((err) => console.warn('Failed to save graph:', err));
       ctx.sidebar.hide();
-      ctx.canvas.refreshGraph(ctx.db.getAllNodes(), ctx.db.getAllEdges(), result.positions);
+      ctx.canvas.refreshGraph(
+        ctx.db.getAllNodes(),
+        ctx.db.getAllEdges(),
+        result.positions,
+        ctx.groupStore.list(),
+      );
       ctx.updateStats();
       showToast('インポートしました', 'success');
     });

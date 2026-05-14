@@ -42,6 +42,7 @@ export const DOM_IDS = {
   cy: 'cy',
   canvasActionBtns: 'canvas-action-btns',
   addNodeBtn: 'add-node-btn',
+  addGroupBtn: 'add-group-btn',
   fitBtn: 'fit-btn',
   layoutCoseBtn: 'layout-cose-btn',
   layoutCircleBtn: 'layout-circle-btn',

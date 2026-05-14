@@ -208,6 +208,21 @@ export class GraphDB {
     this.invalidateCache();
   }
 
+  /**
+   * Set or clear a node's `group` property (membership in a visual group).
+   * Pass `null` to remove the property.
+   */
+  setNodeGroup(gnId: GnId, groupGnId: GnId | null): void {
+    if (groupGnId === null) {
+      this.executor.execute(`MATCH (n) WHERE n.gnId = "${escStr(gnId)}" REMOVE n.group`);
+    } else {
+      this.executor.execute(
+        `MATCH (n) WHERE n.gnId = "${escStr(gnId)}" SET n.group = "${escStr(groupGnId)}"`,
+      );
+    }
+    this.invalidateCache();
+  }
+
   /** Update a single property on a node identified by gnId. */
   updateNodeProperty(gnId: GnId, key: string, value: PropertyValue): void {
     assertIdentifier(key);
