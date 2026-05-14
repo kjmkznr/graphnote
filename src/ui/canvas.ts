@@ -17,6 +17,8 @@ import { Minimap } from './minimap.js';
 
 // Edgehandles の grab 領域。Cytoscape のデフォルト node サイズ (40px) + マージン
 const EDGE_HANDLE_DISTANCE = 52;
+// ノードからハンドルへマウスを移動する余裕を持たせる遅延 (ms)
+const EDGE_HANDLE_REMOVE_DELAY_MS = 600;
 
 /**
  * Compute the union bounding box of a compound node's children, excluding
@@ -186,8 +188,8 @@ export class Canvas {
     this.cy.viewport({ pan, zoom });
   }
 
-  highlightByGnId(nodeGnIds: Set<GnId>, edgeGnIds: Set<GnId>): void {
-    this.renderer.highlightByGnId(nodeGnIds, edgeGnIds);
+  highlightByGnId(nodeGnIds: Set<GnId>, edgeGnIds: Set<GnId>, sourceGnId?: GnId): void {
+    this.renderer.highlightByGnId(nodeGnIds, edgeGnIds, sourceGnId);
   }
 
   clearHighlight(): void {
@@ -428,7 +430,10 @@ export class Canvas {
     cy.on('mouseout', 'node', (e) => {
       const t = e.target as cytoscape.NodeSingular;
       if (t.data('ghost')) return;
-      this.edgeHandleTimer = setTimeout(() => this.removeEdgeHandles(), 200);
+      this.edgeHandleTimer = setTimeout(
+        () => this.removeEdgeHandles(),
+        EDGE_HANDLE_REMOVE_DELAY_MS,
+      );
       if (!t.data('edgeHandle')) this.onEvent({ kind: 'element-unhovered' });
     });
 

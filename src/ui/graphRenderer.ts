@@ -216,9 +216,9 @@ export class GraphRenderer {
    * Highlight nodes and edges matching a query result.
    * Edges between two matched nodes are also highlighted automatically.
    */
-  highlightByGnId(nodeGnIds: Set<GnId>, edgeGnIds: Set<GnId>): void {
+  highlightByGnId(nodeGnIds: Set<GnId>, edgeGnIds: Set<GnId>, sourceGnId?: GnId): void {
     const cy = this.cy;
-    cy.elements().removeClass('query-match query-dimmed');
+    cy.elements().removeClass('query-match query-dimmed query-source');
 
     if (nodeGnIds.size === 0 && edgeGnIds.size === 0) return;
 
@@ -241,16 +241,21 @@ export class GraphRenderer {
         .removeClass('query-dimmed')
         .addClass('query-match');
     }
+    if (sourceGnId) {
+      cy.getElementById(sourceGnId)
+        .removeClass('query-dimmed query-match')
+        .addClass('query-source');
+    }
   }
 
   clearHighlight(): void {
-    this.cy.elements().removeClass('query-match query-dimmed');
+    this.cy.elements().removeClass('query-match query-dimmed query-source');
   }
 
   getHighlightState(): { nodes: Set<GnId>; edges: Set<GnId> } {
     const nodes = new Set<GnId>();
     const edges = new Set<GnId>();
-    this.cy.elements('.query-match').forEach((el) => {
+    this.cy.elements('.query-match, .query-source').forEach((el) => {
       const id = el.id();
       if (el.isNode()) {
         if (el.data('isGroup')) return;

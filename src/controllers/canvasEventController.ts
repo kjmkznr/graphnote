@@ -299,7 +299,7 @@ export class CanvasEventController {
       const { nodeGnIds } = extractMatchedGnIds(nodeRows);
       const { edgeGnIds } = extractMatchedGnIds(edgeRows);
       nodeGnIds.add(gnId);
-      this.ctx.canvas.highlightByGnId(nodeGnIds, edgeGnIds);
+      this.ctx.canvas.highlightByGnId(nodeGnIds, edgeGnIds, gnId);
     } catch {
       // ハイライト失敗は無視
     }

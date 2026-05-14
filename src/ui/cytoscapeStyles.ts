@@ -214,6 +214,17 @@ export const CYTOSCAPE_STYLES: cytoscape.StylesheetStyle[] = [
     },
   },
   {
+    selector: 'node.query-source',
+    style: {
+      'border-width': 4,
+      'border-color': CY_HIGHLIGHT,
+      'background-color': 'data(color)',
+      'overlay-color': CY_HIGHLIGHT,
+      'overlay-opacity': 0.18,
+      'overlay-padding': 6,
+    },
+  },
+  {
     selector: 'edge.query-match',
     style: {
       'line-color': CY_HIGHLIGHT,
