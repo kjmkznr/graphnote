@@ -222,7 +222,9 @@ export class GraphRenderer {
 
     if (nodeGnIds.size === 0 && edgeGnIds.size === 0) return;
 
-    cy.elements().addClass('query-dimmed');
+    // Dim everything except group containers. Dimming a compound parent would
+    // multiply its low opacity into every child, darkening even matched nodes.
+    cy.elements().not('node[?isGroup]').addClass('query-dimmed');
     for (const gnId of nodeGnIds) {
       cy.getElementById(gnId).removeClass('query-dimmed').addClass('query-match');
     }

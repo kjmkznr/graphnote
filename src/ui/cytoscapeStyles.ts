@@ -225,12 +225,9 @@ export const HIGHLIGHT_STYLES: cytoscape.StylesheetStyle[] = [
   {
     selector: 'node.query-source',
     style: {
-      'border-width': 4,
+      'border-width': 5,
       'border-color': CY_HIGHLIGHT,
       'background-color': 'data(color)',
-      'overlay-color': CY_HIGHLIGHT,
-      'overlay-opacity': 0.18,
-      'overlay-padding': 6,
     },
   },
   {
