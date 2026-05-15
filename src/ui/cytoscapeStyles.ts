@@ -93,6 +93,51 @@ export const CYTOSCAPE_STYLES: cytoscape.StylesheetStyle[] = [
     },
   },
   {
+    selector: 'node[?isGroup]',
+    style: {
+      'background-color': 'data(color)',
+      'background-opacity': 0.08,
+      'border-color': 'data(color)',
+      'border-width': 2,
+      'border-style': 'dashed',
+      shape: 'round-rectangle',
+      label: 'data(displayLabel)',
+      color: 'data(color)',
+      'text-valign': 'top',
+      'text-halign': 'center',
+      'text-margin-y': -6,
+      'font-size': '13px',
+      'font-weight': 'bold',
+      'font-family': 'Geist, ui-sans-serif, sans-serif',
+      'text-outline-color': CY_BG,
+      'text-outline-width': 2,
+      padding: '24px',
+      'compound-sizing-wrt-labels': 'include',
+      'z-index': 0,
+      'z-compound-depth': 'bottom',
+    },
+  },
+  {
+    selector: 'node[?isGroup]:selected',
+    style: {
+      'border-color': CY_ACCENT,
+      'border-width': 3,
+      'border-style': 'solid',
+    },
+  },
+  {
+    selector: 'node[?isGroup][?collapsed]',
+    style: {
+      'background-opacity': 0.25,
+      'border-style': 'solid',
+      width: 140,
+      height: 56,
+      'text-valign': 'center',
+      'text-margin-y': 0,
+      color: 'data(color)',
+    },
+  },
+  {
     selector: 'edge',
     style: {
       width: 1.5,
@@ -156,6 +201,15 @@ export const CYTOSCAPE_STYLES: cytoscape.StylesheetStyle[] = [
       height: 22,
     },
   },
+];
+
+/**
+ * Highlight (query match / source) styles applied AFTER user-configured
+ * node-type styles so that the per-type background/border colors do not
+ * override the amber highlight. Must be the last stylesheet block passed
+ * to cy.style().
+ */
+export const HIGHLIGHT_STYLES: cytoscape.StylesheetStyle[] = [
   {
     selector: '.query-dimmed',
     style: { opacity: 0.12 },
@@ -164,6 +218,14 @@ export const CYTOSCAPE_STYLES: cytoscape.StylesheetStyle[] = [
     selector: 'node.query-match',
     style: {
       'border-width': 3,
+      'border-color': CY_HIGHLIGHT,
+      'background-color': 'data(color)',
+    },
+  },
+  {
+    selector: 'node.query-source',
+    style: {
+      'border-width': 5,
       'border-color': CY_HIGHLIGHT,
       'background-color': 'data(color)',
     },

@@ -1,4 +1,4 @@
-import type { GnId, PersistedGraph, PropertyValue } from '../types.js';
+import type { GnId, PersistedGraph, PersistedGroup, PropertyValue } from '../types.js';
 import { asGnId } from '../types.js';
 import type { GraphDB } from './db.js';
 
@@ -77,6 +77,7 @@ export class UndoManager {
   static captureSnapshot(
     db: GraphDB,
     positions: Record<GnId, { x: number; y: number }>,
+    groups: PersistedGroup[] = [],
   ): GraphSnapshot {
     const nodes = db.getAllNodes();
     const edges = db.getAllEdges();
@@ -105,6 +106,7 @@ export class UndoManager {
           properties: e._properties,
         }))
         .filter((e) => e.id && e.srcId && e.dstId),
+      groups: groups.length > 0 ? groups.map((g) => ({ ...g })) : undefined,
       positions: { ...positions },
     };
 
@@ -114,7 +116,7 @@ export class UndoManager {
   static restoreSnapshot(
     db: GraphDB,
     snapshot: GraphSnapshot,
-  ): Record<GnId, { x: number; y: number }> {
+  ): { positions: Record<GnId, { x: number; y: number }>; groups: PersistedGroup[] } {
     const { graph } = snapshot;
     db.reset();
 
@@ -156,6 +158,9 @@ export class UndoManager {
       db.endBulkLoad();
     }
 
-    return graph.positions ?? {};
+    return {
+      positions: graph.positions ?? {},
+      groups: graph.groups ?? [],
+    };
   }
 }

@@ -1,4 +1,4 @@
-import type { GnId } from '../types.js';
+import type { GnId, PersistedGroup } from '../types.js';
 import type { GraphDB } from './db.js';
 import {
   clearSaved,
@@ -11,6 +11,7 @@ import {
 export interface GraphSwitchResult {
   positions: Record<GnId, { x: number; y: number }>;
   viewport?: { pan: { x: number; y: number }; zoom: number };
+  groups: PersistedGroup[];
 }
 
 /**
@@ -106,8 +107,9 @@ export class GraphManager {
     db: GraphDB,
     positions: Record<GnId, { x: number; y: number }>,
     viewport?: { pan: { x: number; y: number }; zoom: number },
+    groups?: PersistedGroup[],
   ): Promise<void> {
-    await saveGraph(db, positions, viewport, this.storage, this._currentGraphId);
+    await saveGraph(db, positions, viewport, this.storage, this._currentGraphId, groups);
   }
 
   /**

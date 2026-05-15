@@ -1,6 +1,6 @@
 import type cytoscape from 'cytoscape';
 import type { TypeRegistry } from '../graph/typeRegistry.js';
-import type { GnId, RawEdge, RawNode } from '../types.js';
+import type { GnId, PersistedGroup, RawEdge, RawNode } from '../types.js';
 import { asGnId } from '../types.js';
 
 // ── Position utilities ────────────────────────────────────────────────────────
@@ -89,6 +89,43 @@ function nodeDisplayData(
   };
 }
 
+function groupElementDef(g: PersistedGroup): cytoscape.ElementDefinition {
+  const def: cytoscape.ElementDefinition = {
+    group: 'nodes',
+    data: {
+      id: g.id,
+      gnId: g.id,
+      isGroup: true,
+      displayLabel: g.name,
+      color: g.color,
+      collapsed: g.collapsed,
+    },
+  };
+  if (g.position) def.position = { ...g.position };
+  return def;
+}
+
+function parentGroupOf(node: RawNode, groupIds: Set<GnId>): GnId | null {
+  const raw = node._properties.group;
+  if (typeof raw !== 'string' || !raw) return null;
+  const id = asGnId(raw);
+  return groupIds.has(id) ? id : null;
+}
+
+function applyGroupCollapse(cy: cytoscape.Core, groups: PersistedGroup[]): void {
+  for (const g of groups) {
+    const parent = cy.getElementById(g.id);
+    if (parent.empty()) continue;
+    const children = parent.children();
+    if (g.collapsed) {
+      children.style('display', 'none');
+      if (g.position) parent.position(g.position);
+    } else {
+      children.style('display', 'element');
+    }
+  }
+}
+
 function edgeElementDef(
   edge: RawEdge,
   internalIdToGnId: Map<string, GnId>,
@@ -142,17 +179,33 @@ export class GraphRenderer {
    * - Without: incremental diff (add/remove/update changed elements only).
    * Returns the gnIds of newly added nodes so callers can apply node-specific setup.
    */
-  refreshGraph(nodes: RawNode[], edges: RawEdge[], savedPositions?: PositionMap): GnId[] {
+  refreshGraph(
+    nodes: RawNode[],
+    edges: RawEdge[],
+    savedPositions?: PositionMap,
+    groups: PersistedGroup[] = [],
+  ): GnId[] {
     if (savedPositions) {
-      return this.fullRefresh(nodes, edges, savedPositions);
+      return this.fullRefresh(nodes, edges, savedPositions, groups);
     } else {
-      return this.diffRefresh(nodes, edges);
+      return this.diffRefresh(nodes, edges, groups);
     }
   }
 
+  /** Positions of normal (non-group, non-ghost) nodes. */
   getPositions(): PositionMap {
     const positions: PositionMap = {} as PositionMap;
-    this.cy.nodes('[!ghost][!edgeHandle]').forEach((n) => {
+    this.cy.nodes('[!ghost][!edgeHandle][!isGroup]').forEach((n) => {
+      const gnId = asGnId(n.data('gnId') as string);
+      if (gnId) positions[gnId] = { ...n.position() };
+    });
+    return positions;
+  }
+
+  /** Positions of group (compound) nodes. */
+  getGroupPositions(): PositionMap {
+    const positions: PositionMap = {} as PositionMap;
+    this.cy.nodes('[?isGroup]').forEach((n) => {
       const gnId = asGnId(n.data('gnId') as string);
       if (gnId) positions[gnId] = { ...n.position() };
     });
@@ -163,13 +216,15 @@ export class GraphRenderer {
    * Highlight nodes and edges matching a query result.
    * Edges between two matched nodes are also highlighted automatically.
    */
-  highlightByGnId(nodeGnIds: Set<GnId>, edgeGnIds: Set<GnId>): void {
+  highlightByGnId(nodeGnIds: Set<GnId>, edgeGnIds: Set<GnId>, sourceGnId?: GnId): void {
     const cy = this.cy;
-    cy.elements().removeClass('query-match query-dimmed');
+    cy.elements().removeClass('query-match query-dimmed query-source');
 
     if (nodeGnIds.size === 0 && edgeGnIds.size === 0) return;
 
-    cy.elements().addClass('query-dimmed');
+    // Dim everything except group containers. Dimming a compound parent would
+    // multiply its low opacity into every child, darkening even matched nodes.
+    cy.elements().not('node[?isGroup]').addClass('query-dimmed');
     for (const gnId of nodeGnIds) {
       cy.getElementById(gnId).removeClass('query-dimmed').addClass('query-match');
     }
@@ -188,18 +243,24 @@ export class GraphRenderer {
         .removeClass('query-dimmed')
         .addClass('query-match');
     }
+    if (sourceGnId) {
+      cy.getElementById(sourceGnId)
+        .removeClass('query-dimmed query-match')
+        .addClass('query-source');
+    }
   }
 
   clearHighlight(): void {
-    this.cy.elements().removeClass('query-match query-dimmed');
+    this.cy.elements().removeClass('query-match query-dimmed query-source');
   }
 
   getHighlightState(): { nodes: Set<GnId>; edges: Set<GnId> } {
     const nodes = new Set<GnId>();
     const edges = new Set<GnId>();
-    this.cy.elements('.query-match').forEach((el) => {
+    this.cy.elements('.query-match, .query-source').forEach((el) => {
       const id = el.id();
       if (el.isNode()) {
+        if (el.data('isGroup')) return;
         nodes.add(asGnId(id));
       } else if (id.startsWith('e-')) {
         edges.add(asGnId(id.slice(2)));
@@ -211,24 +272,44 @@ export class GraphRenderer {
   // ── Private refresh helpers ─────────────────────────────────────────────────
 
   /** Full clear + rebuild. Used only on initial load or after import. */
-  private fullRefresh(nodes: RawNode[], edges: RawEdge[], savedPositions: PositionMap): GnId[] {
+  private fullRefresh(
+    nodes: RawNode[],
+    edges: RawEdge[],
+    savedPositions: PositionMap,
+    groups: PersistedGroup[],
+  ): GnId[] {
     const cy = this.cy;
 
     const internalIdToGnId = new Map<string, GnId>(
       nodes.map((n) => [n._id, n._properties.gnId as GnId]),
     );
 
+    const groupIds = new Set<GnId>(groups.map((g) => g.id));
+
     const elements: cytoscape.ElementDefinition[] = [];
+
+    // Add group (compound) nodes first so children can reference them via `parent`.
+    for (const g of groups) {
+      elements.push(groupElementDef(g));
+    }
+
     const newNodeGnIds: GnId[] = [];
     const allNodeGnIds: GnId[] = [];
+    const childrenByParent = new Map<GnId, GnId[]>();
 
     for (const node of nodes) {
       const gnId = node._properties.gnId as GnId | undefined;
       if (!gnId) continue;
       allNodeGnIds.push(gnId);
       const { displayLabel, color } = nodeDisplayData(node, this.registry);
+      const parentGroup = parentGroupOf(node, groupIds);
       const pos = savedPositions[gnId] ?? this.positionHints.get(gnId);
       if (!pos) newNodeGnIds.push(gnId);
+      if (parentGroup) {
+        const list = childrenByParent.get(parentGroup) ?? [];
+        list.push(gnId);
+        childrenByParent.set(parentGroup, list);
+      }
       elements.push({
         group: 'nodes',
         data: {
@@ -238,6 +319,7 @@ export class GraphRenderer {
           nodeLabel: node._labels[0] ?? '',
           color,
           borderColor: color,
+          ...(parentGroup ? { parent: parentGroup } : {}),
         },
         ...(pos ? { position: pos } : {}),
       });
@@ -253,13 +335,14 @@ export class GraphRenderer {
     cy.batch(() => {
       cy.elements().remove();
       cy.add(elements);
+      applyGroupCollapse(cy, groups);
     });
     this.placeNewNodes(newNodeGnIds);
     return allNodeGnIds;
   }
 
   /** Incremental diff: add/remove/update only changed elements. Positions are preserved. */
-  private diffRefresh(nodes: RawNode[], edges: RawEdge[]): GnId[] {
+  private diffRefresh(nodes: RawNode[], edges: RawEdge[], groups: PersistedGroup[]): GnId[] {
     const cy = this.cy;
 
     const desiredNodes = new Map<GnId, RawNode>();
@@ -274,6 +357,10 @@ export class GraphRenderer {
       if (gnId) desiredEdges.set(gnId, e);
     }
 
+    const desiredGroups = new Map<GnId, PersistedGroup>();
+    for (const g of groups) desiredGroups.set(g.id, g);
+    const groupIds = new Set<GnId>(desiredGroups.keys());
+
     // Map from WasmGraph internal _id (ephemeral) to stable gnId, for edge src/dst lookup
     const internalIdToGnId = new Map<string, GnId>(
       nodes.map((n) => [n._id, n._properties.gnId as GnId]),
@@ -282,11 +369,38 @@ export class GraphRenderer {
     const newNodeGnIds: GnId[] = [];
     const newNodeElements: cytoscape.ElementDefinition[] = [];
     const newEdgeElements: cytoscape.ElementDefinition[] = [];
+    const newGroupElements: cytoscape.ElementDefinition[] = [];
 
     cy.batch(() => {
+      // ── Groups ───────────────────────────────────────────────────────────────
+      const existingGroupIds = new Set<GnId>();
+      cy.nodes('[?isGroup]').forEach((n) => {
+        const gnId = asGnId(n.data('gnId') as string);
+        existingGroupIds.add(gnId);
+        const desired = desiredGroups.get(gnId);
+        if (!desired) {
+          // Detach any children before removing the parent
+          n.children().forEach((c) => {
+            c.move({ parent: null });
+          });
+          n.remove();
+        } else {
+          n.data({
+            displayLabel: desired.name,
+            color: desired.color,
+            collapsed: desired.collapsed,
+          });
+        }
+      });
+      for (const [id, g] of desiredGroups) {
+        if (existingGroupIds.has(id)) continue;
+        newGroupElements.push(groupElementDef(g));
+      }
+      if (newGroupElements.length > 0) cy.add(newGroupElements);
+
       // ── Nodes ────────────────────────────────────────────────────────────────
       const existingNodeIds = new Set<GnId>();
-      cy.nodes('[!ghost][!edgeHandle]').forEach((n) => {
+      cy.nodes('[!ghost][!edgeHandle][!isGroup]').forEach((n) => {
         const gnId = asGnId(n.data('gnId') as string);
         existingNodeIds.add(gnId);
         if (!desiredNodes.has(gnId)) {
@@ -301,12 +415,20 @@ export class GraphRenderer {
             color,
             borderColor: color,
           });
+          // Sync parent to match the node's current `group` property
+          const desiredParent = parentGroupOf(rawNode, groupIds);
+          const parents = n.parent();
+          const currentParent = parents.nonempty() ? asGnId(parents.first().id()) : null;
+          if (desiredParent !== currentParent) {
+            n.move({ parent: desiredParent ?? null });
+          }
         }
       });
 
       for (const [gnId, rawNode] of desiredNodes) {
         if (existingNodeIds.has(gnId)) continue;
         const { displayLabel, color } = nodeDisplayData(rawNode, this.registry);
+        const parentGroup = parentGroupOf(rawNode, groupIds);
         const pos = this.positionHints.get(gnId);
         if (!pos) newNodeGnIds.push(gnId);
         newNodeElements.push({
@@ -318,6 +440,7 @@ export class GraphRenderer {
             nodeLabel: rawNode._labels[0] ?? '',
             color,
             borderColor: color,
+            ...(parentGroup ? { parent: parentGroup } : {}),
           },
           ...(pos ? { position: pos } : {}),
         });
@@ -341,6 +464,8 @@ export class GraphRenderer {
         if (def) newEdgeElements.push(def);
       }
       if (newEdgeElements.length > 0) cy.add(newEdgeElements);
+
+      applyGroupCollapse(cy, groups);
     });
 
     this.placeNewNodes(newNodeGnIds);
@@ -356,7 +481,7 @@ export class GraphRenderer {
     let sumX = 0;
     let sumY = 0;
     let positionedCount = 0;
-    cy.nodes('[!ghost][!edgeHandle]').forEach((n) => {
+    cy.nodes('[!ghost][!edgeHandle][!isGroup]').forEach((n) => {
       if (gnIds.includes(asGnId(n.data('gnId') as string))) return; // skip the nodes we're about to place
       const pos = n.position();
       grid.add(pos);

@@ -14,27 +14,47 @@ export function setupUndoRedo(ctx: UndoContext): void {
 
   function performUndo(): void {
     if (!ctx.undoManager.canUndo()) return;
-    const current = UndoManager.captureSnapshot(ctx.db, ctx.canvas.getPositions());
+    const current = UndoManager.captureSnapshot(
+      ctx.db,
+      ctx.canvas.getPositions(),
+      ctx.groupStore.dump(),
+    );
     const prev = ctx.undoManager.undo(current);
     if (!prev) return;
-    const positions = UndoManager.restoreSnapshot(ctx.db, prev);
+    const { positions, groups } = UndoManager.restoreSnapshot(ctx.db, prev);
+    ctx.groupStore.loadAll(groups);
     ctx.db.applyConstraints(ctx.registry.getAll());
     ctx.sidebar.hide();
     ctx.updateNodeTypeFilterOptions();
-    ctx.canvas.refreshGraph(ctx.getFilteredNodes(), ctx.getFilteredEdges(), positions);
+    ctx.canvas.refreshGraph(
+      ctx.getFilteredNodes(),
+      ctx.getFilteredEdges(),
+      positions,
+      ctx.groupStore.list(),
+    );
     ctx.scheduleSave();
   }
 
   function performRedo(): void {
     if (!ctx.undoManager.canRedo()) return;
-    const current = UndoManager.captureSnapshot(ctx.db, ctx.canvas.getPositions());
+    const current = UndoManager.captureSnapshot(
+      ctx.db,
+      ctx.canvas.getPositions(),
+      ctx.groupStore.dump(),
+    );
     const next = ctx.undoManager.redo(current);
     if (!next) return;
-    const positions = UndoManager.restoreSnapshot(ctx.db, next);
+    const { positions, groups } = UndoManager.restoreSnapshot(ctx.db, next);
+    ctx.groupStore.loadAll(groups);
     ctx.db.applyConstraints(ctx.registry.getAll());
     ctx.sidebar.hide();
     ctx.updateNodeTypeFilterOptions();
-    ctx.canvas.refreshGraph(ctx.getFilteredNodes(), ctx.getFilteredEdges(), positions);
+    ctx.canvas.refreshGraph(
+      ctx.getFilteredNodes(),
+      ctx.getFilteredEdges(),
+      positions,
+      ctx.groupStore.list(),
+    );
     ctx.scheduleSave();
   }
 

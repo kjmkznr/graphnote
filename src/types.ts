@@ -39,10 +39,20 @@ export interface PersistedEdge {
   properties: Record<string, PropertyValue>;
 }
 
+export interface PersistedGroup {
+  id: GnId;
+  name: string;
+  color: string;
+  note: string;
+  collapsed: boolean;
+  position?: { x: number; y: number };
+}
+
 export interface PersistedGraph {
   version: 1;
   nodes: PersistedNode[];
   edges: PersistedEdge[];
+  groups?: PersistedGroup[];
   positions: Record<GnId, { x: number; y: number }>;
   viewport?: { pan: { x: number; y: number }; zoom: number };
 }
@@ -102,4 +112,8 @@ export type CanvasEvent =
   | { kind: 'bg-tap' }
   | { kind: 'node-hovered'; gnId: GnId; x: number; y: number }
   | { kind: 'edge-hovered'; gnId: GnId; x: number; y: number }
-  | { kind: 'element-unhovered' };
+  | { kind: 'element-unhovered' }
+  | { kind: 'group-clicked'; groupId: GnId }
+  | { kind: 'group-context'; groupId: GnId; x: number; y: number }
+  | { kind: 'group-dblclick'; groupId: GnId }
+  | { kind: 'node-group-changed'; gnId: GnId; groupId: GnId | null };

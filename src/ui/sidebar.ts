@@ -1,5 +1,5 @@
 import type { TypeRegistry } from '../graph/typeRegistry.js';
-import type { GnId, PropertyValue, RawEdge, RawNode } from '../types.js';
+import type { GnId, PersistedGroup, PropertyValue, RawEdge, RawNode } from '../types.js';
 import { DOM_IDS } from './domIds.js';
 import { byId, clearChildren, el } from './domUtils.js';
 import { renderMarkdownContent } from './markdownEditor.js';
@@ -13,6 +13,11 @@ export type SidebarCallbacks = {
   onPropertyChange: (gnId: GnId, key: string, value: PropertyValue) => void;
   onAddProperty: (gnId: GnId, key: string, value: string) => void;
   onLabelChange: (gnId: GnId, oldLabel: string, newLabel: string) => void;
+  onGroupRename: (id: GnId, name: string) => void;
+  onGroupColorChange: (id: GnId, color: string) => void;
+  onGroupNoteChange: (id: GnId, note: string) => void;
+  onGroupCollapseToggle: (id: GnId) => void;
+  onGroupDelete: (id: GnId) => void;
 };
 
 export class Sidebar {
@@ -28,7 +33,7 @@ export class Sidebar {
   private elAddPropBtn = byId(DOM_IDS.addPropBtn);
 
   private currentGnId: GnId | null = null;
-  private currentType: 'node' | 'edge' | null = null;
+  private currentType: 'node' | 'edge' | 'group' | null = null;
   private currentLabel: string | null = null;
 
   private callbacks: Partial<SidebarCallbacks> = {};
@@ -40,7 +45,11 @@ export class Sidebar {
   constructor() {
     this.elNoteTextarea.addEventListener('input', () => {
       if (!this.currentGnId) return;
-      this.callbacks.onNoteChange?.(this.currentGnId, this.elNoteTextarea.value);
+      if (this.currentType === 'group') {
+        this.callbacks.onGroupNoteChange?.(this.currentGnId, this.elNoteTextarea.value);
+      } else {
+        this.callbacks.onNoteChange?.(this.currentGnId, this.elNoteTextarea.value);
+      }
       this.updatePreview();
     });
 
@@ -90,6 +99,63 @@ export class Sidebar {
     this.showContent();
   }
 
+  showGroup(group: PersistedGroup): void {
+    this.currentGnId = group.id;
+    this.currentType = 'group';
+    this.currentLabel = null;
+
+    this.renderGroupHeader(group);
+
+    // Show a custom property-like list for color + collapse, hide the regular props block additions.
+    clearChildren(this.elPropsList);
+
+    // Color picker row
+    const colorInput = el('input', {
+      type: 'color',
+      class: 'group-color-input',
+      value: group.color,
+      'aria-label': 'グループの色',
+    }) as HTMLInputElement;
+    colorInput.addEventListener('input', () => {
+      if (this.currentGnId) this.callbacks.onGroupColorChange?.(this.currentGnId, colorInput.value);
+    });
+    this.elPropsList.appendChild(
+      el('div', { class: 'prop-row' }, el('span', { class: 'prop-key' }, 'Color'), colorInput),
+    );
+
+    // Collapse toggle
+    const collapseBtn = el(
+      'button',
+      { class: 'group-collapse-btn', type: 'button' },
+      group.collapsed ? 'Expand' : 'Collapse',
+    );
+    collapseBtn.addEventListener('click', () => {
+      if (this.currentGnId) this.callbacks.onGroupCollapseToggle?.(this.currentGnId);
+    });
+    this.elPropsList.appendChild(
+      el('div', { class: 'prop-row' }, el('span', { class: 'prop-key' }, 'Display'), collapseBtn),
+    );
+
+    // Delete button
+    const deleteBtn = el(
+      'button',
+      { class: 'group-delete-btn dialog-btn-secondary', type: 'button' },
+      'グループを削除',
+    );
+    deleteBtn.addEventListener('click', () => {
+      if (!this.currentGnId) return;
+      if (!window.confirm('このグループを削除しますか？(所属ノードは残ります)')) return;
+      this.callbacks.onGroupDelete?.(this.currentGnId);
+    });
+    this.elPropsList.appendChild(el('div', { class: 'prop-row prop-row-action' }, deleteBtn));
+
+    this.elNoteTextarea.value = group.note;
+    this.elNoteTextarea.classList.remove('nb-hidden');
+    this.elNotePreview.classList.add('nb-hidden');
+    if (this.elNoteTextarea.value) this.showNotePreview();
+    this.showContent();
+  }
+
   showEdge(edge: RawEdge): void {
     this.currentGnId = (edge._properties.gnId as GnId) ?? null;
     this.currentType = 'edge';
@@ -115,12 +181,30 @@ export class Sidebar {
     this.elContent.style.display = 'none';
   }
 
-  getCurrentType(): 'node' | 'edge' | null {
+  getCurrentType(): 'node' | 'edge' | 'group' | null {
     return this.currentType;
   }
 
   setCallbacks(cbs: SidebarCallbacks): void {
     this.callbacks = cbs;
+  }
+
+  private renderGroupHeader(group: PersistedGroup): void {
+    const nameInput = el('input', {
+      class: 'label-input',
+      type: 'text',
+      value: group.name,
+      'aria-label': 'グループ名',
+    }) as HTMLInputElement;
+    nameInput.addEventListener('input', () => {
+      if (this.currentGnId) this.callbacks.onGroupRename?.(this.currentGnId, nameInput.value);
+    });
+
+    clearChildren(this.elHeader);
+    this.elHeader.appendChild(el('div', { class: 'element-type-badge badge-group' }, 'Group'));
+    this.elHeader.appendChild(
+      el('div', { class: 'label-row' }, el('span', { class: 'label-prefix' }, 'Name:'), nameInput),
+    );
   }
 
   private renderNodeHeader(label: string): void {
