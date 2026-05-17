@@ -101,7 +101,7 @@ textarea {
   display: grid;
   grid-template-columns: var(--rail-w) 1fr 4px var(--sidebar-w);
   grid-template-rows: var(--chrome-h) 1fr 28px var(--query-h);
-  height: 100vh;
+  height: 100dvh;
   width: 100vw;
   overflow: hidden;
 }
@@ -617,6 +617,7 @@ textarea {
   background: none;
   border: none;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 .ct-btn:hover {
   background: var(--bg-2);
@@ -631,6 +632,7 @@ textarea {
   align-self: stretch;
   background: var(--line);
   margin: 2px 3px;
+  flex-shrink: 0;
 }
 
 /* ── Search Panel ──────────────────────────────────────────────── */
@@ -2813,11 +2815,16 @@ textarea {
     padding: 0 6px;
   }
 
-  /* Canvas toolbar: max-width to prevent overflow */
+  /* Canvas toolbar: pin to canvas edges, scroll horizontally */
   .canvas-toolbar {
-    max-width: calc(100% - 16px);
+    left: 8px;
+    right: 8px;
+    transform: none;
+    max-width: none;
+    justify-content: flex-start;
     overflow-x: auto;
     flex-wrap: nowrap;
+    scrollbar-width: none;
   }
 }
 
@@ -2895,6 +2902,38 @@ textarea {
     display: inline-flex;
   }
 
+  /* Brand: hide wordmark, keep mark */
+  .brand {
+    font-size: 0;
+    gap: 0;
+  }
+  .brand-mark {
+    font-size: initial;
+  }
+
+  /* Tabs: tighten */
+  .tab-btn {
+    padding: 0 9px;
+  }
+
+  /* Actions: fill remaining width, scroll horizontally */
+  .actions {
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    scrollbar-width: none;
+  }
+
+  /* Dropdown menus: escape the actions scroll clip */
+  .dropdown-content {
+    position: fixed;
+    top: var(--chrome-h);
+    right: 8px;
+    left: auto;
+  }
+
   /* Canvas toolbar: compact */
   .canvas-toolbar {
     gap: 0;
@@ -2903,9 +2942,6 @@ textarea {
   .ct-btn {
     padding: 4px 8px;
     font-size: 11px;
-  }
-  .canvas-toolbar .ct-btn span {
-    display: none;
   }
 
   /* Minimap: hidden */
